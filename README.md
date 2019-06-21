@@ -1,2 +1,0 @@
-# MI Competing Risks
-
