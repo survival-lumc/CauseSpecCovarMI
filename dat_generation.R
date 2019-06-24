@@ -120,3 +120,5 @@ dat_gener <- function(N, # Sample size
 #                 vals_t1 = c(0.3, 1, 0.5, 0.5), 
 #                 vals_t2 = c(1.7, 0.5, -0.5, 0.5)) 
 
+print("hello world")
+
