@@ -123,3 +123,5 @@ dat_gener <- function(N, # Sample size
 print("hello world")
 
 print("Where is this going")
+
+# Merge now 
