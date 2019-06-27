@@ -30,6 +30,8 @@ dat_gener <- function(N, # Sample size
     dat_covars <- data.frame(X = rbinom(n = N, 1, pr), Z)
   }
   
+  # Generate unobserved covariate
+  W <- rnorm(N)
   
   # Read-in paramaters - Cause 1
   a1 <- vals_t1[1]
@@ -37,7 +39,7 @@ dat_gener <- function(N, # Sample size
   B1_X <- vals_t1[3]
   B1_Z <- vals_t1[4]
   
-  lam1 <- with(dat_covars, h1_0 * exp(-(B1_X * X + B1_Z * Z) / a1))
+  lam1 <- with(dat_covars, h1_0 * exp(-(B1_X * X + B1_Z * Z + W) / a1))
   
   # Read-in paramaters - Cause 1
   a2 <- vals_t2[1]
@@ -45,7 +47,7 @@ dat_gener <- function(N, # Sample size
   B2_X <- vals_t2[3]
   B2_Z <- vals_t2[4]
   
-  lam2 <- with(dat_covars, h2_0 * exp(-(B2_X * X + B2_Z * Z) / a2))
+  lam2 <- with(dat_covars, h2_0 * exp(-(B2_X * X + B2_Z * Z + W) / a2))
   
   
   # Generating event times with two independent weibulls:
@@ -68,10 +70,32 @@ dat_gener <- function(N, # Sample size
   # Induce missingness
   if (mech == "MCAR") {
     
-    dat <- ampute(dat_covars, prop = p, patterns = c(0, 1), mech = "MCAR")$amp
+    dat <- dat_covars %>%
+      mutate(miss_ind = rbinom(N, 1, p),
+             X = ifelse(miss_ind == 1, NA, X))
+    
   } else {
     
-    dat <- ampute(dat_covars, prop = p, patterns = c(0, 1), mech = "MAR")$amp
+    # Transform t so as to be normalised
+    Z <- dat_covars$Z
+    t <- (log(t) - mean(log(t))) / sd(log(t))
+    
+    # Define MAR mech
+    MAR_mech <- function(alph, beta, gam, p) {
+      pr <- 1 / (1 + exp(-(alph + beta * Z + gam * t))) 
+      return(mean(pr) - p)
+    }
+    
+    # Get root
+    alph <- uniroot(MAR_mech, interval = c(-10, 10), extendInt = "yes", 
+                         beta = 1, gam = 1, p = p)$`root`
+    
+    # Induce missingness
+    pr <- 1 / (1 + exp(-(alph + 1 * Z + 1 * t))) 
+    
+    dat <- dat_covars %>% 
+      mutate(miss_ind = rbinom(N, 1, pr),
+             X = ifelse(miss_ind == 1, NA, X))
   }
   
   # Bring dataset together 
@@ -120,11 +144,4 @@ dat_gener <- function(N, # Sample size
 #                 vals_t1 = c(0.3, 1, 0.5, 0.5), 
 #                 vals_t2 = c(1.7, 0.5, -0.5, 0.5)) 
 
-print("hello world")
 
-print("Where is this going")
-
-print("Hein was here")
-
-print('Liesbeth was here')
-# Merge now 
