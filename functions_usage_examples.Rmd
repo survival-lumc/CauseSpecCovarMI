@@ -1,0 +1,53 @@
+---
+title: "MI Competing Risks - example usage of functions"
+author: "Ed Bonneville"
+date: "14 juni 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Clear environment
+rm(list = ls())
+
+# Load necessary packages
+library(MASS)
+library(tidyverse)
+library(mice)
+library(survival)
+library(xtable)
+```
+
+# Data generating 
+
+## From a single weibull distribution
+
+
+```{r datgen_singlweib}
+source("dat_generation_singleweibull.R")
+
+
+# Demonstration of pdf
+hist(my_rweibull(10000, 1, 1), breaks = 50, freq = F)
+x <- seq(0.001, 4, 0.001)
+lines(x, pdf_weib(x, 1, 1), lwd = 2)
+
+
+# Demonstrate use
+samps <- invtrans_weib(10000, alph1 = .1, lam1 = 2, alph2 = 5, lam2 = 2)
+hist(samps, breaks = 50)
+
+# Plot empirical CDF
+plot(ecdf(samps))
+t <- seq(min(samps), max(samps), by = 0.001)
+
+# Check that it corresponds to actual CDF of sum of two weibulls with diff shape
+cdf_weib <- function(t, alph1, lam1, alph2, lam2) {
+  return(1 - exp(-(lam1 * t^alph1 + lam2 * t^alph2)))
+}
+
+lines(t, cdf_weib(t, alph1 = .1, lam1 = 2, alph2 = 5, lam2 = 2), type = "l", lwd = 5)
+```
+
+#
