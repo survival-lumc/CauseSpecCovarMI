@@ -21,14 +21,15 @@ source("data_generation/dat_generation_W.R")
 # Set a global seed
 set.seed(1984)
 
+
 # Fix parameters (equiv of scenarios later) :
 
-N <- 10 # number of datasets to create
+N <- 100 # number of datasets to create
 true_betas <- c(0.5, -0.5) # beta (X1) and gamma (X2) in data generating model
 mech <- "MAR" # missingness mechanism
-m <- c(1, 5, 10) # number of imputations to compare
+m <- c(1, 5, 25) # number of imputations to compare
 method <- "norm" # imputation method, here bayesian linear regression
-prob <- 0.5 # percentage missingness in X!
+prob <- 0.3 # percentage missingness in X!
 R <- 10 # Number times to replicate imputations
 
 
@@ -91,7 +92,7 @@ dats <- lapply(1:N, function(i) {
                      X_type = "contin",
                      mus = c(0, 0), 
                      covmat = matrix(c(1, 0.25, 
-                                       0.25, 1), nrow = 2), 
+                                       0.25, 1), nrow = 2), # make into correlation mat
                      mech = mech, 
                      pars_MAR = c(1, 1),
                      p = prob, 
@@ -103,28 +104,36 @@ dats <- lapply(1:N, function(i) {
 })
 
 
+# Assign MICE matrices once outside of lapply loop
+dat_mats <- dats[[1]]$dat
+mpred_ch1 <- mpred_ch12 <- mpred_ch12_int <-  matrix(0, ncol(dat_mats), ncol(dat_mats),
+                                                     dimnames = list(names(dat_mats), names(dat_mats)))
+
+## Ch1 model: MI with Z, eps (as factor) and H1(t) as covars
+mpred_ch1["X1", c("X2", "ev1", "H1")] <- 1
+
+# Ch12 model with addition of interactions H x Z
+mpred_ch12_int["X1", c("X2", "eps", "H1", "H2", "H1_X2", "H2_X2")] <- 1
+
+## Ch12 model: MI with Z, eps, H1(t) & H2(t) as covars
+mpred_ch12["X1", c("X2", "eps", "H1", "H2")] <- 1
+
+rm(dat_mats)
+
+
 # Run simulations here
+system.time(
 final_test <- lapply(dats, function(obj) {
   
   # Extract data set
   dat <- obj$dat
   
-  # Set seed
   # set.seed(obj$rep)
   
   # Start replicates for MI methods
   replicates <- lapply(1:R, function(r) {
     
-    ## Multiple imputation section:
-    
-    # Make predictor matrices for both ch1 and ch12
-    mpred_ch1 <- mpred_ch12 <- mpred_ch12_int <-  matrix(0, ncol(dat), ncol(dat),
-                                                         dimnames = list(names(dat), names(dat)))
-    
-    
-    ## Ch1 model: MI with Z, eps (as factor) and H1(t) as covars
-    mpred_ch1["X1", c("X2", "ev1", "H1")] <- 1
-    
+    ## Multiple imputation section
     
     # Run m = 10 imputations, run cause-specific cox, and pool - 
     # tidyversify this using https://stefvanbuuren.name/fimd/workflow.html
@@ -136,10 +145,6 @@ final_test <- lapply(dats, function(obj) {
     results_ch1 <- bind_rows(single_rep_m(imps = imp_ch1,
                                           m = m, r = r, label = "ch1"))
     
-    
-    ## Ch12 model: MI with Z, eps, H1(t) & H2(t) as covars
-    mpred_ch12["X1", c("X2", "eps", "H1", "H2")] <- 1
-    
     # Run m = 10 imputations, run cause-specific cox, and pool
     imp_ch12 <- mice(dat, m = m[length(m)],
                      method = method, 
@@ -150,9 +155,6 @@ final_test <- lapply(dats, function(obj) {
                                            m = m, r = r, label = "ch12"))
     
     
-    # Ch12 model with addition of interactions H x Z
-    mpred_ch12_int["X1", c("X2", "eps", "H1", "H2", "H1_X2", "H2_X2")] <- 1
-    
     imp_ch12_int <- mice(dat, m = m[length(m)],
                          method = method,
                          predictorMatrix = mpred_ch12_int,
@@ -161,13 +163,13 @@ final_test <- lapply(dats, function(obj) {
     results_ch12_int <- bind_rows(single_rep_m(imps = imp_ch12_int, 
                                                m = m, r = r, label = "ch12_int"))
     
-    results_MI <- rbind.data.frame(results_ch1, results_ch12, results_ch12_int)
+    results_MI <- bind_rows(results_ch1, results_ch12, results_ch12_int) 
     return(results_MI) 
   })
   
   
   # tapply with multiple indices? Instead of group_by()
-  # Also how to do coverage/power? 
+  # Add coverage/power here later 
   agg <- bind_rows(replicates) %>%
     group_by(var, analy, m) %>%
     mutate(sd_reps = sd(coef)) %>%
@@ -212,15 +214,17 @@ final_test <- lapply(dats, function(obj) {
   
   return(rbind.data.frame(results_CCA, agg))
 })
+)
 
 
-bind_rows(final_test) %>%
+results <- bind_rows(final_test) %>%
   group_by(var, analy, m) %>%
   mutate(se_emp = sd(coef)) %>%
   summarise_all(~ round(mean(.), 3)) %>%
   select(var, analy, m, coef, se, se_emp) %>%
   as.data.frame()
 
+save(dat, file = "/exports/molepi/users/efbonneville/mi_comprisks/results.RData")
 
 
 # Approx time: 50 secs per dataset, so for 1000 thats 14h (so m = c(1, 10, 50) and R = 10)
