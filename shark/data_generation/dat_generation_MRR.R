@@ -1,6 +1,6 @@
-############################################
-## Data generation using unobserved var W ## 
-############################################
+###########################################
+## Data generation as in MRR draft paper ## 
+###########################################
 
 
 # Generates following data for two competing risks:
@@ -8,7 +8,7 @@
 # - Covariates X1, X2,..,XN from multivar normal
 # - X1 can be binary, depending on X2 through logreg
 # - Complete on X2,..,XN, missing either MAR or MCAR for X1
-# - Missingness induced with logreg including W and standardised log(t)
+# - Missingness induced with mechanism from MRR draft paper
 # - No censoring considered
 # - T drawn from independent Weibulls
 # - For now missingness mechanisms depend only on X2
@@ -16,36 +16,33 @@
 # - PACKAGES NEEDED: MASS, tidyverse
 
 
-dat_gener_W <- function(N, # Sample size
-                        X_type, # "contin" or "binary"
-                        mus, # means of MVN of covars
-                        covmat, # Covariance matrix of X
-                        pars_logist, # Vector of intercept and slope for log reg (if X_type == binary)
-                        mech, # Specify "MCAR" or "MAR" 
-                        pars_MAR, # vector (b_X2, b_t) for MAR mechanism
-                        p, # probability missingness; for MAR this is p when Z < 0; so 0.1 in MRR example
-                        cause2, # Distribution for cause 2 times - either"weib" or "unif"
-                        vals_t1, # vector of (a1, h1_0, B1_X, B1_X2)
-                        vals_t2) { # vector of (a2, h2_0, B2_X, B2_X2)
-  
+dat_gener_MRR <- function(N, # Sample size
+                          X_type, # "contin" or "binary"
+                          mus, # means of MVN of covars
+                          covmat, # Covariance matrix of X
+                          pars_logist, # Vector of intercept and slope for log reg (if X_type == binary)
+                          mech, # Specify "MCAR" or "MAR" 
+                          p, # vector P miss if c(X2 > 0, X2 < 0); in MRR draft it was c(0.9, 0.1)
+                          cause2, # Distribution for cause 2 times - either"weib" or "unif"
+                          vals_t1, # vector of (a1, h1_0, B1_X, B1_X2)
+                          vals_t2) { # vector of (a2, h2_0, B2_X, B2_X2)
+                             
   
   # Generate covariates
   if (X_type == "contin") {
     dat_covars <- data.frame(mvrnorm(n = N, mu = mus, Sigma = covmat)) %>%
       rename_all(~ paste("X", 1:length(mus), sep = ""))
-
+    
   } else {
+    # For binary case, X1 depends on X2 via logreg
     dat_covars <- data.frame(mvrnorm(n = N, mu = mus, Sigma = covmat)) %>%
       rename_all(~ paste("X", 2:(length(mus) + 1), sep = ""))
     
-    # For binary case, X1 depends on X2 via logreg
     pr <- with(dat_covars, plogis(pars_logist[1] + pars_logist[2] * X2))
     dat_covars <- dat_covars %>%
       mutate(X1 = rbinom(n = N, 1, pr))
   }
   
-  # Generate unobserved covariate
-  W <- rnorm(N)
   
   # Read-in paramaters - Cause 1
   a1 <- vals_t1[1]
@@ -53,7 +50,7 @@ dat_gener_W <- function(N, # Sample size
   B1_X1 <- vals_t1[3]
   B1_X2 <- vals_t1[4]
   
-  lam1 <- with(dat_covars, h1_0 * exp(-(B1_X1 * X1 + B1_X2 * X2 + W) / a1))
+  lam1 <- with(dat_covars, h1_0 * exp(-(B1_X1 * X1 + B1_X2 * X2) / a1))
   
   # Read-in paramaters - Cause 1
   a2 <- vals_t2[1]
@@ -61,7 +58,7 @@ dat_gener_W <- function(N, # Sample size
   B2_X1 <- vals_t2[3]
   B2_X2 <- vals_t2[4]
   
-  lam2 <- with(dat_covars, h2_0 * exp(-(B2_X1 * X1 + B2_X2 * X2 + W) / a2))
+  lam2 <- with(dat_covars, h2_0 * exp(-(B2_X1 * X1 + B2_X2 * X2) / a2))
   
   
   # Generating event times with two independent weibulls:
@@ -91,29 +88,23 @@ dat_gener_W <- function(N, # Sample size
     
   } else {
     
-    # Compute log(t) and standardise
-    t_stand <- (log(t) - mean(log(t))) / sd(log(t))
+    # This is MRR's MAR
+    tab_X2 <- table(dat_covars$X2 > 0) 
     
-    # Define function to solve
-    MAR_mech <- function(alph, beta, gam, p) {
-      with(dat_covars, expr = {
-        pr <- plogis(alph + beta * X2 + gam * t_stand) 
-        mean(pr) - p
-      })
+    # Set high and low
+    if (p == 0.5) {
+      p <- c(0.4, 0.6)
+    } else {
+      p <- c(0.05, 0.15)
     }
     
-    # Get root
-    alph <- uniroot(MAR_mech, interval = c(-10, 10), extendInt = "yes", 
-                         beta = pars_MAR[1], gam = pars_MAR[2], p = p)$`root`
-    
-    # Induce missingness
-    pr <- with(dat_covars, plogis(alph + pars_MAR[1] * X2 + pars_MAR[2] * t_stand))
-    
     dat <- dat_covars %>% 
-      mutate(miss_ind = rbinom(N, 1, pr),
-             X1 = ifelse(miss_ind == 1, NA, X1)) %>%
+      mutate(miss_ind = ifelse(X2 > 0, rbinom(tab_X2[2], 1, p[1]), 
+                               rbinom(tab_X2[1], 1, p[2])),
+             X1 = ifelse(miss_ind == 1, NA, X1)) %>% 
       select(X1, X2:paste("X", ncol(dat_covars), sep = "")) # Reorder 
   }
+  
   
   # Bring dataset together 
   final_dat <- dat %>%

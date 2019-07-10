@@ -33,7 +33,7 @@ set.seed(1984)
 N <- 2 # number of datasets to create
 true_betas <- c(0.5, -0.5) # beta (X1) and gamma (X2) in data generating model
 mech <- "MAR" # missingness mechanism
-m <- c(1, 5, 10) # number of imputations to compare
+m <- c(1, 2, 5) # number of imputations to compare
 method <- "norm" # imputation method, here bayesian linear regression
 prob <- 0.3 # percentage missingness in X!
 R <- 10 # Number times to replicate mice imputations
@@ -130,8 +130,8 @@ final_test <- lapply(dats, function(obj) {
   agg <- bind_rows(replicates) %>%
     
     # Power and coverage
-    #mutate(pow = pval < 0.05,
-    #       cov = `2.5 %` < coef && coef < `97.5 %`)
+    mutate(pow = pval < 0.05,
+           cover = `2.5 %` < true & true < `97.5 %`) %>%
     group_by(var, analy, m) %>%
     mutate(sd_reps = sd(coef)) %>%
     summarise_all(~ round(mean(.), 3)) %>%
@@ -150,7 +150,9 @@ final_test <- lapply(dats, function(obj) {
                              m = m[length(m)]))
   
   summ_smcfcs <- smcfcs_pool_diffm(mod_smcfcs, m, label = "smcfcs") %>%
-    mutate(sd_reps = 0)
+    mutate(sd_reps = 0,
+           pow = pval < 0.05,
+           cover = `2.5 %` < true & true < `97.5 %`)
                        
   
   ## Ref model: 
@@ -176,16 +178,18 @@ final_test <- lapply(dats, function(obj) {
            true = rep(true_betas, 2),
            m = 0, pval = `Pr(>|z|)`,
            #sd_imps = 0,
-           sd_reps = 0) %>%
+           sd_reps = 0,
+           pow = pval < 0.05,
+           cover = `2.5 %` < true & true < `97.5 %`) %>%
     select(var, analy, m, coef, se = `se(coef)`, 
-           pval, `2.5 %`, `97.5 %`, true, sd_reps) 
+           pval, `2.5 %`, `97.5 %`, true, sd_reps, pow, cover) 
   
   
-  # Make a counter
-  #seq_perc <- seq(0, N, by = floor(N / 10))
-  #if (obj$rep %in% seq_perc) {cat(100 * (obj$rep / N), "%")}
+  # Results combined
+  results_comb <- rbind.data.frame(results_CCA, agg, summ_smcfcs) %>% 
+    select(-pval, -`2.5 %`, -`97.5 %`)
   
-  return(rbind.data.frame(results_CCA, agg, summ_smcfcs))
+  return(results_comb)
 })
 
 
