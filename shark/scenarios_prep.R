@@ -9,11 +9,12 @@
 betas <- c(0, 0.5, 1) # for beta from hazard 1 model
 miss <- c("high", "low") # 50 or 10 % missing
 mech <- c("MCAR", "MAR_MRR", "MAR_W") # Type of mechanism
+nsim <- 1000 # number of simulations per scenarios
 
 
 # All combinations of factor variables
 scenarios <- expand.grid(beta1 = betas, miss = miss, mech = mech) %>% 
-  mutate(scen = 1:nrow(.))
+  mutate(scen = 1:nrow(.) * nsim)
 
 
 # For picking what dataset to simulate for what scenario
@@ -21,8 +22,11 @@ sim_scenario <- function(beta1, miss, mech, scen) {
   
   function(seed) {
     
-    # Ensure seed is different for each scenario
-    set.seed(seed + scen)
+    # Ensure seed is different for each scenario / simulation combo
+    # So scenario 1 will have seeds 1001 to 2000
+    # scenario 2 will have seeds 2001 to 3000, and so on
+    # Ensuring 18 scen * 1000 sims = 18000 independent datasets
+    set.seed(scen + seed)
     
     # Set missingness
     p <- ifelse(miss == "high", 0.5, 0.1)
