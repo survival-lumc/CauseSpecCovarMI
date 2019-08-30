@@ -30,13 +30,13 @@ set.seed(1984)
 
 # Fix parameters (equiv of scenarios later) :
 
-N <- 2 # number of datasets to create
+N <- 1 # number of datasets to create
 true_betas <- c(0.5, -0.5) # beta (X1) and gamma (X2) in data generating model
 mech <- "MAR" # missingness mechanism
-m <- c(1, 2, 5) # number of imputations to compare
+m <- c(1, 2, 5, 10, 25, 50, 100) # number of imputations to compare
 method <- "norm" # imputation method, here bayesian linear regression
-prob <- 0.3 # percentage missingness in X!
-R <- 10 # Number times to replicate mice imputations
+prob <- 0.4 # percentage missingness in X!
+R <- 2 # Number times to replicate mice imputations
 
 
 # Generate independent datasets & assign index
@@ -56,6 +56,7 @@ dats <- lapply(1:N, function(i) {
   
   return(list("dat" = dat, "rep" = i))
 })
+
 
 
 # Assign MICE matrices once outside of lapply loop
@@ -111,7 +112,7 @@ final_test <- lapply(dats, function(obj) {
     imp_ch12_int <- mice(dat, m = m[length(m)],
                          method = method,
                          predictorMatrix = mpred_ch12_int,
-                         print = FALSE)
+                         print = T)
     
     results_ch12_int <- mice_pool_diffm(imps = imp_ch12_int, 
                                         m = m, r = r, label = "ch12_int")
