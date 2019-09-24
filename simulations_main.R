@@ -30,13 +30,14 @@ set.seed(1984)
 
 # Fix parameters (equiv of scenarios later) :
 
-N <- 1 # number of datasets to create
+N <- 3 # number of datasets to create
 true_betas <- c(0.5, -0.5) # beta (X1) and gamma (X2) in data generating model
 mech <- "MAR" # missingness mechanism
-m <- c(1, 2, 5, 10, 25, 50, 100) # number of imputations to compare
+#m <- c(1, 2, 5, 10, 25, 50, 100) # number of imputations to compare
+m <- c(1, 2, 3)
 method <- "norm" # imputation method, here bayesian linear regression
 prob <- 0.4 # percentage missingness in X!
-R <- 2 # Number times to replicate mice imputations
+R <- 3 # Number times to replicate mice imputations
 
 
 # Generate independent datasets & assign index
@@ -97,7 +98,8 @@ final_test <- lapply(dats, function(obj) {
                     print = FALSE)
     
     results_ch1 <- mice_pool_diffm(imps = imp_ch1,
-                                   m = m, r = r, label = "ch1")
+                                   m = m, r = r, label = "ch1",
+                                   true_betas = true_betas)
     
     # Run imputations, run cause-specific cox, and pool
     imp_ch12 <- mice(dat, m = m[length(m)],
@@ -106,16 +108,18 @@ final_test <- lapply(dats, function(obj) {
                      print = FALSE)
     
     results_ch12 <- mice_pool_diffm(imps = imp_ch12,
-                                    m = m, r = r, label = "ch12")
+                                    m = m, r = r, label = "ch12",
+                                    true_betas = true_betas)
     
     
     imp_ch12_int <- mice(dat, m = m[length(m)],
                          method = method,
                          predictorMatrix = mpred_ch12_int,
-                         print = T)
+                         print = FALSE)
     
     results_ch12_int <- mice_pool_diffm(imps = imp_ch12_int, 
-                                        m = m, r = r, label = "ch12_int")
+                                        m = m, r = r, label = "ch12_int",
+                                        true_betas = true_betas)
     
     results_MI <- bind_rows(results_ch1, results_ch12, results_ch12_int) 
     
@@ -126,13 +130,15 @@ final_test <- lapply(dats, function(obj) {
   # keep SE from first replicate
   se_rep1 <- bind_rows(replicates) %>% 
     filter(rep == 1) %>% 
-    select(se, var, analy, m)
+    select(coef, se, var, analy, m) %>% 
+    rename(coef_i1 = coef)
   
   agg <- bind_rows(replicates) %>%
     
     # Power and coverage
     mutate(pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`) %>%
+           cover = `2.5 %` < true & true < `97.5 %`,
+           bias = coef - true) %>%
     group_by(var, analy, m) %>%
     mutate(sd_reps = sd(coef)) %>%
     summarise_all(~ round(mean(.), 3)) %>%
@@ -150,10 +156,13 @@ final_test <- lapply(dats, function(obj) {
                              method = c("norm", rep("", 10)), 
                              m = m[length(m)]))
   
-  summ_smcfcs <- smcfcs_pool_diffm(mod_smcfcs, m, label = "smcfcs") %>%
+  summ_smcfcs <- smcfcs_pool_diffm(mod_smcfcs, m, label = "smcfcs",
+                                   true_betas = true_betas) %>%
     mutate(sd_reps = 0,
            pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`)
+           cover = `2.5 %` < true & true < `97.5 %`,
+           bias = coef - true,
+           coef_i1 = coef)
                        
   
   ## Ref model: 
@@ -181,9 +190,11 @@ final_test <- lapply(dats, function(obj) {
            #sd_imps = 0,
            sd_reps = 0,
            pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`) %>%
+           cover = `2.5 %` < true & true < `97.5 %`,
+           bias = coef - true) %>%
     select(var, analy, m, coef, se = `se(coef)`, 
-           pval, `2.5 %`, `97.5 %`, true, sd_reps, pow, cover) 
+           pval, `2.5 %`, `97.5 %`, true, sd_reps, pow, cover, bias) %>% 
+    mutate(coef_i1 = coef)
   
   
   # Results combined
@@ -194,12 +205,31 @@ final_test <- lapply(dats, function(obj) {
 })
 
 
+# Test function for rmse and emp se
+emp_SE <- function(theta_i1, theta_hat, nsim) {
+  
+  sq_diffs <- (theta_i1 - theta_hat)^2 
+  term <- sum(sq_diffs) / (nsim - 1)
+  return(sqrt(term))
+}
 
-results <- bind_rows(final_test) %>%
+rmse <- function(theta_i1, true, nsim) {
+  
+  sq_diffs <- (theta_i1 - true)^2 
+  term <- sum(sq_diffs) / (nsim - 1)
+  return(sqrt(term))
+}
+
+
+
+bind_rows(final_test) %>%
   group_by(var, analy, m) %>%
+  mutate(nsim = n()) %>% 
+  mutate(rmse = rmse(coef_i1, true, nsim),
+         emp_se = emp_SE(coef_i1, mean(coef), nsim)) %>% 
   mutate(se_emp = sd(coef)) %>%
   summarise_all(~ round(mean(.), 3)) %>%
-  select(var, analy, m, coef, se, se_emp) %>%
+  select(var, analy, m, se, se_emp, emp_se, rmse) %>%
   as.data.frame()
 
 

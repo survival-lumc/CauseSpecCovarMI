@@ -22,13 +22,30 @@ loadRData <- function(fileName){
   get(ls()[ls() != "fileName"])
 }
 
+# Add functions empse and rmse
+emp_SE <- function(theta_i1, theta_hat, nsim) {
+  
+  sq_diffs <- (theta_i1 - theta_hat)^2 
+  term <- sum(sq_diffs) / (nsim - 1)
+  return(sqrt(term))
+}
+
+rmse <- function(theta_i1, true, nsim) {
+  
+  sq_diffs <- (theta_i1 - true)^2 
+  term <- sum(sq_diffs) / (nsim - 1)
+  return(sqrt(term))
+}
+
 
 # Bind list together
 final_dat <- bind_rows(lapply(list_files, loadRData)) %>% 
   group_by(scen_name, var, analy, m) %>% 
-  mutate(se_emp = sd(coef)) %>% 
-  summarise_all(~ round(mean(.), 3)) %>% 
-  ungroup() %>% 
+  mutate(nsim = n()) %>% 
+  mutate(rmse = rmse(coef_i1, true, nsim),
+         emp_se = emp_SE(coef_i1, mean(coef), nsim)) %>% 
+  mutate(se_emp = sd(coef)) %>%
+  summarise_all(~ round(mean(.), 3)) %>%
   as.data.frame()
 
 

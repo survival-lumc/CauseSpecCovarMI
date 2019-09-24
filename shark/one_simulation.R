@@ -15,6 +15,7 @@ seed <- as.numeric(args[1])
 
 
 # Load necessary packages - needs loading in this order
+# replace with pload, but need to load pacman into shark
 library(MASS)
 library(tidyverse)
 library(mice)
@@ -70,8 +71,9 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
   
   
   #  Global parameters 
-  R <- 10 # number of replications for mice()
-  m <- c(1, 10, 20) # imputations we are interested in
+  R <- 3 # number of replications for mice()
+  #m <- c(1, 10, 20) # imputations we are interested in
+  m <- c(1,2,3)
   method <- "norm" # continuous case, so use Bayesian linear regression
 
   
@@ -118,10 +120,11 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
   })
   
   
-  # keep SE from first replicate - so as to not underestimate variance
+  # keep SE and coef from first replicate - so as to not underestimate variance
   se_rep1 <- bind_rows(replicates) %>% 
     filter(rep == 1) %>% 
-    select(se, var, analy, m)
+    select(coef, se, var, analy, m) %>% 
+    rename(coef_i1 = coef)
   
   # Bring the rest together
   agg <- bind_rows(replicates) %>%
@@ -157,7 +160,8 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
     mutate(sd_reps = 0,
            pow = pval < 0.05,
            cover = `2.5 %` < true & true < `97.5 %`,
-           bias = coef - true)
+           bias = coef - true,
+           coef_i1 = coef)
   
   
   ## Ref model: 
@@ -188,7 +192,8 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
            bias = coef - true) %>%
     select(var, analy, m, coef, se = `se(coef)`, 
            pval, `2.5 %`, `97.5 %`, true, sd_reps, 
-           pow, cover, bias) 
+           pow, cover, bias) %>% 
+    mutate(coef_i1 = coef)
   
   
   # Results combined
