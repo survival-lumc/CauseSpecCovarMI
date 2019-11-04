@@ -1,0 +1,261 @@
+---
+title: "Multiple Imputation"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+We will load in a dataset with simulated data for this exercise.  
+``` {r data}
+# 1. load data
+dat = readRDS('dat.Rda')
+
+# note that dat is a complete dataset with 1043 patients. 
+
+```
+
+``` {r preparations}
+# install and load library
+# install.packages("mice")
+require(prodlim)
+require(survival)
+require(cmprsk)
+require(mice)
+require(vioplot)
+
+# Lattice is usually imported by mice, and is used for a number of plotting functions
+
+# The number imputation datasets we want to have (5 here to speed to process up)
+n_impu <- 5
+# We recommend generating ~100 datasets. Fewer than 100 is also fine if it has no impact on the covariates
+```
+
+``` {r functions}
+# check missingness pattern
+missingpat = function(data) {
+  require(mice)
+  md <-  md.pattern(data)
+  # plot matrix with available data indicated in white and missing data in black 
+  # exclude the last row since this is a vector of pattern frequencies
+  return(levelplot(as.matrix(md[1:(nrow(md) - 1), 1:(ncol(md) - 1)]), border = 'black', colorkey = F, col.regions = gray(0:1), scales = list(x = list(rot = 90)), xlab = 'N observations in pattern'))
+}
+```
+
+```{r generate missingness}
+
+# 2. create missingness pattern
+# first select covariates we want to have missing observations
+# we will remove cases from x1-4: and expand the covariate with >2 levels.
+
+miscov = dat[, c('x1','x2','x3','x4')]
+mm = model.matrix( ~., data = miscov)[, -1]
+
+# incomplete covariates: x1-4
+# complete covariates: z1-2
+
+# We use ampute to create the missingness pattern (unrelated to outcomes).
+
+
+# We use ampute to create the missingness pattern (unrelated to outcomes).
+# we use ampute to create the missingness pattern (unrelated to outcomes)
+mpattern = matrix(1, ncol = 5, nrow = 3, dimnames = list(NULL, colnames(mm)))
+
+# we will create 3 patterns, where 0 indicates  
+mpattern[1, ] = c(0,1,0,0,0)
+mpattern[2, ] = c(1,0,0,1,1)
+mpattern[3, ] = c(1,1,0,0,0)
+
+mpattern
+
+# In the pattern matrix, 0 indicates variables with missing data
+mm.amp = ampute(mm, prop = 0.50, mech = 'MCAR', freq = c(0.4, 0.2, 0.4), patterns = mpattern)$amp
+
+# Other mechanisms can be selected with mech=MAR and mech=MNAR. 
+
+df = dat
+# Insert missingness pattern into dataset
+rem = is.na(mm.amp)
+# Note that x1 has 2 dummies, so we first combine the corresponding columns:
+rem[, 2] = rem[, 1] | rem[, 2]
+
+for (i in 1:4) df[rem[,i + 1], c('x1','x2','x3','x4')[i]] = NA
+
+# then we can check what the pattern looks like
+missingpat(df)
+
+# We can use these data to impute and compare the results to the complete dataset
+
+```
+
+We use the cumulative hazard instead of the time to event (or its log transform) by calling mice::nelsonaalen().  
+
+# Basic Imputation
+
+## Step 1
+
+``` {r step 1 preparation 1}
+
+# imputation preparation
+
+# Specify that x1 is an ordered covariate
+df$x1 = as.ordered(df$x1)
+
+# compute cumulative hazards (outcomes censored at 60m)
+df$haz_os = nelsonaalen(df, srv_t, srv_s)
+
+df$rel_s = as.numeric(df$ci_s == 1)
+df$haz_rel = nelsonaalen(df, ci_t, rel_s)
+df$nrm_s = as.numeric(df$ci_s == 2)
+df$haz_nrm = nelsonaalen(df, ci_t, nrm_s)
+
+```
+
+In this figure we see the patterns of missingness in the current dataset. The rows indicate for which varables data is missing, and the columns indicate for how many patients this pattern of missingness is observed. In this case, complete cases analysis would have left us with 119 cases.   
+
+## Step 2
+
+Which variables to include in imputation? The more the better? Is that true? Or should only plausible variables be used? Perhaps a minial number of variables is better?
+
+``` {r step 2 preparation 2}
+
+# According to Bartlett 2016 / Royston & White 2009, imputation of missing data is done conditional on the complete covariates, and better results are obtained with interactions between cumulative hazard and complete covariates.  
+
+# A predictor matrix can be created manually (this one uses all variables to impute all variables (except time)):
+mpred <- matrix(1, ncol(df), ncol(df), dimnames = list(names(df), names(df)))
+diag(mpred) <- 0
+mpred[, c('srv_t', 'ci_t')] <- 0
+mpred
+
+# Create an empty imputation object imp
+imp = mice(df, maxit = 0)
+
+# Say we think the interaction between x2 and complete binary covariate z1:
+# Add 'silent/passive' imputation for interaction x2*z1
+# We need to add a column for MICE to store the interaction variable:
+df['x2_z1'] = NA
+
+# and provide the interaction term and create a new row & column in the predictor matrix corresponding to the interaction term. 
+meth = imp$method
+meth['x2_z1'] = "~I(x2 * (as.numeric(z1) - 1))"
+mpred['x2_z1','x2_z1'] = 0
+
+# Imputation methods can be specified as well
+# To see the methods mice supports by default (it also allows for specifying custom functions but this is typically sufficient):
+methods(mice)
+# Default methods:
+# 1. continuous: pmm: predictive mean matching
+# 2. binary: logreg: logistic regression
+# 3. >2 levels: polyreg: multinomial log regression
+# 4. >2 levels, ordered: polr: ordinal log regression
+
+# We can check which method is used by mice by default in our dataset, and change it if you want
+# In this way I can see which have missings values and also how the variabels are stored; "" means that that variable won't be imputed
+
+```
+
+## Step 3
+
+The imputation starts here. By default, for the pmm method, it will select among the 5 closest matches. This can be adjusted with the 'donors' argument. A smaller number of potential donors is better with smaller datasets, to ensure donors are actually similar, although it is recommended that the number of donors should be larger than 3. The donors argument can be inserted in the call to mice().  
+
+``` {r step 3 imputation}
+
+# Imputation starts here (100 datasets with ~25 iterations is recommended)
+# imputation <- mice(data.impu, maxit = 25, m = 100, seed = 1234, pred = pred, meth = meth, print = T)
+# Here, we will do 5 to save time  
+imputation <- mice(df, maxit = 5, m = 5, seed = 1234, pred = mpred, print = T)
+
+```
+
+``` {r checking imputation}
+
+# Check the imputed values, for multivariable checking based on propensity scores
+
+
+fit <- with(imputation, glm(ici(imputation) ~ x1 + x2 + x3 + x4 + z1 + z2 + srv_s + rel_s + nrm_s + haz_os + haz_rel + haz_nrm))
+
+
+# Then calculate the propensity score (assume we have all the important variables in)
+ps <- rep(rowMeans(sapply(fit$analyses, fitted.values)), imputation$m + 1)
+# And create a scatterplot for each of the datasets (.imp is the imputation dataset indicator)x
+xyplot(imputation, x2 ~ ps | as.factor(.imp))
+
+# We can do something similar for categorical covariates.
+# Here I use the vioplot package for smoothed histograms.
+
+require(vioplot)
+.col = RColorBrewer::brewer.pal(9, 'Set1')
+
+ps.av = ps[1:1043]; ps.av = ps.av[!is.na(imputation$data$x1)]
+ps.mis = ps[1:1043]; ps.mis = ps.mis[is.na(imputation$data$x1)]
+
+par(mfrow = c(5, 1))
+par(mar = c(2, 4.1, 1, 1))
+for (i in 1:5) {
+  vioplot(ps.av ~ imputation$data$x1[!is.na(imputation$data$x1)], col = .col[2], lwd = 2, side = 'left', horizontal = F)
+  vioplot(ps.mis ~ imputation$imp$x1[, i], add = T, col = .col[1], lwd = 2, side = 'right', horizontal = F)
+}
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+par(mfrow = c(1, 1))
+
+```
+
+
+Under MCAR the distributions should look similar. However, under MAR, the distributions do not need to look similar so in such cases the plot by itself would not be sufficient. 
+
+## Step 4
+``` {r step 4 modeling}
+
+# Develop model using mice::with()
+# This you do to get meaningful hazard ratios, not those corresponding to the linear/quadratic/cubic terms which are given for ordered covariates.
+cox <- with(imputation, coxph(Surv(srv_t, srv_s) ~ factor(x1, ordered = F) + x2 + x3 + z1 + z2))
+
+# If all models have the same covariates, pool:
+final = summary(pool(cox))
+
+exp(final$estimate)
+
+summary(with(dat, coxph(Surv(srv_t, srv_s) ~ factor(x1, ordered = F) + x2 + x3 + z1 + z2)))
+summary(with(df, coxph(Surv(srv_t, srv_s) ~ factor(x1, ordered = F) + x2 + x3 + z1 + z2)))
+
+```
+
+### Model checking
+
+Look for systematic evidence of non-proportionality.
+
+#### 1. Distribution of p-values
+``` {r mod checking 1}
+# model assumptions could be checked in each of the imputed datasets. 
+
+# we will use simple p values of correlation tests of the and create boxplots because visual evaluation of each of the models would be too much
+tb = NULL
+for (i in 1:5) tb <- cbind(tb, cox.zph(cox$analyses[[i]])$table[, 3])
+boxplot(t(tb), las = 2)
+# this shows the distribution of p-values of a trend in the scaled Schoenfeld residuals for each of the included dummy variables, and gives an indication of potential NP issues in your models. 
+
+```
+
+#### 2. Test statistics 
+``` {r model checking 2}
+# check proportionality
+zph_chisq <- data.frame(matrix(0, ncol = n_impu, nrow = length(cox$analyses[[1]]$coefficients)+1))
+
+for(i in 1:n_impu) zph_chisq[,i] <- cox.zph(cox$analyses[[i]])$table[,2]
+mean_chisq <- apply(zph_chisq, 1, mean)
+
+p <- 0
+for(i in 1:length(cox$analyses[[1]]$coefficients)) p[i] <- pchisq(mean_chisq[i], df = 1, lower.tail = F)
+
+# global test
+p_globle <- pchisq(mean_chisq[length(cox$analyses[[1]]$coefficients) + 1], df = length(cox$analyses[[1]]), lower.tail = F)
+```
+
+# Additional points
+
+ - Outliers/infuence & functional form of covariates  
+ - How much missing is too much?

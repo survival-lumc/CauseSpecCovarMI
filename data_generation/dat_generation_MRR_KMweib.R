@@ -25,6 +25,46 @@ haz_weib <- Vectorize(function(alph, lam, t) {
   return(alph * lam * t^(alph - 1))
 })
 
+dens_weib <- Vectorize(function(alph, lam, t) {
+  haz_weib(alph, lam, t) * exp(-lam * t^alph)
+})
+
+cumhaz_weib <- Vectorize(function(alph, lam, t) {
+  lam * t^alph
+})
+
+# Take input vector of
+gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
+  exp(-(cumhaz1 + cumhaz2))
+})
+
+
+# Make a general cumulative incidence function
+cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
+  
+  prod <-  function(t) {
+    haz_weib(alph_ev, lam_ev, t) * gen_surv_weib(cumhaz_weib(alph_ev, lam_ev, t),
+                                                 cumhaz_weib(alph_comp, lam_comp, t))
+  }
+  
+  ci_func <- Vectorize(function(upp) {
+    integrate(prod, lower = 0, upper = upp)$value
+  })
+  
+  return(ci_func(t))
+}
+
+
+#ci1 <- cuminc_weib(alph_ev = 0.3, lam_ev = 1, 
+#                   alph_comp = 1.7, lam_comp = 1.2,
+#                   t = dat$t)
+
+#ci2 <- cuminc_weib(alph_ev = 1.7, lam_ev = 1.2, 
+#                   alph_comp = 0.3, lam_comp = 1,
+#                   t = dat$t)
+
+
+
 
 dat_gener_MRR_KM <- function(N, # Sample size
                              X_type, # "contin" or "binary"
@@ -35,7 +75,8 @@ dat_gener_MRR_KM <- function(N, # Sample size
                              p, # vector P miss if c(X2 > 0, X2 < 0); in MRR draft it was c(0.9, 0.1)
                              cause2, # Distribution for cause 2 times - either"weib" or "unif"
                              vals_t1, # vector of (a1, h1_0, B1_X, B1_X2)
-                             vals_t2) { # vector of (a2, h2_0, B2_X, B2_X2)
+                             vals_t2, # vector of (a2, h2_0, B2_X, B2_X2)
+                             rate_cens) { 
                           
   
   # Generate covariates
@@ -87,6 +128,12 @@ dat_gener_MRR_KM <- function(N, # Sample size
   t <- pmin(t1, t2)
   eps <- ifelse(t1 < t2, 1, 2)
   
+  # Censoring 
+  if (rate_cens != 0) {
+    cens <- rexp(n = N, rate = rate_cens)
+    eps <- ifelse(cens < t, 0, eps)
+  }
+  
   
   # Induce missingness
   if (mech == "MCAR") {
@@ -135,20 +182,6 @@ dat_gener_MRR_KM <- function(N, # Sample size
 }
 
 
+# Comment out the bottom bit
+
 # test run
-dat <- dat_gener_MRR_KM(N = 10000,
-                        X_type = "contin",
-                        mus = c(0, 0), 
-                        covmat = matrix(c(1, 0.25, 
-                                          0.25, 1), nrow = 2), 
-                        mech = "MCAR", 
-                        p = 0, 
-                        cause2 = "weib", 
-                        vals_t1 = c(0.3, 1, 0.5, -0.5), 
-                        vals_t2 = c(1.7, 0.5, -0.5, 0.5))
-
-mod1 <- coxph(Surv(t, eps == 1) ~ X1 + X2, data = dat)
-mod2 <- coxph(Surv(t, eps == 2) ~ X1 + X2, data = dat)
-
-mod1
-mod2
