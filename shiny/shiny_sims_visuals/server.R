@@ -3,6 +3,9 @@
 ###########################
 
 
+# Set working directory
+# setwd("shiny/shiny_sims_visuals/")
+
 # Load
 source("support_vars.R")
 
@@ -170,4 +173,7 @@ shinyServer(function(input, output) {
     })
 })
 
+## Set working directory back to head if want to go back to head
+#setwd("../../../code_MI_comprisks/")
+#file.edit("simulations_main.R")
 

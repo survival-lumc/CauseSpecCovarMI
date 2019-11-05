@@ -6,6 +6,9 @@
 ##############################
 
 
+# Uncomment and run below if editing file from gitlab directory
+# setwd("shark")
+
 # Clear environment
 rm(list = ls())
 
@@ -209,4 +212,10 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
 
 results <- bind_rows(res_seed)
 
-save(results, file = paste0("/exports/molepi/users/efbonneville/mi_comprisks/results_ISCB/results_", seed, ".RData"))
+save(results, file = paste0("/exports/molepi/users/efbonneville/mi_comprisks/results_ISCB/results_", 
+                            seed, ".RData"))
+
+
+# Uncomment and run below if editing file from gitlab directory - to go back to main
+#setwd("../../code_MI_comprisks/")
+#file.edit("simulations_main.R")

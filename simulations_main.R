@@ -6,7 +6,7 @@
 # Clear environment
 rm(list = ls())
 
-# Load necessary packages
+# Load necessary packages - replace with pacman
 library(MASS)
 library(tidyverse)
 library(mice)
@@ -17,11 +17,25 @@ library(smcfcs) # Bartlett package
 #library(xtable)
 
 
-# Read in support functions
+# Read in support functions - check after
 source("data_generation/dat_generation_W.R")
 source("support_functions/mice_pool_diffm.R")
 source("support_functions/smcfcs_pool_diffm.R")
 source("support_functions/quiet_printcat.R")
+
+
+
+# Section quick linking to other file/directories
+# Assume project is opened here and all libraries are loaded
+
+
+## Shark directory
+file.edit("shark/one_simulation.R")
+
+## Shiny apps:
+file.edit("shiny/shiny_weibull_params/parameter_cuminc.R")
+file.edit("shiny/shiny_sims_visuals/server.R")
+
 
 
 # Set a global seed
