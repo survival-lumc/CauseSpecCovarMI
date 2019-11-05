@@ -1,3 +1,6 @@
+# Set working directory
+setwd("shiny/shiny_weibull_params/")
+
 # Load packages - MASS before tidyverse because of select
 pacman::p_load(MASS, cmprsk, survival, 
                tidyverse, mice, shiny)
@@ -182,3 +185,9 @@ server <- function(input, output) {
 }
 
 shinyApp(ui = ui, server = server)
+
+
+
+## Set working directory back to head if want to go back to head
+setwd("../../../code_MI_comprisks/")
+file.edit("simulations_main.R")
