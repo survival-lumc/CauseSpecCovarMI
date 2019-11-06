@@ -7,21 +7,20 @@
 rm(list = ls())
 
 # Load necessary packages - replace with pacman
-library(MASS)
-library(tidyverse)
-library(mice)
-library(mitools)
-library(survival)
-library(smcfcs) # Bartlett package
-#library(cmprsk)
+if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+
+pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
+               "mitools", "survival", "foreign",
+               "naniar", "VIM", "smcfcs", "cmprsk")
+
 #library(xtable)
 
 
 # Read in support functions - check after
-source("data_generation/dat_generation_W.R")
-source("support_functions/mice_pool_diffm.R")
-source("support_functions/smcfcs_pool_diffm.R")
-source("support_functions/quiet_printcat.R")
+#source("data_generation/dat_generation_W.R")
+#source("support_functions/mice_pool_diffm.R")
+#source("support_functions/smcfcs_pool_diffm.R")
+#source("support_functions/quiet_printcat.R")
 
 
 
@@ -31,6 +30,9 @@ source("support_functions/quiet_printcat.R")
 
 ## Shark directory
 file.edit("shark/one_simulation.R")
+
+# EBMT data directory
+file.edit("EBMT_data_example/MI_cytoscoring_Ed.Rmd")
 
 ## Shiny apps:
 file.edit("shiny/shiny_weibull_params/parameter_cuminc.R")
