@@ -10,11 +10,14 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+# Set directory 
+#setwd("EBMT_data_example")
 
-pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
-                "mitools", "survival", "foreign",
-                "naniar", "VIM")
+#if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+
+#pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
+#                "mitools", "survival", "foreign",
+#                "naniar", "VIM")
 
 set.seed(1984)
 ```
@@ -300,6 +303,7 @@ plot(cuminc_2, xlab = "Months", col = c("blue", "black"), curvlab = c("Relapse",
 
 # This is censoring distirbution
 hist(dat_60mo[dat_60mo$srv_s_60 == 1,]$srv_allo1_60, breaks = 15)
+hist(dat_orig[dat_orig$srv_s_allo1 == "alive", ]$srv_allo1, breaks = 15)
 
 
 # Fit weibull model on this
@@ -331,6 +335,32 @@ rate_nrm_60
 ```
 
 
+# Censoring work
+
+
+```{r}
+# Note in srv_s vars 1 is alive and 2 is dead
+# Censoring is event and people alive after 60 die at 60,01
+dat_60mo_cens <- dat_orig %>% 
+  mutate(srv_s_60 = ifelse(srv_allo1 > 60, 2, srv_s_allo1),
+         srv_allo1_60 = ifelse(srv_allo1 > 60, 60.01, srv_allo1))
+  
+hist(dat_60mo_cens[dat_60mo_cens$srv_s_60 == 1, ]$srv_allo1_60, breaks = 30)
+
+revkm <- survfit(Surv(srv_allo1_60, srv_s_60 == 1) ~ 1, data = dat_60mo_cens)
+  
+plot(revkm)
+
+mod_cens <- survreg(Surv(srv_allo1 / 12, srv_s_allo1 == "alive") ~ 1, 
+                    data = dat_60mo_cens, dist = "exponential")
+
+coefs_cens <- mod_cens$coefficients
+shape_cens <- 1 / mod_cens$scale
+rate_cens <- exp(coefs_cens[1])^(-shape_cens)
+
+shape_cens
+rate_cens
+```
 
 
 # Additional code
@@ -356,4 +386,13 @@ lines(density(dat_orig[dat_orig$ci_s_new == 2, ]$ci_allo1, na.rm = T))
 dat$ci_s <- factor(dat$ci_s, levels = 0:2, labels = c("Censored", "Relapse","NRM"))
 cuminc_1.1 <- survfit(Surv(ci_t, ci_s) ~ 1, data = dat)
 plot(cuminc_1.1, mark.time = FALSE, lwd = 2)
+```
+
+## Set back
+
+```{r}
+## Set working directory back to head if want to go back to head
+#setwd("../../code_MI_comprisks/")
+#file.edit("simulations_main.R")
+
 ```
