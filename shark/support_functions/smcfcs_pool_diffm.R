@@ -30,7 +30,8 @@ smcfcs_pool_diffm <- function(imps, # output of smcfcs()
       
       # Format
       pooled <- cbind.data.frame(summ, confint(result)) %>%
-        select(coef, se = "se(coef)", pval = "Pr(>|z|)", `2.5 %`, `97.5 %`)
+        rownames_to_column('var') %>% 
+        select(var, coef, se = "se(coef)", pval = "Pr(>|z|)", `2.5 %`, `97.5 %`)
       
     } else {
       impobj$imputations <- impobj$imputations[1:i]
@@ -41,19 +42,27 @@ smcfcs_pool_diffm <- function(imps, # output of smcfcs()
       
       # Summarise, add pva;
       pooled <-  summ %>% 
+        rownames_to_column('var') %>% # for conservation of variable names 
         mutate(z = results / se,
                pval = 2 * pnorm(abs(z), lower.tail = F)) %>%
-        select(coef = results, se, pval, 
-               `2.5 %` = `(lower`, `97.5 %` = `upper)`)
-      
+        select(var, coef = results, se, pval, 
+               `2.5 %` = `(lower`, `97.5 %` = `upper)`) 
     }
     
     pooled <- pooled %>% 
-      mutate(var = c("X1", "X2"), m = i, 
+      mutate(var = var, m = i, 
              analy = label, true = true_betas)
     
     return(pooled)
   })
   
-  return(bind_rows(ests))
+  
+  results <- bind_rows(ests) %>%
+    mutate(sd_reps = 0,
+           pow = pval < 0.05,
+           cover = `2.5 %` < true & true < `97.5 %`,
+           bias = coef - true,
+           coef_i1 = coef)
+  
+  return(results)
 } 

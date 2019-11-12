@@ -9,12 +9,12 @@
 betas <- c(0, 0.5, 1) # for beta from hazard 1 model
 miss <- c("high", "low") # 50 or 10 % missing
 mech <- c("MCAR", "MAR_MRR", "MAR_W") # Type of mechanism
-nsim <- 1000 # number of simulations per scenarios
+n_sim <- 1000 # number of simulations per scenarios
 
 
 # All combinations of factor variables
 scenarios <- expand.grid(beta1 = betas, miss = miss, mech = mech) %>% 
-  mutate(scen = 1:nrow(.) * nsim)
+  mutate(scen = 1:nrow(.) * n_sim)
 
 
 # For picking what dataset to simulate for what scenario
