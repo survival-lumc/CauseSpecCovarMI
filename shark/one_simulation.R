@@ -18,14 +18,8 @@ seed <- as.numeric(args[1])
 
 
 # Load necessary packages - needs loading in this order
-# replace with pload, but need to load pacman into shark
-library(MASS)
-library(tidyverse)
-library(mice)
-library(mitools)
-library(survival)
-library(smcfcs) # Bartlett package
-
+pacman::p_load(MASS, tidyverse, mice,
+               mitools, survival, smcfcs)
 
 # Load scenarios
 load("scenarios.Rdata")
@@ -74,7 +68,7 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
   
   
   #  Global parameters 
-  R <- 3 # number of replications for mice()
+  n_rep <- 3 # number of repetitions for mice()
   #m <- c(1, 10, 20) # imputations we are interested in
   m <- c(1,2,3)
   method <- "norm" # continuous case, so use Bayesian linear regression
@@ -83,18 +77,17 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
   # Run all methods in each scenario:
   
   
-  # Start replicates for MI methods
-  replicates <- lapply(1:R, function(r) {
+  # Start repetitions for MI methods
+  repetitions <- lapply(1:n_rep, function(j) {
     
     # Run imputations, run cause-specific cox, and pool - 
-    # tidyversify this using https://stefvanbuuren.name/fimd/workflow.html
     imp_ch1 <- mice(dat, m = m[length(m)],
                     method = method, 
                     predictorMatrix = mpred_ch1,
                     print = FALSE)
     
     results_ch1 <- mice_pool_diffm(imps = imp_ch1,
-                                   m = m, r = r, label = "ch1",
+                                   m = m, j = j, label = "ch1",
                                    true_betas = true_betas)
     
     # Run imputations, run cause-specific cox, and pool
@@ -104,7 +97,7 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
                      print = FALSE)
     
     results_ch12 <- mice_pool_diffm(imps = imp_ch12,
-                                    m = m, r = r, label = "ch12",
+                                    m = m, j = j, label = "ch12",
                                     true_betas = true_betas)
     
     
@@ -114,7 +107,7 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
                          print = FALSE)
     
     results_ch12_int <- mice_pool_diffm(imps = imp_ch12_int, 
-                                        m = m, r = r, label = "ch12_int",
+                                        m = m, j = j, label = "ch12_int",
                                         true_betas = true_betas)
     
     results_MI <- bind_rows(results_ch1, results_ch12, results_ch12_int) 
@@ -122,29 +115,8 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
     return(results_MI) 
   })
   
-  
-  # keep SE and coef from first replicate - so as to not underestimate variance
-  se_rep1 <- bind_rows(replicates) %>% 
-    filter(rep == 1) %>% 
-    select(coef, se, var, analy, m) %>% 
-    rename(coef_i1 = coef)
-  
   # Bring the rest together
-  agg <- bind_rows(replicates) %>%
-    
-    # Power and coverage
-    mutate(pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`,
-           bias = coef - true) %>%
-    group_by(var, analy, m) %>%
-    mutate(sd_reps = sd(coef)) %>%
-    summarise_all(~ round(mean(.), 3)) %>%
-    ungroup() %>%
-    select(-rep, -se) %>%
-    
-    # Join se
-    right_join(se_rep1, by = c("var", "analy", "m")) %>%
-    as.data.frame()
+  agg <- format_MI_repet(repetitions)
   
   
   # Bartlett smcfs model - removes warnings in case rej sampling fails
@@ -159,45 +131,18 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
     
   
   summ_smcfcs <- smcfcs_pool_diffm(mod_smcfcs, m, label = "smcfcs", 
-                                   true_betas = true_betas) %>%
-    mutate(sd_reps = 0,
-           pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`,
-           bias = coef - true,
-           coef_i1 = coef)
-  
+                                   true_betas = true_betas) 
   
   ## Ref model: 
   mod_ref <- coxph(Surv(t, eps == 1) ~ X1_orig + X2, data = dat)
   
   # Read in summary, compute CI & label analysis type
-  summ_ref <- summary(mod_ref)$coefficients[, c("coef", "se(coef)", "Pr(>|z|)")]
-  results_ref <- cbind.data.frame(summ_ref, confint(mod_ref)) %>%
-    mutate(analy = "1ref")
-  
+  results_ref <- format_CCA_ref(mod_ref, true_betas = true_betas, label = "1ref")
   
   ## CCA:
   mod_CCA <- coxph(Surv(t, eps == 1) ~ X1 + X2, data = dat)
   
-  # Read in summary
-  summ_CCA <- summary(mod_CCA)$coefficients[, c("coef", "se(coef)", "Pr(>|z|)")]
-  
-  # Combine / format results together with reference
-  results_CCA <- cbind.data.frame(summ_CCA, confint(mod_CCA)) %>%
-    mutate(analy = "CCA") %>% 
-    bind_rows(results_ref) %>%
-    mutate(var = rep(c("X1", "X2"), 2),
-           true = rep(true_betas, 2),
-           m = 0, pval = `Pr(>|z|)`,
-           sd_reps = 0,
-           pow = pval < 0.05,
-           cover = `2.5 %` < true & true < `97.5 %`,
-           bias = coef - true) %>%
-    select(var, analy, m, coef, se = `se(coef)`, 
-           pval, `2.5 %`, `97.5 %`, true, sd_reps, 
-           pow, cover, bias) %>% 
-    mutate(coef_i1 = coef)
-  
+  results_CCA <- format_CCA_ref(mod_CCA, true_betas = true_betas, label = "CCA")
   
   # Results combined
   result <- rbind.data.frame(results_CCA, agg, summ_smcfcs) %>% 
@@ -212,8 +157,8 @@ res_seed <- lapply(1:nrow(scenarios), function(row) {
 
 results <- bind_rows(res_seed)
 
-save(results, file = paste0("/exports/molepi/users/efbonneville/mi_comprisks/results_ISCB/results_", 
-                            seed, ".RData"))
+#save(results, file = paste0("/exports/molepi/users/efbonneville/mi_comprisks/results_ISCB/results_", 
+#                            seed, ".RData"))
 
 
 # Uncomment and run below if editing file from gitlab directory - to go back to main

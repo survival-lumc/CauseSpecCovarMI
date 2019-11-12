@@ -12,7 +12,7 @@
 
 mice_pool_diffm <- function(imps, # output of mice()
                             m, # vector of no. imputed datasets eg. c(1, 5, 10)
-                            r, # current replicate number
+                            j, # current replicate number
                             label,
                             true_betas) { # character vector labeling current analysis
   
@@ -50,7 +50,7 @@ mice_pool_diffm <- function(imps, # output of mice()
     
     # Append all 
     pooled <- pooled %>%
-      mutate(var = c("X1", "X2"), m = i, rep = r,
+      mutate(var = rownames(pooled), m = i, rep = j,
              analy = label, true = true_betas)
     
     return(pooled)
