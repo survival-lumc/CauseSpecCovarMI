@@ -11,7 +11,8 @@ if (suppressWarnings(!require("pacman", character.only = T))) install.packages("
 
 pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
                "mitools", "survival", "foreign",
-               "naniar", "VIM", "smcfcs", "cmprsk")
+               "naniar", "VIM", "smcfcs", "cmprsk",
+               "JointAI")
 
 #library(xtable)
 
