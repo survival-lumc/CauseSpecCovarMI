@@ -1,13 +1,15 @@
-#############################
+##*************************##
 ## Main simulations script ##
-#############################
+##*************************##
 
 
 # Clear environment
 rm(list = ls())
 
 # Load necessary packages - replace with pacman
-if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+if (suppressWarnings(!require("pacman", character.only = T))) {
+  install.packages("pacman", dep = T)
+} ; library(pacman)
 
 pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
                "mitools", "survival", "foreign",
