@@ -67,8 +67,10 @@ generate_dat <- function(n,
   # Induce missings and format
   dat <- induce_missings(n, dat_times,
                          p, mech, eta1) %>% 
-    mutate(X_orig = X,
-           X = X_miss) %>% # Append original (unimputed) covariate
+    
+    # Append original (unimputed) covariate
+    mutate(X_orig = X, # 
+           X = X_miss) %>% 
     select(-X_miss) %>% #remove redundant variable
     
     # Compute cumulative hazards
@@ -81,10 +83,17 @@ generate_dat <- function(n,
            H1_Z = H1 * Z,
            H2_Z = H2 * Z) %>%
     
-    # Compute hazards
+    # Compute hazards - dleet if not needed
     #mutate(haz1 = haz_weib(alph = a1, lam = lam1, t = t),
     #       haz2 = haz_weib(alph = a2, lam = lam2, t = t)) %>% 
     arrange(t) 
+  
+  # Convert to factors if binary
+  if (X_type == "binary") {
+    dat <- dat %>% 
+      mutate(X = as.factor(dat$X),
+             X_orig = as.factor(dat$X_orig))
+  }
   
   return(dat)
 }
@@ -243,45 +252,3 @@ logreg_missings <- function(p, eta1, covar) {
   return(pr)
 }
 
-
-
-
-library(naniar)
-
-
-
-
-# Test
-dat <- generate_dat(n = 1000,
-                    X_type = "contin",
-                    r = 0.5,
-                    ev1_pars = list("a1" = 0.3, "h1_0" = 1, 
-                                    "b1" = .5, "gamm1" = -.5),
-                    ev2_pars = list("a2" = 1.7, "h2_0" = .5, 
-                                    "b2" = -.5, "gamm2" =.5),
-                    rate_cens = 1, 
-                    mech = "MAR_GEN",
-                    p = 0.5,
-                    eta1 = 2)
-
-table(dat$X, useNA = "always") / nrow(dat)
-mean(is.na(dat$X))
-
-# Check MAR Gen
-ggplot(dat, aes(t, X)) +
-  geom_miss_point()
-
-ggplot(dat, aes(t, X_orig, col = factor(miss_ind))) +
-  geom_point()
-
-
-# Check MAR 
-ggplot(dat, aes(Z, X_orig)) +
-  geom_miss_point()
-
-ggplot(dat, aes(Z, X_orig, col = factor(miss_ind))) +
-  geom_point()
-
-# Check MNAR
-ggplot(dat, aes(Z, X_orig, col = factor(miss_ind))) +
-  geom_point()
