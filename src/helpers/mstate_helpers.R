@@ -43,7 +43,7 @@ setup_mstate <- function(.data) {
 make_covar_grid <- function(.data) {
   
   sd_units <- c(0, 1, 2, -1, -2)
-  z <- mean(.data$Z) + sd_units * sd(.data$Z)
+  z <- 0 + sd_units * 1 # standard normal
   names(z) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
   
   if (is.factor(.data$X)) {
@@ -64,7 +64,7 @@ make_covar_grid <- function(.data) {
     
     # Remove NA since there will be missings
     # check this?? Use X_orig instead?
-    x <- mean(.data$X, na.rm = T) + sd_units * sd(.data$X, na.rm = T)
+    x <- 0 + sd_units * 1 # standard normal
     names(x) <- names(z)
     
     grid_obj <- expand.grid("X" = names(x),
@@ -82,25 +82,6 @@ make_covar_grid <- function(.data) {
   }
   return(grid_obj)
 }
-
-make_covar_grid(dat_MAR) %>% 
-  ggplot(aes(val_X, val_Z)) + geom_point()
-
-library(mstate)
-cox_long <- setup_mstate(dat_MAR)
-grid_obj <- make_covar_grid(dat_MAR)
-times <- c(0.2, 0.5)
-
-# Do first on 1 grid obj
-gridy <- grid_obj[1, ]
-
-
-new_mds <- data.frame(X.1 = c(gridy$val_X, 0), # male
-                      X.2 = c(0, gridy$val_X), # male
-                      Z.1 = c(gridy$val_Z, 0), # 50 y.o
-                      Z.2 = c(0, gridy$val_Z), # 50 y.o
-                      trans = c(1, 2), 
-                      strata = c(1, 2))
 
 
 haz_weib <- Vectorize(function(alph, lam, t) {
@@ -141,7 +122,9 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 
 preds_mstate <- function(cox_long,
                          grid_obj,
-                         times) {
+                         times,
+                         ev1_pars,
+                         ev2_pars) {
   
   #' @title Predicting grids
   #' 
@@ -174,27 +157,54 @@ preds_mstate <- function(cox_long,
     
     preds <- probtrans(msfit_newdat, predt = 0)
     
-    summ <- summary.probtrans(preds, times = times, conf.type = "log")[[1]]
+    # Add log later after pooling
+    summ <- summary.probtrans(preds, times = times, conf.type = "none")[[1]]
     
-    cbind.data.frame(summ, "X" = combo$X, "Z" = combo$Z)
+    # Add the true ones
+    true_CI <- get_true_cuminc(ev1_pars = ev1_pars, 
+                               ev2_pars = ev2_pars,
+                               combo =  combo, 
+                               times = times)
+    
+    cbind.data.frame(summ, "X" = as.character(combo$X), 
+                     "Z" = as.character(combo$Z)) %>% 
+      left_join(true_CI, by = "times")
   })
   
+  # Check bind rows here
   return(bind_rows(predos))
 }
 
-preds_mstate(cox_long = setup_mstate(dat_MAR),
-             grid_obj = make_covar_grid(dat_MAR), 
-             times = c(0.2, 0.5))
 
-cox_long <- setup_mstate(dat_MAR)
-grid_obj <- 
-
-# Work on expand grid thing here
-#exp_grid_obj <- 
+get_true_cuminc <- function(ev1_pars, 
+                            ev2_pars,
+                            combo,
+                            times) {
+  
+  lam1 <- ev1_pars$h1_0 * exp((ev1_pars$b1 * combo$val_X + 
+                                 ev1_pars$gamm1 * combo$val_Z))
+  lam2 <- ev2_pars$h2_0 * exp((ev2_pars$b2 * combo$val_X + 
+                                 ev2_pars$gamm2 * combo$val_Z))
+  
+  # only integrate at times!!
+  true_pstate2 <- cuminc_weib(alph_ev = ev1_pars$a1, lam_ev = lam1, 
+                              alph_comp = ev2_pars$a2, lam_comp = lam2,
+                              t = times)
+  
+  true_pstate3 <- cuminc_weib(alph_ev = ev2_pars$a2, lam_ev = lam2, 
+                              alph_comp = ev1_pars$a1, lam_comp = lam1, 
+                              t = times)
+  
+  dato <- cbind.data.frame("times" = times, 
+                           "true_pstate2" = true_pstate2,
+                           "true_pstate3" = true_pstate3) %>%
+    
+    # Add true event-free survival
+    mutate(true_pstate1 = 1 - (true_pstate2 + true_pstate3))
+  
+  return(dato)
+}
 
 
 
   
-  
-
-# Also need true cumulative incidences..

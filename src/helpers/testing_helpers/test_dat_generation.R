@@ -47,7 +47,7 @@ ggplot(dat_MCAR, aes(X_orig, Z, col = factor(miss_ind))) +
 
 
 dat_MAR <- generate_dat(n = 1000,
-                        X_type = "binary",
+                        X_type = "contin",
                         r = .7,
                         ev1_pars = list("a1" = 1, "h1_0" = 1, 
                                         "b1" = .5, "gamm1" = -.5),
