@@ -14,7 +14,7 @@ if (suppressWarnings(!require("pacman", character.only = T))) {
 pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
                "mitools", "survival", "foreign",
                "naniar", "VIM", "smcfcs", "cmprsk",
-               "JointAI", "docstring")
+               "JointAI", "docstring", "mstate")
 
 #library(xtable)
 

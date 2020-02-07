@@ -6,8 +6,8 @@ source("src/helpers/dat_generation_helpers.R")
 source("src/helpers/MI_helpers.R")
 
 
-dat_MAR <- generate_dat(n = 150,
-                        X_type = "binary",
+dat_MAR <- generate_dat(n = 500,
+                        X_type = "contin",
                         r = 0.5,
                         ev1_pars = list("a1" = 1, "h1_0" = 1, 
                                         "b1" = .5, "gamm1" = -.5),
@@ -15,7 +15,7 @@ dat_MAR <- generate_dat(n = 150,
                                         "b2" = -.5, "gamm2" =.5),
                         rate_cens = 1, 
                         mech = "MCAR",
-                        p = 0.05,
+                        p = 0,
                         eta1 = 2)
 
 dat_MAR$X_orig
