@@ -40,8 +40,107 @@ setup_mstate <- function(.data) {
 }
 
 
+make_covar_grid <- function(.data) {
+  
+  sd_units <- c(0, 1, 2, -1, -2)
+  z <- mean(.data$Z) + sd_units * sd(.data$Z)
+  names(z) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
+  
+  if (is.factor(.data$X)) {
+    
+    x <- c(0, 1)
+    names(x) <- c("0", "1")
+    
+    grid_obj <- expand.grid("X" = (names(x)),
+                            "Z" = (names(z)), 
+                            stringsAsFactors = F) %>% 
+      as.data.frame() %>% 
+      mutate(val_X = x[match(X, names(x))],
+             val_Z = z[match(Z, names(z))])
+                   
+    # Maybe unite X and Z?
+         
+  } else {
+    
+    # Remove NA since there will be missings
+    # check this?? Use X_orig instead?
+    x <- mean(.data$X, na.rm = T) + sd_units * sd(.data$X, na.rm = T)
+    names(x) <- names(z)
+    
+    grid_obj <- expand.grid("X" = names(x),
+                            "Z" = names(z), 
+                            stringsAsFactors = F) %>% 
+      as.data.frame() %>% 
+      unite("scen", c(X, Z), sep = "=") %>% 
+      filter(!(str_detect(scen, "2SD") & 
+                 !str_detect(scen, "mean"))) %>% 
+      separate(scen, c("X", "Z"), sep = "=") %>%            
+      mutate(val_X = x[match(X, names(x))],
+             val_Z = z[match(Z, names(z))])
+    
+    # Maybe unite X and Z?
+  }
+  return(grid_obj)
+}
+
+make_covar_grid(dat_MAR) %>% 
+  ggplot(aes(val_X, val_Z)) + geom_point()
+
+library(mstate)
+cox_long <- setup_mstate(dat_MAR)
+grid_obj <- make_covar_grid(dat_MAR)
+times <- c(0.2, 0.5)
+
+# Do first on 1 grid obj
+gridy <- grid_obj[1, ]
+
+
+new_mds <- data.frame(X.1 = c(gridy$val_X, 0), # male
+                      X.2 = c(0, gridy$val_X), # male
+                      Z.1 = c(gridy$val_Z, 0), # 50 y.o
+                      Z.2 = c(0, gridy$val_Z), # 50 y.o
+                      trans = c(1, 2), 
+                      strata = c(1, 2))
+
+
+haz_weib <- Vectorize(function(alph, lam, t) {
+  return(alph * lam * t^(alph - 1))
+})
+
+dens_weib <- Vectorize(function(alph, lam, t) {
+  haz_weib(alph, lam, t) * exp(-lam * t^alph)
+})
+
+cumhaz_weib <- Vectorize(function(alph, lam, t) {
+  lam * t^alph
+})
+
+# Take input vector of
+gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
+  exp(-(cumhaz1 + cumhaz2))
+})
+
+
+# Make a general cumulative incidence function
+cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
+  
+  prod <-  function(t) {
+    haz_weib(alph_ev, lam_ev, t) * gen_surv_weib(cumhaz_weib(alph_ev, lam_ev, t),
+                                                 cumhaz_weib(alph_comp, lam_comp, t))
+  }
+  
+  ci_func <- Vectorize(function(upp) {
+    integrate(prod, lower = 0, upper = upp)$value
+  })
+  
+  return(ci_func(t))
+}
+
+
+
+
 preds_mstate <- function(cox_long,
-                         exp_grid_obj,
+                         grid_obj,
                          times) {
   
   #' @title Predicting grids
@@ -55,79 +154,47 @@ preds_mstate <- function(cox_long,
   
   #...
   
+  # If not look at dat_gener_KMweib for true cuminc functions
   
+  tmat <- trans.comprisk(2, c("Rel", "NRM"))
   
-  new_mds <- data.frame(X.1 = c(0, 0), # male
-                        X.2 = c(0, 0), # male
-                        Z.1 = c(50, 0), # 50 y.o
-                        Z.2 = c(0, 50), # 50 y.o
-                        trans = c(1, 2), 
-                        strata = c(1, 2))
+  predos <- lapply(1:nrow(grid_obj), function(row) {
+    
+    combo <- grid_obj[row, ]
+    
+    new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
+                          X.2 = c(0, combo$val_X), 
+                          Z.1 = c(combo$val_Z, 0), 
+                          Z.2 = c(0, combo$val_X), 
+                          trans = c(1, 2), 
+                          strata = c(1, 2))
+    
+    msfit_newdat <- msfit(cox_long, newdata = new_dat,
+                          trans = tmat)
+    
+    preds <- probtrans(msfit_newdat, predt = 0)
+    
+    summ <- summary.probtrans(preds, times = times, conf.type = "log")[[1]]
+    
+    cbind.data.frame(summ, "X" = combo$X, "Z" = combo$Z)
+  })
   
-  #data.frame(X.1 = c(1, 0), # male
-  #           X.2 = c(0, 1), # male
-  #           Z.1 = c(50, 0), # 50 y.o
-  #          Z.2 = c(0, 50), # 50 y.o
-  #           trans = c(1, 2), 
-  #           strata = c(1, 2))
-
-  
-  mds_msfit <- msfit(cox_rel_long, newdata = new_mds,
-                     trans = tmat)
-  
-  preds <- probtrans(mds_msfit, predt = 0)
-  
-  #summary.probtrans(preds, times = times, conf.type = "log")
-
-  
-  
+  return(bind_rows(predos))
 }
+
+preds_mstate(cox_long = setup_mstate(dat_MAR),
+             grid_obj = make_covar_grid(dat_MAR), 
+             times = c(0.2, 0.5))
+
+cox_long <- setup_mstate(dat_MAR)
+grid_obj <- 
 
 # Work on expand grid thing here
 #exp_grid_obj <- 
 
 
-dat_MAR_contin
 
-x <- mean(dat_MAR_contin$X) + c(0, 1, 2, -1, -2) * sd(dat_MAR_contin$X)
-z <- mean(dat_MAR_contin$Z) + c(0, 1, 2, -1, -2) * sd(dat_MAR_contin$Z)
-
-names(x) <- names(z) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
-
-cums <- expand.grid("X" = names(x),
-                    "Z" = names(z), 
-                    stringsAsFactors = F)
-
-grid_contin_names <- as.data.frame(cums) %>% 
-  unite("scen", c(X, Z), sep = "=") %>% 
-  filter(!(str_detect(scen, "2SD") & 
-             !str_detect(scen, "mean"))) %>% 
-  separate(scen, c("X", "Z"), sep = "=")
-
-grid_contin_names %>% 
-  mutate(X = x[match(X, names(x))],
-         Z = z[match(Z, names(z))]) %>% 
-  ggplot(aes(X, Z)) + geom_point()
-
-grid_contin_names$x
-match(grid_contin_names$x, names(x))
-
-x[match(grid_contin_names$X, names(x))]
-
-x <- c(0, 1)
-z <- mean(dat_MAR_contin$Z) + c(0, 1, 2, -1, 2) * sd(dat_MAR_contin$Z)
-
-
-# this is good for binary case!
-names(x) <- x
-names(z) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
-
-cums <- expand.grid("x" = paste0("X_", names(x)),
-                    "z" = paste0("Z_", names(z)), 
-                    stringsAsFactors = F)
-
-cums
-
-paste0("X_", names(x))
+  
+  
 
 # Also need true cumulative incidences..
