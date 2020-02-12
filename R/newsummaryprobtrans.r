@@ -175,7 +175,7 @@ print.summary.probtrans <- function(x, complete=FALSE, ...)
 }
 
 
-# TODO:
+##Todo:
 # - confidence intervals
 # - check als times een van de tijdstippen van data bevat
 # 
@@ -188,7 +188,7 @@ print.summary.probtrans <- function(x, complete=FALSE, ...)
 # to <- c(5, 16)
 # to <- 0
 
-library(mstate)
+#library(mstate)
 # define pt by running the help code of probtrans (help(probtrans))
 #summary(pt)
 #summary(pt, from=2)

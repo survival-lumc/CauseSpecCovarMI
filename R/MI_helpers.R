@@ -71,6 +71,8 @@ mice_pool_diffm <- function(imps, # output of mice()
   #' @param label Label of analysis type
   #' @param m vector c(5, 10, 25)
   #' 
+  #' @importFrom mice pool
+  #' 
   #' @return Returns pooled estimates for biggest m and others.
   
   # Iterate procedure for all vals of m                     

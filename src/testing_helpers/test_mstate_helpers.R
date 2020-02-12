@@ -2,18 +2,16 @@
 ## Testing mstate helpers ##
 ##************************##
 
-source("src/helpers/dat_generation_helpers.R")
-source("src/helpers/mstate_helpers.R")
-source("src/helpers/newsummaryprobtrans.r")
+#devtools::load_all()
 
 # Set weibull parameter globally as we will need them later
 ev1_pars <- list("a1" = 2, "h1_0" = 1, 
                  #"b1" = .5, "gamm1" = 1)
-                 "b1" = 0, "gamm1" = 0)
+                 "b1" = 1, "gamm1" = 1)
 
 ev2_pars <- list("a2" = 2.5, "h2_0" = .5,
                  #"b2" = 1, "gamm2" = .5)
-                 "b2" = 0, "gamm2" = 0)
+                 "b2" = .5, "gamm2" = 0.5)
 
 
 # Lets start with a complete (large) dataset, with hardly any censoring
@@ -54,7 +52,7 @@ preds <- preds_mstate(cox_long = cox_long,
                       ev1_pars = ev1_pars,
                       ev2_pars = ev2_pars)
             
-view(
+View(
   preds %>% 
     mutate_if(is.numeric, ~ round(., 3)) %>% 
     select(times, X, Z, 
@@ -64,23 +62,51 @@ view(
 
 
 
-# Check empirically for marginal ones
-combo <- data.frame("val_X" = 0, "val_Z" = 0)
+# test correspondence!
+combo <- data.frame("val_X" = 2 , "val_Z" = 2)
 
+# Check vs probs trans
+new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
+                      X.2 = c(0, combo$val_X), 
+                      Z.1 = c(combo$val_Z, 0), 
+                      Z.2 = c(0, combo$val_X), 
+                      trans = c(1, 2), 
+                      strata = c(1, 2))
+
+
+msfit_newdat <- msfit(cox_long, newdata = new_dat,
+                      trans = trans.comprisk(2, c("Rel", "NRM")))
+
+preds <- probtrans(msfit_newdat, predt = 0)[[1]] %>% 
+  mutate(times = time) %>% 
+  select(times, pstate1, pstate2, pstate3)
+
+
+
+
+# Compute true
 CI_true <- get_true_cuminc(ev1_pars, ev2_pars, combo, times = dat_full_contin$t)
 
-CI_emp <- survfit(Surv(t, eps) ~ 1, dat = dat_full_contin)
-
-cbind.data.frame(CI_emp$time, CI_emp$pstate) %>% 
-  rename_all(~ c("times", "pstate1", "pstate2", "pstate3")) %>% 
-  left_join(CI_true) %>% 
-  gather(state, prob, pstate1:true_pstate1) %>%  
+CI_true %>% 
+  left_join(preds) %>% 
+  fill(pstate1:pstate3) %>% 
+  gather(state, prob, true_pstate2:pstate3) %>% 
+  mutate(state_grp = case_when(
+    str_detect(state, "1") ~ "1",
+    str_detect(state, "2") ~ "2",
+    str_detect(state, "3") ~ "3"
+  )) %>% 
   ggplot(aes(times, prob)) +
-  geom_line(aes(col = state, linetype = state), size = 1.25) + ylim(c(0, 1)) +
+  geom_line(aes(col = state_grp, linetype = state), 
+            size = 1.25) + ylim(c(0, 1)) +
   #geom_ribbon(aes(x = times, ymin = low, ymax = high, group = state), 
   #            alpha = .25, col = "grey") + 
-  theme_bw()
-  
+  theme_bw() +
+  ggtitle(paste0("Predicted and true probabilities for X = ",
+                 combo[1],", Z = ", combo[2]))
+
+
+
 
 
 
@@ -91,11 +117,11 @@ cbind.data.frame(CI_emp$time, CI_emp$pstate) %>%
 
 # Set weibull parameter globally as we will need them later
 ev1_pars <- list("a1" = 2, "h1_0" = 1, 
-                 "b1" = .5, "gamm1" = 1)
+                 "b1" = 1, "gamm1" = 1)
                  #"b1" = 0, "gamm1" = 0)
 
 ev2_pars <- list("a2" = 2.5, "h2_0" = .5,
-                 "b2" = 1, "gamm2" = .5)
+                 "b2" = 0.5, "gamm2" = 2)
                  #"b2" = 0, "gamm2" = 0)
 
 
@@ -110,46 +136,28 @@ dat_full_contin <- generate_dat(n = 1000,
                                 p = 0,
                                 eta1 = 2)
 
-table(dat_full_contin$eps)
-  
-cox_long <- setup_mstate(dat_full_contin)
+combo <- data.frame("val_X" = 0 , "val_Z" = 0)
 
-# Pick some covar combo
-combo <- data.frame("val_X" = 2, "val_Z" = -2)
-
-
-tmat <- trans.comprisk(2, c("Rel", "NRM"))
-
-new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
-                      X.2 = c(0, combo$val_X), 
-                      Z.1 = c(combo$val_Z, 0), 
-                      Z.2 = c(0, combo$val_X), 
-                      trans = c(1, 2), 
-                      strata = c(1, 2))
-
-msfit_newdat <- msfit(cox_long, newdata = new_dat,
-                      trans = tmat)
-
-preds <- probtrans(msfit_newdat, predt = 0)[[1]] %>% 
-  mutate(times = time) %>% 
-  select(times, pstate1, pstate2, pstate3)
-
-
-# Compute true
 CI_true <- get_true_cuminc(ev1_pars, ev2_pars, combo, times = dat_full_contin$t)
 
-CI_true %>% 
-  left_join(preds) %>% 
-  fill(pstate1:pstate3) %>% 
-  gather(state, prob, true_pstate2:pstate3) %>% 
-  mutate(state_grp = case_when(
-           str_detect(state, "1") ~ "1",
-           str_detect(state, "2") ~ "2",
-           str_detect(state, "3") ~ "3"
-         )) %>% 
+# This is ok for marginal
+CI_emp <- survfit(Surv(t, eps) ~ 1, dat = dat_full_contin)
+
+
+# But plot must be with output of probstrans!!
+
+
+cbind.data.frame(CI_emp$time, CI_emp$pstate) %>% 
+  rename_all(~ c("times", "pstate1", "pstate2", "pstate3")) %>% 
+  left_join(CI_true) %>% 
+  gather(state, prob, pstate1:true_pstate1) %>%  
   ggplot(aes(times, prob)) +
-  geom_line(aes(col = state_grp, linetype = state), 
-            size = 1.25) + ylim(c(0, 1)) +
+  geom_line(aes(col = state, linetype = state), size = 1.25) + ylim(c(0, 1)) +
   #geom_ribbon(aes(x = times, ymin = low, ymax = high, group = state), 
   #            alpha = .25, col = "grey") + 
-  theme_bw()
+  theme_bw() +
+  ggtitle(paste0("Predicted and true probabilities for X = ",
+                 combo[1],", Z = ", combo[2]))
+
+  
+  
