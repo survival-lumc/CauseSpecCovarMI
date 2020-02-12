@@ -9,6 +9,9 @@ setup_mstate <- function(.data) {
   #' 
   #' @description ...
   #' 
+  #' @importFrom mstate msprep trans.comprisk expand.covs 
+  #' @importFrom survival coxph Surv strata survfit
+  #' 
   #' @return Long cox model
   
   # Set up transition matrix 
@@ -132,6 +135,8 @@ preds_mstate <- function(cox_long,
   #' 
   #' @param cox_long Cox model returned by setup_mstate
   #' @param times Prediction horizon(s) eg. c(2, 5, 10)
+  #' 
+  #' @importFrom mstate msfit probtrans
   #' 
   #' @return Long cox model
   

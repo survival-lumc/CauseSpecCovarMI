@@ -2,6 +2,7 @@
 ## Support functions for generating data ##
 ##***************************************##
 
+# Change import from dplyr and tidyr to specific functions
 
 generate_dat <- function(n,
                          X_type,
@@ -28,6 +29,14 @@ generate_dat <- function(n,
   #' of assocation between variable responsible for missingness
   #' and probability of missingness
   #' @param p Proportion of missing values in X.
+  #' 
+  #' @importFrom magrittr `%>%`
+  #' @importFrom MASS mvrnorm
+  #' @importFrom mice nelsonaalen
+  #' @import dplyr
+  #' @import tidyr
+  #' @import stringr
+  #' @import ggplot2
   #' 
   #' @return Data-frame with missings induced
 
