@@ -71,7 +71,7 @@ mice_pool_diffm <- function(imps, # output of mice()
   #' @param label Label of analysis type
   #' @param m vector c(5, 10, 25)
   #' 
-  #' @importFrom mice pool
+  #' @importFrom mice pool mice
   #' 
   #' @return Returns pooled estimates for biggest m and others.
   
@@ -137,6 +137,9 @@ smcfcs_pool_diffm <- function(imps, # output of smcfcs()
   #' 
   #' @param label Label of analysis type
   #' @param m vector c(5, 10, 25)
+  #' 
+  #' @importFrom smcfcs smcfcs
+  #' @importFrom  magrittr `%$%`
   #' 
   #' @return Returns pooled estimates for biggest m
 

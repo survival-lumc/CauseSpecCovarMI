@@ -10,9 +10,9 @@ generate_dat <- function(n,
                          ev1_pars,
                          ev2_pars,
                          rate_cens,
-                         mech,
-                         eta1,
-                         p) {
+                         mech = NULL,
+                         eta1 = NULL,
+                         p = NULL) {
 
   #' @title Generates data.
   #'
@@ -199,8 +199,12 @@ induce_missings <- function(n, .data, p, mech, eta1) {
   #' @param p Proportion of missing values in X.
   #' 
   #' @return 
-  
-  if (mech == "MCAR") {
+
+  if (is.null(mech) | is.null(p)) {
+    dat <- .data %>%
+      mutate(miss_ind = 0,
+             X_miss = X)
+  } else if (mech == "MCAR") {
     dat <- .data %>%
       mutate(miss_ind = rbinom(n, 1, p),
              X_miss = ifelse(miss_ind == 1, NA, X))

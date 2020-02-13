@@ -4,7 +4,17 @@
 \alias{generate_dat}
 \title{Generates data.}
 \usage{
-generate_dat(n, X_type, r, ev1_pars, ev2_pars, rate_cens, mech, eta1, p)
+generate_dat(
+  n,
+  X_type,
+  r,
+  ev1_pars,
+  ev2_pars,
+  rate_cens,
+  mech = NULL,
+  eta1 = NULL,
+  p = NULL
+)
 }
 \arguments{
 \item{n}{Sample size.}

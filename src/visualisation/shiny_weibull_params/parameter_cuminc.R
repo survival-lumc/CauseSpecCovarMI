@@ -1,5 +1,5 @@
 # Set working directory
-setwd("shiny/shiny_weibull_params/")
+#setwd("shiny/shiny_weibull_params/")
 
 # Load packages - MASS before tidyverse because of select
 pacman::p_load(MASS, cmprsk, survival, 
