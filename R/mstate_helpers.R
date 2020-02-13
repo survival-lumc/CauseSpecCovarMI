@@ -153,7 +153,7 @@ preds_mstate <- function(cox_long,
     new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
                           X.2 = c(0, combo$val_X), 
                           Z.1 = c(combo$val_Z, 0), 
-                          Z.2 = c(0, combo$val_X), 
+                          Z.2 = c(0, combo$val_Z), 
                           trans = c(1, 2), 
                           strata = c(1, 2))
     

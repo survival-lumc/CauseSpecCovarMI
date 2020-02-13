@@ -2,9 +2,6 @@
 ## Testing MICE helpers ##
 ##**********************##
 
-source("src/helpers/dat_generation_helpers.R")
-source("src/helpers/MI_helpers.R")
-
 
 dat_MAR <- generate_dat(n = 500,
                         X_type = "contin",
@@ -15,8 +12,7 @@ dat_MAR <- generate_dat(n = 500,
                                         "b2" = -.5, "gamm2" =.5),
                         rate_cens = 1, 
                         mech = "MCAR",
-                        p = 0,
-                        eta1 = 2)
+                        p = 0.15)
 
 dat_MAR$X_orig
 
@@ -29,6 +25,22 @@ imp_ch1 <- mice(dat_MAR, m = m[length(m)],
                 predictorMatrix = mats$CH12_int,
                 maxit = 10)# 25
                #print = FALSE)
+
+
+
+
+imps <- #quiet()
+  smcfcs(originaldata = dat_MAR, 
+         smtype = "compet", 
+         smformula = c("Surv(t, eps == 1) ~ X + Z",
+                       "Surv(t, eps == 2) ~ X + Z"), 
+         method = methods, 
+         m = m[length(m)])
+
+imps$impDatasets %$%
+  lapply(., function(imp_dat) setup_mstate(imp_dat)) %$%
+  summary(pool(.))
+
 
 plot(imp_ch1)
 
