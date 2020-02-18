@@ -15,6 +15,10 @@ cumincs_plot_truepred <- function(cox_long,
   #' @inheritParams get_true_cuminc
   #' @inheritParams get_predictor_mats
   #' 
+  #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon ylim theme
+  #' scale_linetype_manual scale_color_manual ggtitle xlab ylab
+  #' @importFrom tidyr replace_na
+  #' 
   #' @return Ggplot by state and true/predicted
   #' 
   #' @export
@@ -36,7 +40,7 @@ cumincs_plot_truepred <- function(cox_long,
   
   # Make the plot
   dat_plot <- probtrans(msfit_newdat, predt = 0)[[1]] %>% 
-    mutate(times = time)  %>% 
+    mutate(times = .data$time)  %>% 
     left_join(CI_true, by = "times") %>% 
     
     # Correct for state at time zero
@@ -47,35 +51,41 @@ cumincs_plot_truepred <- function(cox_long,
     )) %>% 
     
     # Make into long format
-    gather(state_est, prob, pstate1:pstate3) %>% 
-    gather(state_SE, se, se1:se3) %>% 
-    gather(state_true, true, true_pstate2:true_pstate1) %>%
-    unite(state, state_est, state_SE, state_true) %>% 
-    mutate(state = case_when(
-      str_detect(state, "pstate1_se1_true_pstate1") ~ "1",
-      str_detect(state, "pstate2_se2_true_pstate2") ~ "2",
-      str_detect(state, "pstate3_se3_true_pstate3") ~ "3"
+    gather("state_est", "prob", .data$pstate1:.data$pstate3) %>% 
+    gather("state_SE", "se", .data$se1:.data$se3) %>% 
+    gather("state_true", "true", .data$true_pstate2:.data$true_pstate1) %>%
+    unite(
+      "state", 
+      .data$state_est, 
+      .data$state_SE, 
+      .data$state_true
+    ) %>% 
+    mutate("state" = case_when(
+      str_detect(.data$state, "pstate1_se1_true_pstate1") ~ "1",
+      str_detect(.data$state, "pstate2_se2_true_pstate2") ~ "2",
+      str_detect(.data$state, "pstate3_se3_true_pstate3") ~ "3"
     )) %>% 
-    filter(!is.na(state))%>%  
+    filter(!is.na(.data$state))%>%  
     
     # Add confidence intervals (these are plain)
     mutate(
-      low = prob - qnorm(0.975) * se,
-      low = ifelse(low < 0, 0, low),
-      upp = prob + qnorm(0.975) * se,
-      upp = ifelse(upp > 1, 1, upp)
+      low = .data$prob - qnorm(0.975) * .data$se,
+      low = ifelse(.data$low < 0, 0, .data$low),
+      upp = .data$prob + qnorm(0.975) * .data$se,
+      upp = ifelse(.data$upp > 1, 1, .data$upp)
     ) %>% 
     
     # Set up for labelling true and predicted
-    gather(true_pred, prob, prob, true) 
+    gather("true_pred", "prob", .data$prob, .data$true) 
   
   
   # Plot begins here
   p1 <- ggplot(dat_plot,
-               aes(times, prob, na.rm = T)) +
-    geom_line(aes(col = state, linetype = factor(true_pred)), 
+               aes(.data$times, .data$prob, na.rm = T)) +
+    geom_line(aes(col = .data$state, linetype = factor(.data$true_pred)), 
               size = 1.25) + ylim(c(0, 1)) +
-    geom_ribbon(aes(x = times, ymin = low, ymax = upp, group = state), 
+    geom_ribbon(aes(x = .data$times, ymin = .data$low,
+                    ymax = .data$upp, group = .data$state), 
                 alpha = .25, col = NA) + 
     
     # Set up legends

@@ -42,7 +42,6 @@ dat <- generate_dat(n = n,
                     p = prop_miss,
                     eta1 = eta1)
 
-
 # Run all methods ---------------------------------------------------------
 
 
@@ -52,6 +51,14 @@ mod_ref <- setup_mstate(dat %>% mutate(X = X_orig))
 
 # Complete case analyses
 mod_CCA <- setup_mstate(dat)
+
+# Small plot for fun
+#cumincs_plot_truepred(mod_CCA, 
+#                      combo = data.frame("val_X" = 0,
+#                                        "val_Z" = 0), 
+#                     ev1_pars = ev1_pars,
+#                      ev2_pars = ev2_pars, 
+#                      dat = dat)
 
 
 # Set up imputations

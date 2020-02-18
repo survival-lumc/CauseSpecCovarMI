@@ -124,7 +124,7 @@ summarise_bayes <- function(mod) {
            analy = "JointAI",
            m = summary(mod)$size) %>% 
     rename(estimate = .data$Mean, std.error = .data$SD,
-           `2.5 %` = `2.5%`, `97.5 %` = `97.5%`) %>% 
+           `2.5 %` = .data$`2.5%`, `97.5 %` = .data$`97.5%`) %>% 
     select(-.data$`GR-crit`, -.data$`tail-prob.`)
 }
 
@@ -184,24 +184,36 @@ pool_diffm_preds <- function(preds_impdats,
   #' @inheritParams pool_diffm
   #' @param preds_impdats List of lalala
   #' 
+  #' @importFrom stats var
+  #' 
   #' @export
   
   purrr::map_dfr(n_imp, function(m) {
     bind_rows(preds_impdats[1:m], .id = "imp_num") %>% 
-      gather(state_est, prob, pstate1:pstate3) %>% 
-      gather(state_SE, se, se1:se3) %>% 
-      gather(state_true, true, true_pstate2:true_pstate1) %>% 
-      unite(state, state_est, state_SE, state_true) %>% 
+      gather("state_est", "prob", .data$pstate1:.data$pstate3) %>% 
+      gather("state_SE", "se", .data$se1:.data$se3) %>% 
+      gather("state_true", "true", .data$true_pstate2:.data$true_pstate1) %>% 
+      unite(
+        "state", 
+        .data$state_est, 
+        .data$state_SE, 
+        .data$state_true
+      ) %>% 
       mutate(state = case_when(
-        str_detect(state, "pstate1_se1_true_pstate1") ~ "1",
-        str_detect(state, "pstate2_se2_true_pstate2") ~ "2",
-        str_detect(state, "pstate3_se3_true_pstate3") ~ "3"
+        str_detect(.data$state, "pstate1_se1_true_pstate1") ~ "1",
+        str_detect(.data$state, "pstate2_se2_true_pstate2") ~ "2",
+        str_detect(.data$state, "pstate3_se3_true_pstate3") ~ "3"
       )) %>% 
-      filter(!is.na(state)) %>% 
-      unite("combo-X_Z", X, Z, sep = "_X-Z_") %>% 
+      filter(!is.na(.data$state)) %>% 
+      unite("combo-X_Z", .data$X, .data$Z, sep = "_X-Z_") %>% 
       
       # Rubins rules here
-      group_by(state, `combo-X_Z`, times, true) %>% 
+      group_by(
+        .data$state, 
+        .data$`combo-X_Z`, 
+        .data$times, 
+        .data$true
+      ) %>% 
       
       # Pool on log scale here or not?
       summarise(
@@ -210,24 +222,24 @@ pool_diffm_preds <- function(preds_impdats,
         w_bar = mean(.data$se^2),
         b_bar = var(.data$prob),
         t = .data$w_bar + (1 + .data$m^(-1)) * .data$b_bar,
-        se_pool = sqrt(t)
+        se_pool = sqrt(.data$t)
       ) %>% 
       select(-.data$w_bar, -.data$b_bar, -.data$t) %>% 
       
       # Add confidence intervals on log scale
       mutate(
-        low = exp(log(p_pool) - qnorm(0.975) * se_pool / p_pool),
+        low = exp(log(.data$p_pool) - qnorm(0.975) * .data$se_pool / .data$p_pool),
         #low = p_pool - qnorm(0.975) * se_pool,
-        low = ifelse(low < 0, 0, low),
-        upp = exp(log(p_pool) + qnorm(0.975) * se_pool / p_pool),
+        low = ifelse(.data$low < 0, 0, .data$low),
+        upp = exp(log(.data$p_pool) + qnorm(0.975) * .data$se_pool / .data$p_pool),
         #upp = p_pool + qnorm(0.975) * se_pool,
-        upp = ifelse(upp > 1, 1, upp)
+        upp = ifelse(.data$upp > 1, 1, .data$upp)
       ) %>% 
       mutate(analy = analy) %>% 
       ungroup() %>% 
       
       # Add Squared error 
-      mutate(sq_err = (p_pool - true)^2)
+      mutate(sq_err = (.data$p_pool - .data$true)^2)
   })
 }
 

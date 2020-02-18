@@ -120,7 +120,7 @@ gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
 # Make a general cumulative incidence function
 cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
   
-  #' @importFrom stats integrate
+  #' @importFrom stats integrate confint
   
   prod <-  function(t) {
     haz_weib(alph_ev, lam_ev, t) * gen_surv_weib(cumhaz_weib(alph_ev, lam_ev, t),
