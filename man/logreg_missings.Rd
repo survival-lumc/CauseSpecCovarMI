@@ -17,7 +17,7 @@ and probability of missingness}
 \item{covar}{Variable responsible for missingness, e.g. "Z"}
 }
 \value{
-
+Probability vector to generate missings.
 }
 \description{
 Calculate probability of missingness using 

@@ -4,12 +4,12 @@
 \alias{induce_missings}
 \title{Induce missingess.}
 \usage{
-induce_missings(n, .data, p, mech, eta1)
+induce_missings(n, dat, p, mech, eta1)
 }
 \arguments{
 \item{n}{Sample size.}
 
-\item{.data}{Data fram containing X and Z}
+\item{dat}{Data fram containing X and Z}
 
 \item{p}{Proportion of missing values in X.}
 
@@ -21,7 +21,7 @@ of assocation between variable responsible for missingness
 and probability of missingness}
 }
 \value{
-
+Dataset with missingness induced.
 }
 \description{
 Induce missingess.

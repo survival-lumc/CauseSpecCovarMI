@@ -7,6 +7,8 @@
 rweibull_KM(n, alph, lam)
 }
 \arguments{
+\item{n}{sample size}
+
 \item{alph}{Shape parameter of weibull distribution.}
 
 \item{lam}{Rate parameter of lambda distirbution.}

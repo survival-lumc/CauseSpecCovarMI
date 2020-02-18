@@ -2,7 +2,22 @@
 ## Support functions for generating data ##
 ##***************************************##
 
-# Change import from dplyr and tidyr to specific functions
+
+# Set-up ------------------------------------------------------------------
+
+
+options(readr.num_columns = 0) # suppress read.csv message
+
+# Add global variable (for package errors)
+globalVariables(c(names(
+  readr::read_csv(system.file("testdata",
+                              "test_data.csv",
+                              package = "SimsCauseSpecCovarMiss"))
+), "object", "res", "times", "variance", "warn", ".", "X_miss"))
+
+
+# Main --------------------------------------------------------------------
+
 
 generate_dat <- function(n,
                          X_type,
@@ -30,15 +45,18 @@ generate_dat <- function(n,
   #' and probability of missingness
   #' @param p Proportion of missing values in X.
   #' 
-  #' @importFrom magrittr `%>%`
+  #' @importFrom magrittr `%>%` 
   #' @importFrom MASS mvrnorm
   #' @importFrom mice nelsonaalen
-  #' @import dplyr
-  #' @import tidyr
-  #' @import stringr
-  #' @import ggplot2
+  #' @importFrom rlang .data
+  #' @importFrom dplyr mutate rename_all select arrange filter 
+  #' left_join bind_rows rename case_when group_by summarise ungroup
+  #' @importFrom tidyr gather separate unite
+  #' @importFrom stringr str_detect str_extract
   #' 
   #' @return Data-frame with missings induced
+  #' 
+  #' @export
 
   # Compute true R needed if binary
   if (X_type == "binary") {
@@ -72,6 +90,10 @@ generate_dat <- function(n,
   dat_times <- dat_covars %>% 
     mutate(t = event_times$t, 
            eps = as.factor(event_times$eps))
+  
+  # Small check to provide if eta1 (when not MCAR)
+  if(mech != "MCAR" && is.null(eta1))
+    stop("If mechanism is other than MCAR, you must provide an eta1 value.")
   
   # Induce missings and format
   dat <- induce_missings(n, dat_times,
@@ -125,7 +147,7 @@ pbiserial_to_pearson <- function(p, r_pb) {
 
 
 gen_cmprsk_times <- function(n,
-                             .data,
+                             dat,
                              ev1_pars,
                              ev2_pars,
                              rate_cens) {
@@ -133,24 +155,27 @@ gen_cmprsk_times <- function(n,
   #' @title Generate competing risks times + event indictor (2 events)
   #'
   #' @param n Sample size.
-  #' @param .data Data frame containing n rows with X and Z as columns
+  #' @param dat Data frame containing n rows with X and Z as columns
   #' @param ev1_pars Named list of ("a1", "h1_0", "b1", "gamm1")
   #' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
   #' @param rate_cens Rate of exponential distributiion for censoring.
   #' If 0 means no censoring is applied.
   #' 
+  #' @importFrom stats rexp rbinom uniroot plogis qnorm approx df dnorm runif uniroot
+  #' @importFrom utils head tail
+  #' 
   #' @return Data-frame with missings induced
   
   # Generate time to events
   lam1 <- with(
-    .data,
+    dat,
     ev1_pars$h1_0 * exp((ev1_pars$b1 * X + ev1_pars$gamm1 * Z))
   )
   
   t1 <- rweibull_KM(n = n, alph = ev1_pars$a1, lam = lam1)
   
   lam2 <- with(
-    .data,
+    dat,
     ev2_pars$h2_0 * exp((ev2_pars$b2 * X + ev2_pars$gamm2 * Z))
   )
   
@@ -177,6 +202,7 @@ rweibull_KM <- function(n, alph, lam) {
   #' 
   #' @param alph Shape parameter of weibull distribution.
   #' @param lam Rate parameter of lambda distirbution.
+  #' @param n sample size
   #' 
   #' @return n samples from weibull distribution.
   
@@ -185,12 +211,12 @@ rweibull_KM <- function(n, alph, lam) {
 }
 
 
-induce_missings <- function(n, .data, p, mech, eta1) {
+induce_missings <- function(n, dat, p, mech, eta1) {
   
   #' @title Induce missingess.
   #' 
   #' @param n Sample size.
-  #' @param .data Data fram containing X and Z
+  #' @param dat Data fram containing X and Z
   #' @param mech Missingness mechanism, one of:
   #' "MAR_GEN", "MAR", "MNAR", "MCAR"
   #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
@@ -198,35 +224,35 @@ induce_missings <- function(n, .data, p, mech, eta1) {
   #' and probability of missingness
   #' @param p Proportion of missing values in X.
   #' 
-  #' @return 
+  #' @return Dataset with missingness induced.
 
   if (is.null(mech) | is.null(p)) {
-    dat <- .data %>%
+    dat <- dat %>%
       mutate(miss_ind = 0,
              X_miss = X)
   } else if (mech == "MCAR") {
-    dat <- .data %>%
+    dat <- dat %>%
       mutate(miss_ind = rbinom(n, 1, p),
              X_miss = ifelse(miss_ind == 1, NA, X))
     
   } else if (mech == "MAR") {
-    pr <- logreg_missings(p, eta1, covar = .data$Z)
+    pr <- logreg_missings(p, eta1, covar = dat$Z)
     
-    dat <- .data %>%
+    dat <- dat %>%
       mutate(miss_ind = rbinom(n, 1, pr),
              X_miss = ifelse(miss_ind == 1, NA, X))
     
   } else if (mech == "MNAR") {
-    pr <- logreg_missings(p, eta1, covar = .data$X)
+    pr <- logreg_missings(p, eta1, covar = dat$X)
     
-    dat <- .data %>%
+    dat <- dat %>%
       mutate(miss_ind = rbinom(n, 1, pr),
              X_miss = ifelse(miss_ind == 1, NA, X))
     
   } else if (mech == "MAR_GEN") {
-    pr <- logreg_missings(p, eta1, covar = scale(log(.data$t)))
+    pr <- logreg_missings(p, eta1, covar = scale(log(dat$t)))
     
-    dat <- .data %>%
+    dat <- dat %>%
       mutate(miss_ind = rbinom(n, 1, pr),
              X_miss = ifelse(miss_ind == 1, NA, X))
     
@@ -247,7 +273,7 @@ logreg_missings <- function(p, eta1, covar) {
   #' and probability of missingness
   #' @param covar Variable responsible for missingness, e.g. "Z"
   #' 
-  #' @return 
+  #' @return Probability vector to generate missings.
   
   intercept_solve <- function(eta0, eta1, p) {
     pr <- plogis(eta0 + eta1 * covar) 

@@ -3,16 +3,20 @@
 ##************************##
 
 
-setup_mstate <- function(.data) {
+setup_mstate <- function(dat) {
   
   #' @title Set-up mstate model (pre-predicting)
   #' 
   #' @description ...
   #' 
-  #' @importFrom mstate msprep trans.comprisk expand.covs 
+  #' @inheritParams get_predictor_mats
+  #' 
+  #' @importFrom mstate msprep trans.comprisk expand.covs msfit probtrans
   #' @importFrom survival coxph Surv strata survfit
   #' 
   #' @return Long cox model
+  #' 
+  #' @export
   
   # Set up transition matrix 
   tmat <- trans.comprisk(2, c("Rel", "NRM"))
@@ -21,7 +25,7 @@ setup_mstate <- function(.data) {
   # Long format
   dat_msprepped <- msprep(time = c(NA, "t", "t"),
                           status = c(NA, "ev1", "ev2"), 
-                          data = .data,
+                          data = dat,
                           trans = tmat,
                           keep = covs) 
   
@@ -43,13 +47,21 @@ setup_mstate <- function(.data) {
 }
 
 
-make_covar_grid <- function(.data) {
+make_covar_grid <- function(dat) {
+  
+  #' @title Make grid of covariate combinations.
+  #' 
+  #' @inheritParams get_predictor_mats
+  #' 
+  #' @return Grid of covariate combos.
+  #' 
+  #' @export
   
   sd_units <- c(0, 1, 2, -1, -2)
   z <- 0 + sd_units * 1 # standard normal
   names(z) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
   
-  if (is.factor(.data$X)) {
+  if (is.factor(dat$X)) {
     
     x <- c(0, 1)
     names(x) <- c("0", "1")
@@ -75,9 +87,9 @@ make_covar_grid <- function(.data) {
                             stringsAsFactors = F) %>% 
       as.data.frame() %>% 
       unite("scen", c(X, Z), sep = "=") %>% 
-      filter(!(str_detect(scen, "2SD") & 
-                 !str_detect(scen, "mean"))) %>% 
-      separate(scen, c("X", "Z"), sep = "=") %>%            
+      filter(!(str_detect(.data$scen, "2SD") & 
+                 !str_detect(.data$scen, "mean"))) %>% 
+      separate(.data$scen, c("X", "Z"), sep = "=") %>%            
       mutate(val_X = x[match(X, names(x))],
              val_Z = z[match(Z, names(z))])
     
@@ -108,13 +120,15 @@ gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
 # Make a general cumulative incidence function
 cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
   
+  #' @importFrom stats integrate
+  
   prod <-  function(t) {
     haz_weib(alph_ev, lam_ev, t) * gen_surv_weib(cumhaz_weib(alph_ev, lam_ev, t),
                                                  cumhaz_weib(alph_comp, lam_comp, t))
   }
   
   ci_func <- Vectorize(function(upp) {
-    integrate(prod, lower = 0, upper = upp)$value
+    stats::integrate(prod, lower = 0, upper = upp)$value
   })
   
   return(ci_func(t))
@@ -135,10 +149,15 @@ preds_mstate <- function(cox_long,
   #' 
   #' @param cox_long Cox model returned by setup_mstate
   #' @param times Prediction horizon(s) eg. c(2, 5, 10)
+  #' @inheritParams get_true_cuminc
+  #' @param grid_obj Grid object
   #' 
   #' @importFrom mstate msfit probtrans
+  #' @importFrom purrr map modify_depth map_dfr imap_dfr
   #' 
   #' @return Long cox model
+  #' 
+  #' @export
   
   #...
   
@@ -146,7 +165,7 @@ preds_mstate <- function(cox_long,
   
   tmat <- trans.comprisk(2, c("Rel", "NRM"))
   
-  predos <- lapply(1:nrow(grid_obj), function(row) {
+  purrr::map_dfr(1:nrow(grid_obj), function(row) {
     
     combo <- grid_obj[row, ]
     
@@ -175,9 +194,6 @@ preds_mstate <- function(cox_long,
                      "Z" = as.character(combo$Z)) %>% 
       left_join(true_CI, by = "times")
   })
-  
-  # Check bind rows here
-  return(bind_rows(predos))
 }
 
 
@@ -185,6 +201,17 @@ get_true_cuminc <- function(ev1_pars,
                             ev2_pars,
                             combo,
                             times) {
+  
+  #' @title Compute true cumulative incidence
+  #' 
+  #' @param ev1_pars List arameters for weibull event 1
+  #' @param ev2_pars List arameters for weibull event 2
+  #' @param combo Covariate combo, e.g. list("val_X" = 1, "val_Z" = 1)
+  #' @param times Vector of timepoints to evaluate cuminc at
+  #' 
+  #' @return True cumulative incidence at times.
+  #' 
+  #' @export
   
   lam1 <- ev1_pars$h1_0 * exp((ev1_pars$b1 * combo$val_X + 
                                  ev1_pars$gamm1 * combo$val_Z))
@@ -210,6 +237,3 @@ get_true_cuminc <- function(ev1_pars,
   return(dato)
 }
 
-
-
-  

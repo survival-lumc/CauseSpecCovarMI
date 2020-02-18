@@ -1,0 +1,14 @@
+.Rproj.user
+
+inst/doc
+doc
+Meta
+tests
+analysis/data/raw_data
+analysis/paper/WileyNJD-AMA.bst
+analysis/paper/WileyNJD-v2.cls
+analysis/paper/bibfile.bib
+analysis/paper/paper.log
+analysis/paper/paper.pag
+analysis/paper/paper.pdf
+temp
