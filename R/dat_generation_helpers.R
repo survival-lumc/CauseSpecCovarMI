@@ -92,7 +92,8 @@ generate_dat <- function(n,
            eps = as.factor(event_times$eps))
   
   # Small check to provide if eta1 (when not MCAR)
-  if(mech != "MCAR" && is.null(eta1))
+  # This will also allow complete datasets with mech = NULL and eta1 = NULL
+  if(!(is.null(mech)) && (mech != "MCAR") && is.null(eta1))
     stop("If mechanism is other than MCAR, you must provide an eta1 value.")
   
   # Induce missings and format

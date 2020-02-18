@@ -90,91 +90,7 @@ head(preds) %>%
 ```
 
 
-
-```{r trueplotz, echo=F}
-cumincs_plot_truepred <- function(cox_long,
-                                  combo,
-                                  ev1_pars,
-                                  ev2_pars,
-                                  .data) {
-  
-  # Compute true
-  CI_true <- get_true_cuminc(ev1_pars, ev2_pars, 
-                             combo, times = .data$t)
-  
-  # Check vs probs trans
-  new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
-                        X.2 = c(0, combo$val_X), 
-                        Z.1 = c(combo$val_Z, 0), 
-                        Z.2 = c(0, combo$val_Z), # THIS WAS SET TO VAL_X 
-                        trans = c(1, 2), 
-                        strata = c(1, 2))
-  
-  msfit_newdat <- msfit(cox_long, newdata = new_dat,
-                        trans = trans.comprisk(2, c("Rel", "NRM")))
-  
-  prob_obj <- probtrans(msfit_newdat, predt = 0)[[1]] %>% 
-    mutate(times = time) 
-  
-  probs <- prob_obj %>% 
-    gather(state, prob, pstate1:pstate3) %>% 
-    select(times, state, prob)
-  
-  preds <- prob_obj %>% 
-    gather(state, se, se1:se3) %>% 
-    mutate(state = case_when(
-      str_detect(state, "1") ~ "pstate1",
-      str_detect(state, "2") ~ "pstate2",
-      str_detect(state, "3") ~ "pstate3"
-    )) %>% 
-    select(times, state, se) %>% 
-    left_join(probs) %>% 
-    mutate(
-      low = prob - qnorm(0.975) * se,
-      low = ifelse(low < 0, 0, low),
-      upp = prob + qnorm(0.975) * se,
-      upp = ifelse(upp > 1, 1, upp)
-    )
-  
-  
-  # Plot it
-  p1 <- CI_true %>%
-    gather(state, prob, true_pstate2:true_pstate1) %>% 
-    bind_rows(preds) %>% 
-    mutate(state_grp = case_when(
-      str_detect(state, "1") ~ "1",
-      str_detect(state, "2") ~ "2",
-      str_detect(state, "3") ~ "3"
-    )) %>% 
-    mutate(true_pred = ifelse(str_detect(state, "true"), "true", "predicted")) %>% 
-    group_by(state) %>% 
-    fill(prob) %>% 
-    
-    # Plot code here
-    ggplot(aes(times, prob)) +
-    geom_line(aes(col = state_grp, linetype = factor(true_pred)), 
-              size = 1.25) + ylim(c(0, 1)) +
-    geom_ribbon(aes(x = times, ymin = low, ymax = upp, group = state), 
-                alpha = .25, col = NA) + 
-    theme_bw() +
-    ggtitle(paste0("Predicted and true probabilities for X = ",
-                   combo[1],", Z = ", combo[2])) +
-    scale_linetype_manual("Prob. type", values = c("solid", "dotdash"),
-                          labels = c("Predicted", "True")) +
-    scale_color_manual("State", values = c(1, 2, 3),
-                       labels = c("EFS", "REL", "NRM")) +
-    theme(legend.position = "bottom", 
-          plot.title = element_text(hjust = .5)) +
-    xlab("Time") + ylab("Probability")
-  
-  return(p1)
-}
-
-```
-
-
-
-```{r trueplot_mean, dev='svg'}
+```{r trueplot_mean, dev='svg', warning=FALSE}
 cumincs_plot_truepred(cox_long = cox_long, 
                       combo = data.frame("val_X" = 0, "val_Z" = 0),
                       ev1_pars,
@@ -183,7 +99,7 @@ cumincs_plot_truepred(cox_long = cox_long,
 ```
 
 
-```{r trueplot_high, dev='svg'}
+```{r trueplot_high, dev='svg', warning=FALSE}
 cumincs_plot_truepred(cox_long = cox_long, 
                       combo = data.frame("val_X" = 1, "val_Z" = 1),
                       ev1_pars,
@@ -192,7 +108,7 @@ cumincs_plot_truepred(cox_long = cox_long,
 ```
 
 
-```{r trueplot_low, dev='svg'}
+```{r trueplot_low, dev='svg', warning=FALSE}
 cumincs_plot_truepred(cox_long = cox_long, 
                       combo = data.frame("val_X" = -1, "val_Z" = -1),
                       ev1_pars,

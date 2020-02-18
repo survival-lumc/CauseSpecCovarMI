@@ -229,9 +229,7 @@ get_true_cuminc <- function(ev1_pars,
   
   dato <- cbind.data.frame("times" = times, 
                            "true_pstate2" = true_pstate2,
-                           "true_pstate3" = true_pstate3) %>%
-    
-    # Add true event-free survival
+                           "true_pstate3" = true_pstate3) %>% 
     mutate(true_pstate1 = 1 - (true_pstate2 + true_pstate3))
   
   return(dato)
