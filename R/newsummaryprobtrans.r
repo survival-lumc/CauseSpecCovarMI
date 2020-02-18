@@ -1,3 +1,10 @@
+##********************************************##
+## New summary for probtrans object in mstate ##
+##          Property of H. Putter             ##
+##********************************************##
+
+
+
 summary.probtrans <- function(object, times, from=1, to=0, complete=FALSE,
                               variance=TRUE, conf.int=0.95,
                               conf.type=c("log", "none", "plain"),
@@ -204,14 +211,6 @@ print.summary.probtrans <- function(x, complete=FALSE, ...)
 #summary(pt, times=seq(0, 15, by=3), extend=TRUE)
 #summary(pt, times=seq(0, 15, by=3), conf.type="plain")
 #ummary(pt, times=seq(0, 15, by=3), conf.type="no")
-
-# Hello 
-
-
-
-# dok #####
-##
-#####   ######
 
 
 
