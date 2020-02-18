@@ -127,7 +127,7 @@ complist <- list("ch1" = mice::complete(imp_ch1, action = "all"),
 
 
 # Run cox models on imputed datasets
-mods_complist <- complist %$% purrr::modify_depth(., .depth = 2, ~ setup_mstate(.x))  
+mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate(.x))  
 
 
 # Pool estimates (mice, smcfcs, JointAI, CCA, ref)
@@ -177,7 +177,8 @@ View(pooled_preds)
 # Scenario identifiers + seed + export to .Rdata --------------------------
 
 
-# Scenario/seed should at least be in the filenames 
+# Scenario/seed should at least be in the filenames; also record smcfcs 
+# Rej sampling failures too?
 
 
 
