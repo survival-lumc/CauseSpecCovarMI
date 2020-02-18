@@ -4,12 +4,12 @@
 \alias{gen_cmprsk_times}
 \title{Generate competing risks times + event indictor (2 events)}
 \usage{
-gen_cmprsk_times(n, .data, ev1_pars, ev2_pars, rate_cens)
+gen_cmprsk_times(n, dat, ev1_pars, ev2_pars, rate_cens)
 }
 \arguments{
 \item{n}{Sample size.}
 
-\item{.data}{Data frame containing n rows with X and Z as columns}
+\item{dat}{Data frame containing n rows with X and Z as columns}
 
 \item{ev1_pars}{Named list of ("a1", "h1_0", "b1", "gamm1")}
 

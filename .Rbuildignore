@@ -1,0 +1,10 @@
+^MI-cause-specific_R\.Rproj$
+^\.Rproj\.user$
+^README\.Rmd$
+^README-.*\.png$
+^doc$
+^Meta$
+analysis
+LICENSE.md
+temp
+.Rhistory

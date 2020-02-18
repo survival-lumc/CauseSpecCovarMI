@@ -1,0 +1,202 @@
+---
+title: "On predicted probabilities"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{predicted_probabilities}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6,
+  fig.align = 'center',
+  message = FALSE, 
+  warning = FALSE
+)
+# see https://github.com/epiforecasts/WuhanSeedingVsTransmission/blob/master/vignettes/output.Rmd
+```
+
+
+
+```{r setup, message=FALSE}
+library(SimsCauseSpecCovarMiss)
+library(tidyverse)
+library(mstate)
+
+set.seed(123)
+
+theme_set(theme_bw(base_size = 12) +
+            theme(plot.title = element_text(hjust = 0.5)))
+```
+
+
+# Generate data
+
+
+```{r gen_dat}
+# Set weibull parameter globally as we will need them later
+ev1_pars <- list("a1" = 2, "h1_0" = 1, 
+                 "b1" = 1, "gamm1" = 1)
+
+ev2_pars <- list("a2" = 2.5, "h2_0" = .5,
+                 "b2" = .5, "gamm2" = .5)
+
+
+# Lets start with a complete (large) dataset, with hardly any censoring
+dat_full_contin <- generate_dat(n = 500,
+                                X_type = "contin",
+                                r = 0.1,
+                                ev1_pars = ev1_pars,
+                                ev2_pars = ev2_pars,
+                                rate_cens = .01) 
+```
+
+
+
+```{r cox_long}
+# Run both cause-specific models using mstate
+cox_long <- setup_mstate(dat_full_contin)
+cox_long
+```
+
+
+```{r grid_print}
+# Make grid of covariate values at which to evaluate predictions
+grid_obj <- make_covar_grid(dat_full_contin)
+grid_obj
+```
+
+
+```{r grid_plot, dev='svg'}
+grid_obj %>% 
+  ggplot(aes(val_X, val_Z)) + geom_point() +
+  labs(x = "X", y = "Z")
+```
+
+
+```{r pred_hor, warning=FALSE}
+preds <- preds_mstate(cox_long = cox_long,
+                      grid_obj = grid_obj, 
+                      times = c(0.5, 1), 
+                      ev1_pars = ev1_pars,
+                      ev2_pars = ev2_pars)
+
+head(preds) %>% 
+  mutate_if(is.numeric, ~ round(., 3))
+```
+
+
+
+```{r trueplotz, echo=F}
+cumincs_plot_truepred <- function(cox_long,
+                                  combo,
+                                  ev1_pars,
+                                  ev2_pars,
+                                  .data) {
+  
+  # Compute true
+  CI_true <- get_true_cuminc(ev1_pars, ev2_pars, 
+                             combo, times = .data$t)
+  
+  # Check vs probs trans
+  new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
+                        X.2 = c(0, combo$val_X), 
+                        Z.1 = c(combo$val_Z, 0), 
+                        Z.2 = c(0, combo$val_Z), # THIS WAS SET TO VAL_X 
+                        trans = c(1, 2), 
+                        strata = c(1, 2))
+  
+  msfit_newdat <- msfit(cox_long, newdata = new_dat,
+                        trans = trans.comprisk(2, c("Rel", "NRM")))
+  
+  prob_obj <- probtrans(msfit_newdat, predt = 0)[[1]] %>% 
+    mutate(times = time) 
+  
+  probs <- prob_obj %>% 
+    gather(state, prob, pstate1:pstate3) %>% 
+    select(times, state, prob)
+  
+  preds <- prob_obj %>% 
+    gather(state, se, se1:se3) %>% 
+    mutate(state = case_when(
+      str_detect(state, "1") ~ "pstate1",
+      str_detect(state, "2") ~ "pstate2",
+      str_detect(state, "3") ~ "pstate3"
+    )) %>% 
+    select(times, state, se) %>% 
+    left_join(probs) %>% 
+    mutate(
+      low = prob - qnorm(0.975) * se,
+      low = ifelse(low < 0, 0, low),
+      upp = prob + qnorm(0.975) * se,
+      upp = ifelse(upp > 1, 1, upp)
+    )
+  
+  
+  # Plot it
+  p1 <- CI_true %>%
+    gather(state, prob, true_pstate2:true_pstate1) %>% 
+    bind_rows(preds) %>% 
+    mutate(state_grp = case_when(
+      str_detect(state, "1") ~ "1",
+      str_detect(state, "2") ~ "2",
+      str_detect(state, "3") ~ "3"
+    )) %>% 
+    mutate(true_pred = ifelse(str_detect(state, "true"), "true", "predicted")) %>% 
+    group_by(state) %>% 
+    fill(prob) %>% 
+    
+    # Plot code here
+    ggplot(aes(times, prob)) +
+    geom_line(aes(col = state_grp, linetype = factor(true_pred)), 
+              size = 1.25) + ylim(c(0, 1)) +
+    geom_ribbon(aes(x = times, ymin = low, ymax = upp, group = state), 
+                alpha = .25, col = NA) + 
+    theme_bw() +
+    ggtitle(paste0("Predicted and true probabilities for X = ",
+                   combo[1],", Z = ", combo[2])) +
+    scale_linetype_manual("Prob. type", values = c("solid", "dotdash"),
+                          labels = c("Predicted", "True")) +
+    scale_color_manual("State", values = c(1, 2, 3),
+                       labels = c("EFS", "REL", "NRM")) +
+    theme(legend.position = "bottom", 
+          plot.title = element_text(hjust = .5)) +
+    xlab("Time") + ylab("Probability")
+  
+  return(p1)
+}
+
+```
+
+
+
+```{r trueplot_mean, dev='svg'}
+cumincs_plot_truepred(cox_long = cox_long, 
+                      combo = data.frame("val_X" = 0, "val_Z" = 0),
+                      ev1_pars,
+                      ev2_pars, 
+                      dat_full_contin)
+```
+
+
+```{r trueplot_high, dev='svg'}
+cumincs_plot_truepred(cox_long = cox_long, 
+                      combo = data.frame("val_X" = 1, "val_Z" = 1),
+                      ev1_pars,
+                      ev2_pars, 
+                      dat_full_contin)
+```
+
+
+```{r trueplot_low, dev='svg'}
+cumincs_plot_truepred(cox_long = cox_long, 
+                      combo = data.frame("val_X" = -1, "val_Z" = -1),
+                      ev1_pars,
+                      ev2_pars, 
+                      dat_full_contin)
+```
+

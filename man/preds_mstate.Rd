@@ -9,7 +9,13 @@ preds_mstate(cox_long, grid_obj, times, ev1_pars, ev2_pars)
 \arguments{
 \item{cox_long}{Cox model returned by setup_mstate}
 
+\item{grid_obj}{Grid object}
+
 \item{times}{Prediction horizon(s) eg. c(2, 5, 10)}
+
+\item{ev1_pars}{List arameters for weibull event 1}
+
+\item{ev2_pars}{List arameters for weibull event 2}
 }
 \value{
 Long cox model

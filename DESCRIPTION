@@ -1,13 +1,35 @@
-Package: compendium
-Title: Directory for missing data in competing risks project, in cause-specific models.
+Package: SimsCauseSpecCovarMiss
+Title: Missing data in competing risk, cause-specific models
 Version: 1.0.0
-Authors@R: 
-    person(given = "Edouard",
+Authors@R:
+    person(given = "Edouard F.",
            family = "Bonneville",
            role = c("aut", "cre"),
            email = "e.f.bonneville@lumc.nl")
-Description: What the package does (one paragraph).
+Description: Directory for R code of the missing data in competing risks, focusing on cause-specific models.
 License: MIT + file LICENSE
+ByteCompile: true
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.2
+Suggests:
+    ggpubr,
+    tidyverse
+VignetteBuilder: knitr
+Imports:
+    dplyr,
+    magrittr,
+    tidyr,
+    readr,
+    purrr,
+    tibble,
+    stringr,
+    rlang,
+    knitr,
+    rmarkdown,
+    MASS,
+    survival,
+    mstate,
+    mice,
+    smcfcs,
+    JointAI
