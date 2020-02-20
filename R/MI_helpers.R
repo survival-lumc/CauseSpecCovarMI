@@ -91,10 +91,11 @@ pool_diffm <- function(mods_impdats,
   #' @importFrom tibble rownames_to_column
   #' @importFrom mice pool mice
   #' @importFrom smcfcs smcfcs
-  #' @importFrom JointAI coxph_imp MC_error traceplot
   #' @importFrom magrittr `%$%` 
   #' 
   #' @export
+
+  # @importFrom JointAI coxph_imp MC_error traceplot
   
   purrr::map_dfr(n_imp, function(m) {
     estims <- mods_impdats[1:m] %$%
