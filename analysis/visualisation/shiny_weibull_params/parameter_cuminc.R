@@ -25,12 +25,12 @@ ui <- fluidPage(
       h3("Weibull params REL (event 1)", align = "center"),
       sliderInput("shape_1", "Shape Cause 1:",
                   min = 0, max = 6,
-                  value = 1, step = 0.01),
+                  value = 0.59, step = 0.01),
       
       # Input:  ----
       sliderInput("base_1", "BaseHaz Cause 1:",
                   min = 0, max = 3,
-                  value = 1, step = 0.01),
+                  value = 0.19, step = 0.01),
       
       # Input:  ----
       sliderInput("beta_1", "Beta Cause 1:",
@@ -45,12 +45,12 @@ ui <- fluidPage(
       h3("Weibull params NRM (event 2)", align = "center"),
       sliderInput("shape_2", "Shape Cause 2:",
                   min = 0, max = 6,
-                  value = 1, step = 0.01),
+                  value = 0.53, step = 0.01),
       
       # Input:  ----
       sliderInput("base_2", "BaseHaz Cause 2:",
                   min = 0, max = 3,
-                  value = 1, step = 0.01),
+                  value = 0.21, step = 0.01),
       
       # Input:  ----
       sliderInput("beta_2", "Beta Cause 2:",
@@ -87,7 +87,7 @@ ui <- fluidPage(
                 
                 sliderInput("rate_cens", "Exp censoring rate:",
                             min = 0, max = 5,
-                            value = 0.5, step = 0.01),
+                            value = 0.14, step = 0.01),
                 
                 # Input:  ----
                 sliderInput("X", "Value of covariate X",
@@ -153,7 +153,8 @@ server <- function(input, output) {
                             "b2" = input$beta_2, 
                             "gamm2" = input$gamma_2
                           ), 
-                          dat = dat_cumin())
+                          dat = dat_cumin()) +
+      xlim(c(0, 10))
   })
   
   
@@ -164,7 +165,7 @@ server <- function(input, output) {
   
   output$plot_haz <- renderPlot({
     
-    t <- seq(0.01, 5, by = 0.01)
+    t <- seq(0.01, 10, by = 0.1)
     
     lam1 <- input$shape_1 * exp((input$beta_1 * input$X + 
                                    input$gamma_1 * input$Z))
@@ -197,7 +198,7 @@ server <- function(input, output) {
   
   output$plot_condhaz <- renderPlot({
 
-    t <- seq(0.01, 5, by = 0.01)
+    t <- seq(0.01, 10, by = 0.1)
     
     lam1 <- input$shape_1 * exp((input$beta_1 * input$X + 
                                    input$gamma_1 * input$Z))
@@ -232,13 +233,13 @@ server <- function(input, output) {
     # Run reverse KM
     fit <- survfit(Surv(t, eps == 0) ~ 1, data = dat_cumin())
     
-    cbind.data.frame("t" = fit$time,
-                     "surv" = fit$surv) %>% 
-      ggplot(aes(.data$t, .data$surv)) +
-      geom_line(size = 1.5, linetype = "solid") +
-      ggtitle("Reverse Kaplan-Meier") +
-      xlab("Time") + ylab("Probability")
-    
+    #cbind.data.frame("t" = fit$time,
+    #                 "surv" = fit$surv) %>% 
+    #  ggplot(aes(.data$t, .data$surv)) +
+    #  geom_line(size = 1.5, linetype = "solid") +
+    # ggtitle("Reverse Kaplan-Meier") +
+    #  xlab("Time") + ylab("Probability")
+    plot(fit, xlim = c(0, 10))
   })
 }
 
