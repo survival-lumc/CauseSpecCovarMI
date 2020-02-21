@@ -13,7 +13,8 @@ generate_dat(
   rate_cens,
   mech = NULL,
   eta1 = NULL,
-  p = NULL
+  p = NULL,
+  mod_type = "latent"
 )
 }
 \arguments{
@@ -38,6 +39,10 @@ of assocation between variable responsible for missingness
 and probability of missingness}
 
 \item{p}{Proportion of missing values in X.}
+
+\item{mod_type}{Either "latent", weibull times generated from 
+separate weibull distribution, or "total", times generated from 
+sum of cause-specific hazards (using inverse transform method)}
 }
 \value{
 Data-frame with missings induced
