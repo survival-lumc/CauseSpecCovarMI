@@ -27,7 +27,8 @@ generate_dat <- function(n,
                          rate_cens,
                          mech = NULL,
                          eta1 = NULL,
-                         p = NULL) {
+                         p = NULL,
+                         mod_type = "latent") {
 
   #' @title Generates data.
   #'
@@ -44,6 +45,8 @@ generate_dat <- function(n,
   #' of assocation between variable responsible for missingness
   #' and probability of missingness
   #' @param p Proportion of missing values in X.
+  #' 
+  #' @inheritParams gen_cmprsk_times
   #' 
   #' @importFrom magrittr `%>%` 
   #' @importFrom MASS mvrnorm
@@ -85,7 +88,8 @@ generate_dat <- function(n,
                                   dat_covars, 
                                   ev1_pars,
                                   ev2_pars,
-                                  rate_cens)
+                                  rate_cens, 
+                                  mod_type = mod_type)
   # Add event times
   dat_times <- dat_covars %>% 
     mutate(t = event_times$t, 
@@ -114,10 +118,6 @@ generate_dat <- function(n,
            # Interaction terms
            H1_Z = H1 * Z,
            H2_Z = H2 * Z) %>%
-    
-    # Compute hazards - dleet if not needed
-    #mutate(haz1 = haz_weib(alph = a1, lam = lam1, t = t),
-    #       haz2 = haz_weib(alph = a2, lam = lam2, t = t)) %>% 
     arrange(t) 
   
   # Convert to factors if binary
@@ -151,7 +151,8 @@ gen_cmprsk_times <- function(n,
                              dat,
                              ev1_pars,
                              ev2_pars,
-                             rate_cens) {
+                             rate_cens,
+                             mod_type = "latent") { 
   
   #' @title Generate competing risks times + event indictor (2 events)
   #'
@@ -161,30 +162,52 @@ gen_cmprsk_times <- function(n,
   #' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
   #' @param rate_cens Rate of exponential distributiion for censoring.
   #' If 0 means no censoring is applied.
+  #' @param mod_type Either "latent", weibull times generated from 
+  #' separate weibull distribution, or "total", times generated from 
+  #' sum of cause-specific hazards (using inverse transform method)
   #' 
   #' @importFrom stats rexp rbinom uniroot plogis qnorm approx df dnorm runif uniroot
   #' @importFrom utils head tail
   #' 
   #' @return Data-frame with missings induced
   
-  # Generate time to events
+  # Rates from cause specific hazards
   lam1 <- with(
     dat,
     ev1_pars$h1_0 * exp((ev1_pars$b1 * X + ev1_pars$gamm1 * Z))
   )
-  
-  t1 <- rweibull_KM(n = n, alph = ev1_pars$a1, lam = lam1)
   
   lam2 <- with(
     dat,
     ev2_pars$h2_0 * exp((ev2_pars$b2 * X + ev2_pars$gamm2 * Z))
   )
   
-  t2 <- rweibull_KM(n = n, alph = ev2_pars$a2, lam = lam2)
-  
-  # Take minimum of two, and compute indicator
-  t <- pmin(t1, t2)
-  eps <- ifelse(t1 < t2, 1, 2)
+  if (mod_type == "latent") {
+    
+    t1 <- rweibull_KM(n = n, alph = ev1_pars$a1, lam = lam1)
+    t2 <- rweibull_KM(n = n, alph = ev2_pars$a2, lam = lam2)
+    
+    # Take minimum of two, and compute indicator
+    t <- pmin(t1, t2)
+    eps <- ifelse(t1 < t2, 1, 2)
+    
+  } else if (mod_type == "total") {
+    
+    # n = 1 is misleading: this is vectorised so we actually obtain n samples
+    t <- invtrans_weib(
+      n = 1, 
+      alph1 = ev1_pars$a1, 
+      lam1 = lam1, 
+      alph2 = ev2_pars$a2, 
+      lam2 = lam2
+    )
+    
+    # Determine which event occured
+    haz_ev1 <- haz_weib(ev1_pars$a1, lam1, t)
+    haz_ev2 <- haz_weib(ev2_pars$a2, lam2, t)
+    event <- rbinom(n, 1, prob = haz_ev1 / (haz_ev1 + haz_ev2))
+    eps <- ifelse(event == 1, 1, 2)
+  }
   
   # Add censoring
   if (0 < rate_cens) {
@@ -195,6 +218,29 @@ gen_cmprsk_times <- function(n,
   
   return(cbind.data.frame(t, eps))
 }
+
+
+
+
+invtrans_weib <- Vectorize(function(n, alph1, lam1, alph2, lam2) {
+  
+  # Define cdf - U first
+  cdf_U <- function(t, U) {
+    F_min_U <- 1 - exp(-(lam1 * t^alph1 + lam2 * t^alph2)) - U
+    return(F_min_U)
+  }
+  
+  # Generate uniform values, and find roots
+  samps <- sapply(runif(n), function(u) {
+    root <- uniroot(cdf_U, interval = c(.Machine$double.eps, 1000), 
+                    extendInt = "yes", U = u)$`root`
+    return(root)
+  })
+  
+  return(samps)
+})
+
+
 
 
 rweibull_KM <- function(n, alph, lam) {

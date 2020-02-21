@@ -10,12 +10,12 @@
 
 # Fixed/varied parameters:
 
-n <- 500 # sample size
-meas <- "binary" # measurement level of X
+n <- 2000 # sample size
+meas <- "contin" # measurement level of X
 rho <- 0.5 # correlation X and Z
 beta1 <- 1 # Coeff of X in CauseSpec mod of event 1
-mechan <- "MNAR" # missingness mechanism
-prop_miss <- .5 # proportion of missingness
+mechan <- "MCAR" # missingness mechanism
+prop_miss <- 0 # proportion of missingness
 m <- c(10) #25, 100) # Number of imputations of interest
 iters_MI <- 50 # Iterations of multiple imputation procedure
 horiz <- c(0.5, 1, 1.5) # Prediction horizons
@@ -189,6 +189,11 @@ one_simulation <- function(scenario, # scenario
   # Save as RDS in analysis/simulation results/predictions
   #saveRDS(pooled_preds, file = "scenariolabel/number_repnum_preds")
   
+  # For shark
+  #saveRDS(dat, 
+  # file = "/exports/molepi/users/efbonneville/.../filename/rds")
+  
+  
   # Also store seeds
   
   # Remove this return thing after
@@ -218,7 +223,7 @@ ev2_pars = list("a2" = 2.5, "h2_0" = .5,
 set.seed(1)
 
 # Generate a dataset
-dat <- generate_dat(n = n,
+dat <- generate_dat(n = 50000,
                     X_type = meas, 
                     r = rho, 
                     ev1_pars = ev1_pars,
@@ -227,6 +232,8 @@ dat <- generate_dat(n = n,
                     mech = mechan, 
                     p = prop_miss,
                     eta1 = eta1)
+                    #, mod_type = "total")
+
 
 # Run all methods ---------------------------------------------------------
 
@@ -394,7 +401,7 @@ View(pooled_preds %>%
        mutate_if(is.numeric, ~ round(., 3)))
 
 
-# Scenario identifiers + seed + export to .Rdata --------------------------
+# Scenario identifiers + seed + export to .RDS --------------------------
 
 
 # Scenario/seed should at least be in the filenames; also record smcfcs 
@@ -404,7 +411,7 @@ View(pooled_preds %>%
 
 
 
-# Export to .Rdata
+
 
 
 # -- End

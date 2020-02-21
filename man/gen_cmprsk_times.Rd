@@ -4,7 +4,7 @@
 \alias{gen_cmprsk_times}
 \title{Generate competing risks times + event indictor (2 events)}
 \usage{
-gen_cmprsk_times(n, dat, ev1_pars, ev2_pars, rate_cens)
+gen_cmprsk_times(n, dat, ev1_pars, ev2_pars, rate_cens, mod_type = "latent")
 }
 \arguments{
 \item{n}{Sample size.}
@@ -17,6 +17,10 @@ gen_cmprsk_times(n, dat, ev1_pars, ev2_pars, rate_cens)
 
 \item{rate_cens}{Rate of exponential distributiion for censoring.
 If 0 means no censoring is applied.}
+
+\item{mod_type}{Either "latent", weibull times generated from 
+separate weibull distribution, or "total", times generated from 
+sum of cause-specific hazards (using inverse transform method)}
 }
 \value{
 Data-frame with missings induced
