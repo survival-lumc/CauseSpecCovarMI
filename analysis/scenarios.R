@@ -11,12 +11,14 @@ n_sim <- 1000 # change this based on a monte carlo error!!!
 
 
 
-n <- c("small" = 500, "large" = 2000)
+#n <- c("small" = 500, "large" = 2000)
+n <- c("large" = 2000)
 prop_miss <- c("low" = .10, "high" = .5)
 beta <- c("null" = 0, "med" = 0.5, "large" = 1)
 mech <- c("MCAR", "MAR", "MNAR", "MAR-GEN")
 X_level <- c("continous", "binary")
-rho <- c("weak" = 0.1, "strong" = 0.5)
+#rho <- c("weak" = 0.1, "strong" = 0.5)
+rho <- c("strong" = 0.5)
 eta1 <- c("little" = 1, "strong" = 2)
 
 
