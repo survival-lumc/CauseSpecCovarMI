@@ -1,0 +1,373 @@
+---
+title: "Demo for one repetition of one scenario"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Demo for one repetition of one scenario}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 6,
+  fig.align = 'center',
+  message = FALSE, 
+  warning = FALSE
+)
+```
+
+
+```{r setup}
+#library(SimsCauseSpecCovarMiss)
+library(tidyverse)
+library(ggpubr)
+#library(mstate)
+#library(mice)
+#library(smcfcs)
+
+theme_set(theme_bw(base_size = 16) +
+            theme(legend.position = "right",
+                  plot.title = element_text(hjust = 0.5)))
+```
+
+
+# Make one scenario
+
+
+```{r one_scen}
+n_sim <- 1000 # number of repetitions per scenario
+scen_num <- 1 # the first scenario
+
+scenario <- data.frame(
+  "n" = 5000,
+  "prop_miss" = .5,
+  "beta1" = 1,
+  "miss_mech" = "MAR",
+  "X_level" = "binary",
+  "rho" = .5,
+  "eta1" = 1,
+  "scen_num" = scen_num,
+  "seed" = n_sim * scen_num
+)
+
+scenario
+```
+
+This defines how we set the seed depending on the repetition number.
+
+```{r reproduce}
+rep_num <- 6 # the first repetition
+
+seed <- scenario$seed + rep_num
+seed
+set.seed(seed)
+```
+
+
+# Read-in baseline parameters and generate data
+
+
+```{r baseline}
+# Extract parameters from AFTs ran on MDS-long term data
+# Maybe put this in inst/doc?
+baseline <- readRDS(
+  system.file("testdata", 
+              "MDS_shape_rates_month.rds", 
+              package = "SimsCauseSpecCovarMiss")
+)  
+
+#baseline <- readRDS(
+#  "../analysis/data/derived_data/MDS_shape_rates.rds"
+#  
+  
+  # Parameter Weibull event 1
+ev1_pars <- list(
+  "a1" = baseline[baseline$state == "REL", "shape"],
+  "h1_0" = baseline[baseline$state == "REL", "rate"],
+  "b1" = scenario$beta1,
+  "gamm1" = 1
+)
+  
+# Parameters Weibull event 2
+ev2_pars <- list(
+  "a2" = baseline[baseline$state == "NRM", "shape"],
+  "h2_0" = baseline[baseline$state == "NRM", "rate"],
+  "b2" = .5,
+  "gamm2" = .5
+)
+
+# Generate a dataset based on scenario
+dat <- generate_dat(
+  n = scenario$n,
+  X_type = scenario$X_level,
+  r = scenario$rho,
+  ev1_pars = ev1_pars,
+  ev2_pars = ev2_pars,
+  rate_cens = baseline[baseline$state == "EFS", "rate"],
+  mech = scenario$miss_mech,
+  p = scenario$prop_miss,
+  eta1 = scenario$eta1
+)
+
+# Check also for missing values
+
+#dat %>% 
+#  mutate(risk_set = 2001 - 1:2000,
+#         H1_alt = cumsum(ifelse(eps == 1, 1 / risk_set, 0)),
+#         H2_alt = cumsum(ifelse(eps == 2, 1 / risk_set, 0))) %>% 
+#  select(t, H1, H1_alt, H2, H2_alt) %>%  View()
+
+head(dat)
+```
+
+
+# Run reference and CCA model
+
+Describe `setup_mstate()` command here.
+
+
+```{r ref_CCA}
+# Reference (full dataset)
+mod_ref <- setup_mstate(dat %>% mutate(X = X_orig))
+  
+# Complete case analyses
+mod_CCA <- setup_mstate(dat)
+
+mod_CCA
+```
+
+
+# Intermezzo - more efficient msfit/probtrans
+
+
+```{r probtran_eff, eval=FALSE, echo=FALSE}
+#For mod ref
+tmat <- trans.comprisk(2, c("Rel", "NRM"))
+
+msfit_newdat <- msfit(mod_ref, trans = tmat,
+                      newdata = data.frame("X.1" = 0,
+                                           "X.2" = 0,
+                                           "Z.1" = 0,
+                                           "Z.2" = 0,
+                                           trans = c(1, 2),
+                                           strata = c(1, 2)))
+
+
+mod_ref$linear.predictors
+
+msfit_newdat$Haz
+
+ob <- survfit(mod_ref, )
+
+ob$std.err
+
+str(basehaz(mod_ref))
+
+test_basehaz
+
+```
+
+
+
+
+# Imputation part
+
+
+## MICE
+
+```{r MICE}
+# Fixed parameters
+m <- c(5) # Number of imputations of imputed datasets
+iters_MI <- 15 # Iterations of multiple imputation procedure
+
+# Set methods and predictor matrices
+mats <- get_predictor_mats(dat)
+methods <- get_imp_models(dat)
+
+#mats$CH1
+#methods
+
+# Ch1 model
+imp_ch1 <- mice(
+  dat,
+  m = m[length(m)],
+  method = methods,
+  predictorMatrix = mats$CH1,
+  maxit = iters_MI,
+  print = FALSE
+)
+
+# Ch12 model
+imp_ch12 <- mice(
+  dat,
+  m = m[length(m)],
+  method = methods,
+  predictorMatrix = mats$CH12,
+  maxit = iters_MI,
+  print = FALSE
+)
+
+# Ch12_int model
+imp_ch12_int <- mice(
+  dat,
+  m = m[length(m)],
+  method = methods,
+  predictorMatrix = mats$CH12_int,
+  maxit = iters_MI,
+  print = FALSE
+)
+```
+
+We can check that this converges properly
+
+```{r MICE_converge, dev='svg'}
+plot(imp_ch12_int)
+```
+
+## smcfcs
+
+```{r smcfcs}
+# smcfcs - wrap with quiet() after, capture rejection sampling errors
+# Takes about 15.5 minutes seconds for nimp = 100, and iters = 25 
+
+
+# For safey
+imp_smcfcs <- record_warning(
+  smcfcs(
+    originaldata = dat,
+    smtype = "compet",
+    smformula = c("Surv(t, eps == 1) ~ X + Z",
+                  "Surv(t, eps == 2) ~ X + Z"),
+    method = methods,
+    m = m[length(m)],
+    numit = iters_MI,
+    rjlimit = 2500 # 5 times higher than default (1000), avoid rej sampling errors
+  ) 
+)
+
+# Extract rej sampling - add to summary data-frame after
+str_extract(imp_smcfcs$warning, "[0-9]+")
+```
+
+Check convergence
+
+```{r smcfcs_converge, dev='svg'}
+purrr::map_dfr(1:m[length(m)], function(i) {
+  as.data.frame(t(imp_smcfcs$value$smCoefIter[i, ,])) %>% 
+    mutate(iter = 1:iters_MI)
+}, .id = "imp_dat") %>% 
+  rename("X1" = V1, "X2" = V2,
+         "Z1" = V3, "Z2" = V4) %>% 
+  gather("var", "value", X1:Z2) %>% 
+  ggplot(aes(iter, value, col = imp_dat)) +
+  geom_line() +
+  theme(legend.position = "none") +
+  ggplot2::facet_wrap(~ var)
+```
+
+
+
+# Pooling regression estimates
+
+
+## First from one methods
+
+
+```{r pool_ch1}
+purrr::map(mice::complete(imp_ch1, action = "all"), 
+           ~ setup_mstate(.x)) %$%
+  pool_diffm(., m, analy = "ch1")
+```
+
+
+## All methods
+
+```{r pool_all}
+# Store all complete imputed datasets
+complist <- list("ch1" = mice::complete(imp_ch1, action = "all"),
+                 "ch12" = mice::complete(imp_ch12, action = "all"),
+                 "ch12_int" = mice::complete(imp_ch12_int, action = "all"),
+                 "smcfcs" = imp_smcfcs$value$impDatasets)
+  
+
+# Run cox models on imputed datasets
+mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate(.x)) 
+  
+
+# Summarise/pool regression coefficients ----
+estimates <- purrr::imap_dfr(mods_complist,
+                             ~ pool_diffm(.x, n_imp = m, analy = .y)) %>% 
+  # Bind Bayes, CCA, ref
+  bind_rows(
+    summarise_ref_CCA(mod_ref, analy = "ref"),
+    summarise_ref_CCA(mod_CCA, analy = "CCA")
+  ) %>% 
+  
+  # Add true values
+  mutate(true = case_when(
+    str_detect(var, "X.1") ~ ev1_pars$b1,
+    str_detect(var, "Z.1") ~ ev1_pars$gamm1,
+    str_detect(var, "X.2") ~ ev2_pars$b2,
+    str_detect(var, "Z.2") ~ ev2_pars$gamm2    
+  )) %>% 
+  
+  # Add rej sampling errors for smcfcs
+  mutate(warnings = ifelse(
+    analy == "smcfcs",
+    as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
+    0
+  ))
+  
+estimates %>%
+  mutate_if(is.numeric, ~ round(., 3))
+
+# Save as RDS...analysis/simulation results/estimates
+#saveRDS(estimates, file = "scenariolabel/number_repnum_estims")
+```
+
+
+
+# Predictions
+
+
+```{r preds}
+
+horiz <- c(0.5, 2, 5) # Prediction horizons, 6mo, 2Y, 5Y
+  
+# Make predictions for cox models fitted in each imputed dataset
+preds_list <- purrr::modify_depth(
+  mods_complist,
+  .depth = 2,
+  ~ preds_mstate(
+    cox_long = .x,
+    grid_obj = make_covar_grid(dat),
+    times = horiz,
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars
+  )
+)
+  
+  
+# Pool predictions
+pooled_preds <- purrr::imap_dfr(preds_list,
+                                ~ pool_diffm_preds(.x, n_imp = m, analy = .y))
+
+
+# Save as RDS in analysis/simulation results/predictions
+#saveRDS(pooled_preds, file = "scenariolabel/number_repnum_preds")
+
+pooled_preds %>%
+  mutate_if(is.numeric, ~ round(., 3))
+```
+
+
+
+```{r extra}
+# Warnings have to be summarised as follows:
+pooled_preds %>% 
+  group_by(analy, `combo-X_Z`, m) %>% 
+  summarise(fails = sum(warns)) 
+```

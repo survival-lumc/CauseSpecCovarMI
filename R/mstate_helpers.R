@@ -179,20 +179,29 @@ preds_mstate <- function(cox_long,
     msfit_newdat <- msfit(cox_long, newdata = new_dat,
                           trans = tmat)
     
-    preds <- probtrans(msfit_newdat, predt = 0)
+    preds <- record_warning(probtrans(msfit_newdat, predt = 0))
+      
     
     # Add log later after pooling
-    summ <- summary.probtrans(preds, times = times, conf.type = "none")[[1]]
+    summ <- summary.probtrans(preds$value, 
+                              times = times, conf.type = "none")[[1]]
     
     # Add the true ones
     true_CI <- get_true_cuminc(ev1_pars = ev1_pars, 
                                ev2_pars = ev2_pars,
-                               combo =  combo, 
+                               combo = combo, 
                                times = times)
     
-    cbind.data.frame(summ, "X" = as.character(combo$X), 
-                     "Z" = as.character(combo$Z)) %>% 
-      left_join(true_CI, by = "times")
+    cbind.data.frame(summ, 
+                     "X" = combo$X, 
+                     "Z" = combo$Z) %>% 
+      left_join(true_CI, by = "times") %>% 
+      
+      # Record 1 if probtrans error was recorded
+      mutate(
+        warning = ifelse(preds$warning != "0", 1, 0)
+      ) %>% 
+      dplyr::mutate_if(is.factor, as.character) # avoid bind_rows warnings
   })
 }
 

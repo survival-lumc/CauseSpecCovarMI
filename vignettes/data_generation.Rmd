@@ -51,7 +51,7 @@ head(dat_bin)
 
 
 
-```{r plot_bin_dat}
+```{r plot_bin_dat, dev='svg'}
 ggplot(dat_bin, aes(X, Z)) +
   geom_jitter(position = position_jitter(width = .1, height = 0),
               alpha = .5, col = 9)
@@ -78,7 +78,7 @@ dat_MCAR <- generate_dat(n = 1000, # 1000
 
 
 
-```{r plot_MCAR}
+```{r plot_MCAR, dev='svg'}
 ggplot(dat_MCAR, aes(X_orig, Z, col = factor(miss_ind))) +
   geom_point() +
   scale_colour_manual("Missing indicator",
@@ -105,7 +105,7 @@ dat_MAR <- generate_dat(n = 1000, # 1000
 ```
 
 
-```{r plot_MAR}
+```{r plot_MAR, dev='svg'}
 ggplot(dat_MAR, aes(X_orig, Z, col = factor(miss_ind))) +
   geom_point(alpha = .75) +
   scale_colour_manual("Missing indicator",
@@ -114,7 +114,7 @@ ggplot(dat_MAR, aes(X_orig, Z, col = factor(miss_ind))) +
 ```
 
 
-```{r grid_mar, echo=FALSE}
+```{r grid_mar, echo=FALSE, dev='svg'}
 etas <- c(-2, -1, -.5)
 
 eta_plots_MAR <- lapply(etas, function(eta) {
@@ -164,7 +164,7 @@ dat_MNAR <- generate_dat(n = 1000, # 1000
 
 
 
-```{r plot_MNAR, echo=FALSE}
+```{r plot_MNAR, echo=FALSE, dev='svg'}
 eta_plots_MNAR <- lapply(etas, function(eta) {
   dat <- generate_dat(n = 1000, # 1000
                       X_type = "contin",
@@ -213,7 +213,7 @@ dat_MAR_GEN <- generate_dat(n = 1000,
 
 
 
-```{r plot_MAR-GEN}
+```{r plot_MAR-GEN, dev='svg'}
 
 ggplot(dat_MAR_GEN, aes(t, X_orig, col = factor(miss_ind))) +
   geom_point() +

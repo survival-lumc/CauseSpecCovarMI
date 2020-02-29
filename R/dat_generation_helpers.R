@@ -112,14 +112,21 @@ generate_dat <- function(n,
     # Compute cumulative hazards
     mutate(ev1 = as.numeric(eps == 1),
            ev2 = as.numeric(eps == 2)) %>% 
+    
+    # Convert t to month
     mutate(H1 = nelsonaalen(., t, ev1),
-           H2 = nelsonaalen(., t, ev2),
-           
-           # Interaction terms
-           H1_Z = H1 * Z,
+           H2 = nelsonaalen(., t, ev2)) %>% 
+    
+    # Take care of NAs in H1 & H2 due to time steps that are too small
+    # in this case keep previous cumulative hazard
+    #mutate(H1 = zoo::na.locf(.data$H1),
+    #       H2 = zoo::na.locf(.data$H2)) %>% 
+    
+    # Compute interaction terms
+    mutate(H1_Z = H1 * Z,
            H2_Z = H2 * Z) %>%
     arrange(t) 
-  
+
   # Convert to factors if binary
   if (X_type == "binary") {
     dat <- dat %>% 
