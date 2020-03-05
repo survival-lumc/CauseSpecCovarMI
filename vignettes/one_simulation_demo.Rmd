@@ -42,11 +42,11 @@ n_sim <- 1000 # number of repetitions per scenario
 scen_num <- 1 # the first scenario
 
 scenario <- data.frame(
-  "n" = 5000,
+  "n" = 2000,
   "prop_miss" = .5,
   "beta1" = 1,
-  "miss_mech" = "MAR",
-  "X_level" = "binary",
+  "miss_mech" = "MCAR",
+  "X_level" = "continous",
   "rho" = .5,
   "eta1" = 1,
   "scen_num" = scen_num,
@@ -59,7 +59,7 @@ scenario
 This defines how we set the seed depending on the repetition number.
 
 ```{r reproduce}
-rep_num <- 6 # the first repetition
+rep_num <- 2 # the first repetition
 
 seed <- scenario$seed + rep_num
 seed
@@ -85,17 +85,31 @@ baseline <- readRDS(
   
   # Parameter Weibull event 1
 ev1_pars <- list(
-  "a1" = baseline[baseline$state == "REL", "shape"],
-  "h1_0" = baseline[baseline$state == "REL", "rate"],
+  "a1" = 0.5,
+  "h1_0" = 0.003,
   "b1" = scenario$beta1,
   "gamm1" = 1
 )
+
+#ev1_pars <- list(
+#  "a1" = baseline[baseline$state == "REL", "shape"],
+#  "h1_0" = baseline[baseline$state == "REL", "rate"],
+# "b1" = scenario$beta1,
+#  "gamm1" = 1
+#)
   
 # Parameters Weibull event 2
+#ev2_pars <- list(
+#  "a2" = baseline[baseline$state == "NRM", "shape"],
+#  "h2_0" = baseline[baseline$state == "NRM", "rate"],
+#  "b2" = .5,
+# "gamm2" = .5
+#)
+
 ev2_pars <- list(
-  "a2" = baseline[baseline$state == "NRM", "shape"],
-  "h2_0" = baseline[baseline$state == "NRM", "rate"],
-  "b2" = .5,
+  "a2" = 0.8,
+  "h2_0" = 0.002,
+ "b2" = .5,
   "gamm2" = .5
 )
 
@@ -106,7 +120,7 @@ dat <- generate_dat(
   r = scenario$rho,
   ev1_pars = ev1_pars,
   ev2_pars = ev2_pars,
-  rate_cens = baseline[baseline$state == "EFS", "rate"],
+  rate_cens = 0.013,
   mech = scenario$miss_mech,
   p = scenario$prop_miss,
   eta1 = scenario$eta1
@@ -121,7 +135,95 @@ dat <- generate_dat(
 #  select(t, H1, H1_alt, H2, H2_alt) %>%  View()
 
 head(dat)
+
+mod1 <- lm(X_orig ~ Z + ev1 + H1, data = dat)
+
+hist(predict(mod1), breaks = 100, xlim = c(-3, 3))
+
+mod2 <- lm(X_orig ~ Z + eps + H1 + H2, data = dat)
+
+hist(predict(mod2), breaks = 100, xlim = c(-3, 3))
+
+
+plot(dat$t,dat$H1)
+lines(dat$t, dat$H2)
+
+
+dat %>% 
+  ggplot(aes(t, fill = eps)) +
+  geom_density(alpha = .5)
+
+cor(dat$H1, dat$H2)
+
+dat %>% 
+  mutate(pred_mod1 = predict(mod1),
+         pred_mod2 = predict(mod2)) %>% 
+  filter(miss_ind == 1) %>% 
+  gather(type, value, 
+         pred_mod1, pred_mod2) %>% 
+  ggplot(aes(value, fill = type)) +
+  geom_density(alpha = 0.5)
+
+
+dat %>% 
+  mutate(pred_mod1 = predict(mod1),
+         pred_mod2 = predict(mod2),
+         diff_mod1 = X_orig - pred_mod1,
+         diff_mod2 = X_orig - pred_mod2) %>% 
+  ggplot(aes(diff_mod2, diff_mod1, 
+             col = factor(miss_ind))) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  facet_wrap(~ eps)
+
+dat %>% 
+  mutate(pred_mod1 = predict(mod1),
+         pred_mod2 = predict(mod2),
+         diff_mod1 = pred_mod1,
+         diff_mod2 = pred_mod2) %>% 
+  filter(miss_ind == 1) %>% 
+  ggplot(aes(X_orig, diff_mod2)) +
+  geom_point() 
+  
+  
+by(dat, dat$eps, function(x) cor(x$H1, x$H2))
+
+
+
+summary()
+
+summary(predict(mod2))
 ```
+
+
+```{r}
+
+hi <- replicate(100, expr = {
+  
+  dat <- generate_dat(
+  n = scenario$n,
+  X_type = scenario$X_level,
+  r = scenario$rho,
+  ev1_pars = ev1_pars,
+  ev2_pars = ev2_pars,
+  rate_cens = 0.013,
+  mech = scenario$miss_mech,
+  p = scenario$prop_miss,
+  eta1 = scenario$eta1
+)
+
+  corr <- cor(dat$H1, dat$H2, use = "complete.obs")
+  missings <- anyNA(dat$H1) | anyNA(dat$H2)
+  c("corr" = corr, "miss" = missings)
+}, simplify = T)
+
+
+mean(hi[1,] >= .999)
+
+mean(hi[2,])
+
+```
+
 
 
 # Run reference and CCA model
@@ -180,8 +282,8 @@ test_basehaz
 
 ```{r MICE}
 # Fixed parameters
-m <- c(5) # Number of imputations of imputed datasets
-iters_MI <- 15 # Iterations of multiple imputation procedure
+m <- c(25) # Number of imputations of imputed datasets
+iters_MI <- 25 # Iterations of multiple imputation procedure
 
 # Set methods and predictor matrices
 mats <- get_predictor_mats(dat)
@@ -277,9 +379,18 @@ purrr::map_dfr(1:m[length(m)], function(i) {
 
 
 ```{r pool_ch1}
-purrr::map(mice::complete(imp_ch1, action = "all"), 
+mod1_pooled <- purrr::map(mice::complete(imp_ch1, action = "all"), 
            ~ setup_mstate(.x)) %$%
   pool_diffm(., m, analy = "ch1")
+
+mod2_pooled <- purrr::map(mice::complete(imp_ch12, action = "all"), 
+           ~ setup_mstate(.x)) %$%
+  pool_diffm(., m, analy = "ch1")
+
+
+
+mod1_pooled
+mod2_pooled
 ```
 
 

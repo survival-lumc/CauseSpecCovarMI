@@ -35,12 +35,12 @@ ui <- fluidPage(
       # Input:  ----
       sliderInput("beta_1", "Beta Cause 1:",
                   min = -2, max = 2,
-                  value = 0, step = 0.01),
+                  value = 0.5, step = 0.01),
       
       # Input:  ----
       sliderInput("gamma_1", "Gamma Cause 1:",
                   min = -2, max = 2,
-                  value = 0, step = 0.01),
+                  value = 1, step = 0.01),
       
       h3("Weibull params NRM (event 2)", align = "center"),
       sliderInput("shape_2", "Shape Cause 2:",
@@ -55,12 +55,12 @@ ui <- fluidPage(
       # Input:  ----
       sliderInput("beta_2", "Beta Cause 2:",
                   min = -2, max = 2,
-                  value = 0, step = 0.01),
+                  value = 0.5, step = 0.01),
       
       # Input:  ----
       sliderInput("gamma_2", "Gamma Cause 2:",
                   min = -2, max = 2,
-                  value = 0, step = 0.01)
+                  value = 0.5, step = 0.01)
       
     ),
     
@@ -92,12 +92,12 @@ ui <- fluidPage(
                 # Input:  ----
                 sliderInput("X", "Value of covariate X",
                             min = -3, max = 3,
-                            value = 0, step = 0.1),
+                            value = 0, step = 1),
                 
                 # Input:  ----
                 sliderInput("Z", "Value of covariate Z",
                             min = -3, max = 3,
-                            value = 0, step = 0.1)
+                            value = 0, step = 1)
               )
         
       )
@@ -117,7 +117,7 @@ server <- function(input, output) {
   # Reactive expression to create data frame of all input values ----
   dat_cumin <- reactive({
     
-    generate_dat(n = 500,
+    generate_dat(n = 200,
                  X_type = "continous", 
                  r = .4, 
                  ev1_pars = list("a1" = input$shape_1, 

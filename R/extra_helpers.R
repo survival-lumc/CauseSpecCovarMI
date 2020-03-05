@@ -80,8 +80,8 @@ cumincs_plot_truepred <- function(cox_long,
   
   
   # Plot begins here
-  p1 <- ggplot(dat_plot,
-               aes(.data$times, .data$prob, na.rm = T)) +
+  p1 <- dat_plot %>% 
+    ggplot(aes(.data$times, .data$prob, na.rm = T)) +
     geom_line(aes(col = .data$state, linetype = factor(.data$true_pred)), 
               size = 1.25) + ylim(c(0, 1)) +
     geom_ribbon(aes(x = .data$times, ymin = .data$low,
