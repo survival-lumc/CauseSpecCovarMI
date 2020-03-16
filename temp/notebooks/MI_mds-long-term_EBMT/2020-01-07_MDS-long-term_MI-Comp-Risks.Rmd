@@ -1,0 +1,507 @@
+---
+title: "MDS-long-term_Ed"
+author: "Ed Bonneville"
+date: "7-1-2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+
+pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
+               "mitools", "survival", "cmprsk", "foreign",
+               "naniar", "VIM", "mstate")
+
+set.seed(1984)
+```
+
+## Data prep
+
+
+```{r readin}
+
+# Suppress warnings here
+dat_orig <- read.spss("analysis/data/raw_data/Final_MDS_Longterm_20200106_LK.sav",
+                      to.data.frame = T,
+                      use.value.labels = T,
+                      use.missings = T, 
+                      max.value.labels = 8)
+               
+# attributes(dat_mds)$variable.labels
+
+# Read in final selected subset of patienhts
+LdW_schetelig_subset <- read.spss("analysis/data/raw_data/mds_longterm_aaauto.sav",
+                                  to.data.frame = T)
+
+# Depends on tidyverse - give to EBMT people
+select_keeplabs <- function(.data, ...) {
+  
+  # Subsetted data
+  new_dat <- .data %>% dplyr::select(...)
+  
+  # Character vector of variables kept
+  vars_kept <- names(new_dat)
+  
+  # Adjust attributes
+  attr_obj <- attributes(new_dat)$variable.labels
+  var_labs <- attr_obj[names(attr_obj) %in% vars_kept]
+  matched_labs <- var_labs[order(match(names(var_labs), vars_kept))]
+
+  attributes(new_dat)$variable.labels <- matched_labs
+  
+  return(new_dat)
+}
+
+#selecto <- function(.data) ...
+vars_keep <- c("AA_AUTO", "PATSEX", "age_allo1", "YEAR_allo1",
+               "mdsclass", "donorrel", "ric_allo1", "bm_allo1",
+               "pb_allo1", "pb_diag1", "bm_diag1", "AGEDONOR_allo1_1", "rel_s_allo1",
+               "rel_allo1", "ci_s_allo1", "ci_allo1", "srv_s_allo1",
+               "srv_allo1")
+
+# Keep variables from study 
+dat_mds <- dat_orig %>% 
+  select_keeplabs(vars_keep) %>% 
+  filter(AA_AUTO %in% LdW_schetelig_subset$AA_AUTO)
+```
+
+
+# Basic exploration
+
+```{r vis_explor}
+gg_miss_var(dat_mds, show_pct = T)
+miss_var_summary(dat_mds)
+
+dat_mds %>% 
+  group_by(mdsclass) %>% 
+  group_map(~ summary(.x$bm_allo1))
+
+by(dat_mds, dat_mds$mdsclass, function(x) summary(x$bm_allo1))
+
+# Make plots 
+dat_mds %>% 
+  #filter(mdsclass %in% c(""sAML")) %>% 
+  ggplot(aes(x = bm_diag1, fill = mdsclass)) +
+  geom_density(alpha= .5, adjust = 2) +
+  xlim(c(0, 50)) +
+  theme(legend.position = "top")
+
+names(dat_mds)
+
+blasts <- str_subset(names(dat_mds), "bm_|pb_")
+
+
+lol <- lapply(blasts, function(blast) {
+  
+  dat_mds %>% 
+    ggplot(aes(x = .[, blast], fill = mdsclass)) +
+    geom_density(alpha= .5, adjust = 1) +
+    xlim(c(0, 50)) +
+    ggtitle(blast) +
+    theme(axis.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)) 
+})
+
+library(ggpubr)
+
+p <- ggarrange(plotlist = lol, nrow = 2, ncol = 2, 
+               common.legend = T, legend = "top")
+
+annotate_figure(p, left = "Density", bottom = "Blast percentage")
+
+
+# Take maximum
+dat_mds %>% 
+  mutate(bm_blast_max = pmax(bm_allo1, bm_diag1, na.rm = T)) %>% 
+  #filter(mdsclass %in% c(""sAML")) %>% 
+  ggplot(aes(x = bm_blast_max, fill = mdsclass)) +
+  geom_density(alpha= .5, adjust = 2) +
+  #xlim(c(0, 75)) +
+  theme(legend.position = "top")
+
+
+dat_mds %>% 
+  mutate(bm_blast_max = pmax(bm_allo1, bm_diag1, na.rm = T)) %>% 
+  group_by(mdsclass) %>% 
+  group_map(~ summary(.x$bm_blast_max))
+
+```
+
+
+# Estimate marginal AFT models for both Rel and NRM
+
+```{r aft_rel_nrm}
+# Convert indicators
+
+# This is no longer true (missing relapse information)
+#dat_mds <- 
+dat_mds_aft <- dat_mds %>% 
+
+  mutate(time = ci_allo1 * 30.5) %>% # Put in days
+  filter(!is.na(time)) %>%  # excludes 86 patients with missing prog/rel data
+  
+  # Aritifical censor at 10Y
+  mutate(time = ifelse(time > 120 * 30.5, 120 * 30.5, time),
+         delta = ifelse(time == 120 * 30.5, 0,
+                        as.numeric(ci_s_allo1) - 1),
+         srv_s_allo1 = as.numeric(srv_s_allo1) - 1, # this we will change after
+         stat1 = as.numeric(delta == 1),
+         stat2 = as.numeric(delta == 2))
+
+
+ev1 <- basehaz(coxph(Surv(time, delta == 1) ~ 1, 
+                     data = dat_mds_aft), centered = F) %>% 
+  mutate(ev = 1)
+
+ev2 <- basehaz(coxph(Surv(time, delta == 2) ~ 1, 
+                     data = dat_mds_aft), centered = F) %>% 
+  mutate(ev = 2)
+
+bind_rows(ev1, ev2) %>% 
+  ggplot(aes(time / 365, hazard, col = factor(ev))) +
+  geom_point()
+
+
+bind_cols(ev1, ev2) %>% 
+  ggplot(aes(hazard, hazard1)) +
+  geom_point()
+
+dat_mds_aft %>% 
+  ggplot(aes(time, fill = factor(delta))) +
+  geom_density(alpha = .5)
+
+cor(ev1$hazard, ev2$hazard)
+
+# Calculate empirical CumIncs
+cumin_rel_nrm <- survfit(Surv(time, delta) ~ 1, data = dat_mds_aft %>% 
+                           mutate(delta = factor(delta, levels = c(0, 1, 2))))
+
+as.data.frame(cumin_rel_nrm$pstate) %>% 
+  rename("EFS" = V1, "REL" = V2, "NRM" = V3) %>% 
+  mutate(time = cumin_rel_nrm$time) %>% 
+  gather(state, prob, EFS:NRM) %>% 
+  ggplot(aes(time, prob, col = state, linetype = state)) +
+  geom_line(size = 1.5, alpha = .75) +
+  xlim(c(0, 120 * 30.5)) + theme_bw() +
+    theme(legend.position = "top") 
+
+
+# Relapse - divide by 12 to put in years
+mod_rel <- survreg(Surv(time, delta == 1) ~ 1, 
+                   data = dat_mds_aft, dist = "weibull")
+
+coefs_rel <- mod_rel$coefficients
+shape_rel <- 1 / mod_rel$scale
+rate_rel <- exp(coefs_rel[1])^(-shape_rel)
+
+# Print it 
+cat(paste("For Rel:\n",
+          "Shape =", round(shape_rel, 3),
+          "\n Rate =", round(rate_rel, 3)))
+
+
+# NRM
+mod_nrm <- survreg(Surv(time, delta == 2) ~ 1, 
+                   data = dat_mds_aft, dist = "weibull")
+
+coefs_nrm <- mod_nrm$coefficients
+shape_nrm <- 1 / mod_nrm$scale
+rate_nrm <- exp(coefs_nrm[1])^(-shape_nrm)
+
+cat(paste("For NRM:\n",
+          "Shape =", round(shape_nrm, 3),
+          "\n Rate =", round(rate_nrm, 3)))
+```
+
+
+# Estimate censoring distribution
+
+Admin censoring at 60 months.
+
+Check rev KM too
+
+```{r aft_cens}
+# Admin cens at 120month (10 years)
+# Censoring is event and people alive after 60 die at 60.01
+dat_60mo_cens <- dat_mds_aft %>% 
+  mutate(srv_s_60 = ifelse(srv_allo1 > 120 * 30.5, 1, srv_s_allo1), # Ev
+         srv_allo1_60 = ifelse(srv_allo1 > 120 * 30.5, 
+                               120 * 30.5 + 0.01, srv_allo1))
+
+# Run reverse KM
+rev_KM <- survfit(Surv(srv_allo1_60, srv_s_60 == 1) ~ 1, data = dat_60mo_cens)
+plot(rev_KM)
+
+
+# Fit weibull AFT (for exponential check, see if shape close to 1)
+mod_cens_weib <- survreg(Surv(srv_allo1_60, srv_s_60 == 0) ~ 1, 
+                    data = dat_60mo_cens, dist = "weibull")
+
+coefs_cens <- mod_cens_weib$coefficients
+shape_cens_weib <- 1 / mod_cens_weib$scale
+rate_cens_weib <- exp(coefs_cens[1])^(-shape_cens_weib)
+
+cat(paste("For censoring:\n",
+          "Shape =", round(shape_cens_weib, 3),
+          "\n Rate =", round(rate_cens_weib, 3)))
+
+
+# Fit exponential AFT 
+mod_cens <- survreg(Surv(srv_allo1_60, srv_s_60 == 0) ~ 1, 
+                    data = dat_60mo_cens, dist = "exponential")
+
+coefs_cens <- mod_cens$coefficients
+rate_cens <- exp(coefs_cens[1])^(-1)
+
+cat(paste("For censoring:\n",
+          "Shape =", round(1, 3), "(Exponential)",
+          "\n Rate =", round(rate_cens, 3)))
+```
+
+# Summarise parameters 
+
+```{r params}
+res <- rbind(c(shape_rel, rate_rel),
+             c(shape_nrm, rate_nrm),
+             c(1, rate_cens))
+
+rownames(res) <- c("REL", "NRM", "EFS")
+colnames(res) <- c("shape", "rate")
+
+# rates are on yearly scale
+round(res, 3)
+
+# Check against empirical distri
+as.data.frame(res) %>% 
+  tibble::rownames_to_column(var = "state") %>% 
+  saveRDS(
+    ., file = "analysis/data/derived_data/MDS_shape_rates.rds"
+    #., file = "analysis/data/derived_data/MDS_shape_rates_month.rds"
+  )
+```
+
+
+# Mstate analysis 
+
+
+```{r}
+# Check causespecific hazard of relapse with survival
+cox_rel <- coxph(Surv(time, delta == 1) ~ mdsclass + PATSEX +
+                   age_allo1 + YEAR_allo1 + donorrel,
+                 #+ pb_allo1 +
+                #   AGEDONOR_allo1_1,
+                 data = dat_mds)
+
+summary(cox_rel)
+
+# Transition matrix 
+tmat <- trans.comprisk(2, c("Rel", "NRM"))
+
+# Covs to keeps
+covs = c("mdsclass", "PATSEX", "age_allo1", "YEAR_allo1", "donorrel")
+
+# long format
+dat_mds_long <- msprep(time = c(NA, "time", "time"),
+                       status = c(NA, "stat1", "stat2"), 
+                       data = dat_mds[!is.na(dat_mds$time),], # still song with unknown info
+                       trans = tmat,
+                       keep = covs) 
+
+# Expand covariates
+dat_mds_long <- expand.covs(dat_mds_long, covs, 
+                            append = TRUE, longnames = F)
+
+events(dat_mds_long)
+
+# Use strata(trans), estimates seperate baseline hazards for each trans
+cox_rel_long <- coxph(Surv(time, status) ~ 
+                        # Trans 1
+                        mdsclass1.1 + mdsclass2.1 + mdsclass3.1 +
+                        PATSEX.1 + age_allo1.1 + 
+                        YEAR_allo1.1 + donorrel.1 +
+                        
+                        # Trans 2
+                        mdsclass1.2 + mdsclass2.2 + mdsclass3.2 +
+                        PATSEX.2 + age_allo1.2 + 
+                        YEAR_allo1.2 + donorrel.2 +
+                        
+                        # Separate baseline hazards
+                        strata(trans),
+                        data = dat_mds_long)
+
+                        
+summary(cox_rel_long)
+```
+
+
+# Example applied to simulation study
+
+Example with binary X and continuous Z
+
+```{r sim_mstate}
+# Covs to keeps
+covs = c("PATSEX", "age_allo1")
+
+# long format
+dat_mds_long <- msprep(time = c(NA, "time", "time"),
+                       status = c(NA, "stat1", "stat2"), 
+                       data = dat_mds[!is.na(dat_mds$time),],
+                       trans = tmat,
+                       keep = covs) 
+
+# Expand covariates
+dat_mds_long <- expand.covs(dat_mds_long, covs, 
+                            append = TRUE, longnames = F)
+
+# Simple cox model
+cox_rel_long <- coxph(Surv(time, status) ~ 
+                        # Trans 1
+                        PATSEX.1 + age_allo1.1 + 
+
+                        # Trans 2
+                        PATSEX.2 + age_allo1.2 + 
+
+                        # Separate baseline hazards
+                        strata(trans),
+                        data = dat_mds_long)
+
+# Covariate values to predict
+new_mds <- data.frame(PATSEX.1 = c(0, 0), # male
+                      PATSEX.2 = c(0, 0), # male
+                      age_allo1.1 = c(50, 0), # 50 y.o
+                      age_allo1.2 = c(0, 50), # 50 y.o
+                      trans = c(1, 2), 
+                      strata = c(1, 2))
+
+mds_msfit <- msfit(cox_rel_long, newdata = new_mds,
+                   trans = tmat)
+
+preds <- probtrans(mds_msfit, predt = 0)[[1]]
+
+plot(preds$time, preds$pstate2, type = "l", lty = 1, 
+     ylim = c(0, 1), col = "blue")
+lines(preds$time, preds$pstate3, lty = 2)
+text(150, 0.2, "Relapse", col = "blue")
+text(150, 0.5, "NRM", col = "black")
+
+
+# Try female instead
+new_mds <- data.frame(PATSEX.1 = c(1, 0), # female
+                      PATSEX.2 = c(0, 1), # female
+                      age_allo1.1 = c(50, 0), # 50 y.o
+                      age_allo1.2 = c(0, 50), # 50 y.o
+                      trans = c(1, 2), 
+                      strata = c(1, 2))
+
+mds_msfit <- msfit(cox_rel_long, newdata = new_mds,
+                   trans = tmat)
+
+preds <- probtrans(mds_msfit, predt = 0)#[[1]]
+
+plot(preds[[1]]$time, preds[[1]]$pstate2, type = "l", lty = 1, 
+     ylim = c(0, 1), col = "blue")
+lines(preds[[1]]$time, preds[[1]]$pstate3, lty = 2)
+text(150, 0.2, "Relapse", col = "blue")
+text(150, 0.5, "NRM", col = "black")
+
+
+# Extract CumIncs at 6 mo, 24 mo and 60 mo (for example)
+bind_rows(
+  lapply(c(6, 24, 60), function(t) {
+    preds[[1]] %>% 
+    filter(time <= t) %>% 
+    slice(n())
+  })
+)
+
+source("liesbeth_files/newsummaryprobtrans.r")
+
+summary.probtrans(preds, times = c(6, 24, 60), conf.type = "plain")
+
+
+x1 <- c(0, 1)
+x2_sim <- rnorm(100)
+x2 <- mean(x2_sim) + c(0, 1, 2, -1, 2) * sd(x2_sim)
+names(x2) <- c("mean", "+1SD", "+2SD","-1SD","-2SD")
+
+paste0("X2_", names(x2))
+
+cums <- expand.grid("x1" = x1, "x2" = names(x2), 
+                    stringsAsFactors = F)
+
+hi <- cums[1, ]
+
+hi[1]
+x2[hi[[2]]]
+
+new_mds <- data.frame(PATSEX.1 = c(1, 0), # female
+                      PATSEX.2 = c(0, 1), # female
+                      age_allo1.1 = c(50, 0), # 50 y.o
+                      age_allo1.2 = c(0, 50), # 50 y.o
+                      trans = c(1, 2), 
+                      strata = c(1, 2))
+
+mds_msfit <- msfit(cox_rel_long, newdata = new_mds,
+                   trans = tmat)
+
+
+
+
+```
+
+
+# Obtaining true cumulative incidences with simmed data
+
+...
+
+
+# Application on multiple imputed datasets
+
+```{r}
+# Try a model with donor age and patient age
+dat_mds_MI <- dat_mds %>% 
+  select_keeplabs(age_allo1, AGEDONOR_allo1_1, time, 
+                  delta, stat1, stat2) %>% 
+  # Compute baselines hazards
+  mutate(H1 = nelsonaalen(., time, stat1),
+         H2 = nelsonaalen(., time, stat2),
+         delta = factor(delta))
+
+# Which vars actually have some data missing?
+var_names_miss <- miss_var_which(dat_mds_MI)
+
+# Set methods accordingly
+meth_miss <- setNames(c("norm"), var_names_miss)
+
+# Prep imputation methods
+meths <- setNames(rep("", ncol(dat_mds_MI)), names(dat_mds_MI))
+meths[var_names_miss] <- meth_miss
+
+# Create matrix for MI
+matpred <- matrix(1, ncol(dat_mds_MI), ncol(dat_mds_MI),
+                  dimnames = list(names(dat_mds_MI), names(dat_mds_MI)))
+
+diag(matpred) <- 0 # dont impute a var using itself
+
+# We don't use time is imputation models, justuse delta as factor
+matpred[, c("time", "stat1", "stat2")] <- 0
+
+# We only imputer donor age
+matpred[!(rownames(matpred) %in% "AGEDONOR_allo1_1"), ] <- 0
+```
+
+
+# Running les imputations
+
+```{r imps}
+imps <- mice(dat_mds_MI, maxit = 15, m = 10, 
+             predictorMatrix = matpred, method = meths)
+
+complete(imps, 1) # first imputed datset
+  
+# Run mstate on each imputeddataset, and pool cumincs according to Rubins rules?
+```

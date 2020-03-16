@@ -3,8 +3,10 @@ title: "Demo for one repetition of one scenario"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Demo for one repetition of one scenario}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -45,7 +47,7 @@ scenario <- data.frame(
   "n" = 2000,
   "prop_miss" = .5,
   "beta1" = 1,
-  "miss_mech" = "MCAR",
+  "miss_mech" = "MAR",
   "X_level" = "continous",
   "rho" = .5,
   "eta1" = 1,
@@ -59,7 +61,7 @@ scenario
 This defines how we set the seed depending on the repetition number.
 
 ```{r reproduce}
-rep_num <- 2 # the first repetition
+rep_num <- 3 # the first repetition
 
 seed <- scenario$seed + rep_num
 seed
@@ -86,32 +88,34 @@ baseline <- readRDS(
   # Parameter Weibull event 1
 ev1_pars <- list(
   "a1" = 0.5,
-  "h1_0" = 0.003,
-  "b1" = scenario$beta1,
+  "h1_0" = 0.005,
+  "b1" = 1,
   "gamm1" = 1
 )
 
-#ev1_pars <- list(
-#  "a1" = baseline[baseline$state == "REL", "shape"],
-#  "h1_0" = baseline[baseline$state == "REL", "rate"],
-# "b1" = scenario$beta1,
-#  "gamm1" = 1
-#)
+ev2_pars <- list(
+ "a2" = 0.7,
+  "h2_0" = 0.005,
+ "b2" = 1,
+  "gamm2" = 1
+)
+
+ev1_pars <- list(
+  "a1" = baseline[baseline$state == "REL", "shape"],
+  "h1_0" = baseline[baseline$state == "REL", "rate"],
+ "b1" = scenario$beta1,
+  "gamm1" = 1
+)
   
 # Parameters Weibull event 2
-#ev2_pars <- list(
-#  "a2" = baseline[baseline$state == "NRM", "shape"],
-#  "h2_0" = baseline[baseline$state == "NRM", "rate"],
-#  "b2" = .5,
-# "gamm2" = .5
-#)
-
 ev2_pars <- list(
-  "a2" = 0.8,
-  "h2_0" = 0.002,
- "b2" = .5,
-  "gamm2" = .5
+  "a2" = baseline[baseline$state == "NRM", "shape"],
+  "h2_0" = baseline[baseline$state == "NRM", "rate"],
+  "b2" = .5,
+ "gamm2" = .5
 )
+
+
 
 # Generate a dataset based on scenario
 dat <- generate_dat(
@@ -120,14 +124,69 @@ dat <- generate_dat(
   r = scenario$rho,
   ev1_pars = ev1_pars,
   ev2_pars = ev2_pars,
-  rate_cens = 0.013,
+  rate_cens = .01, #1e-6 or .01
   mech = scenario$miss_mech,
   p = scenario$prop_miss,
   eta1 = scenario$eta1
 )
 
-# Check also for missing values
 
+# THE way to do it
+ev1_mod <- coxph(Surv(t, eps == 1) ~ 1, data = dat)
+aeqSurv(Surv(dat$t, dat$eps == 1))
+
+
+basehaz_ev1 <- basehaz(ev1_mod, centered = FALSE)
+
+
+# Check hazard fun
+nelsonaalen(data = dat, timevar = t, statusvar = ev1)
+
+nels_ev1 <- summary(
+  survfit()
+  )
+
+cbind.data.frame(nels_ev1$time, nels_ev1$n.event, nels_ev1$n.risk,
+                 nels_ev1$cumhaz)[1:18, ]
+
+
+
+ev1_mod <- coxph(Surv(t, eps == 1) ~ 1, data = dat,
+                 control = coxph.control(timefix = FALSE))
+
+
+basehaz_ev1 <- basehaz(ev1_mod, centered = FALSE)
+
+
+
+
+# What does the data look like
+table(dat$eps)
+
+dat %>% 
+  filter(eps != 0) %>% 
+  ggplot(aes(t, fill = eps)) +
+  geom_density(alpha = .5) +
+  xlim(c(0, 120 * 30.5))
+  
+# What about the cumulative hazards vs time
+dat %>% 
+  pivot_longer(cols = c("H1", "H2"), 
+               names_to = "haz_label", 
+               values_to = "cumhaz") %>% 
+  ggplot(aes(t, cumhaz, col = haz_label)) +
+  geom_line(size = 1.5) +
+  xlim(c(0, 120 * 30.5))
+  
+
+# Vs each other
+dat %>% 
+  ggplot(aes(H1, H2)) +
+  geom_line(size = 1.5)
+
+cor(dat$H1, dat$H2, use = "complete")
+
+# Check also for missing values
 #dat %>% 
 #  mutate(risk_set = 2001 - 1:2000,
 #         H1_alt = cumsum(ifelse(eps == 1, 1 / risk_set, 0)),
@@ -136,24 +195,15 @@ dat <- generate_dat(
 
 head(dat)
 
+# Lets check the imputation models, CH1 vs CH12
 mod1 <- lm(X_orig ~ Z + ev1 + H1, data = dat)
-
-hist(predict(mod1), breaks = 100, xlim = c(-3, 3))
-
 mod2 <- lm(X_orig ~ Z + eps + H1 + H2, data = dat)
 
-hist(predict(mod2), breaks = 100, xlim = c(-3, 3))
+
+mod1
+mod2
 
 
-plot(dat$t,dat$H1)
-lines(dat$t, dat$H2)
-
-
-dat %>% 
-  ggplot(aes(t, fill = eps)) +
-  geom_density(alpha = .5)
-
-cor(dat$H1, dat$H2)
 
 dat %>% 
   mutate(pred_mod1 = predict(mod1),
