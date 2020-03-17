@@ -1,5 +1,6 @@
 require("survival")
 
+
 NAfix <- function(x, subst=-Inf) {
 ### Written by Christian Hoffmann; propagate last known non-NA value
 ### Input:
