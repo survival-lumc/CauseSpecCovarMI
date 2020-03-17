@@ -7,8 +7,6 @@
 cumincs_plot_truepred(cox_long, combo, ev1_pars, ev2_pars, dat)
 }
 \arguments{
-\item{cox_long}{Cox model returned by setup_mstate}
-
 \item{combo}{Covariate combo, e.g. list("val_X" = 1, "val_Z" = 1)}
 
 \item{ev1_pars}{List arameters for weibull event 1}

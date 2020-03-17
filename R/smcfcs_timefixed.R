@@ -1,172 +1,43 @@
-#' Substantive model compatible fully conditional specification imputation of covariates.
-#'
-#' Multiply imputes missing covariate values using substantive model compatible
-#' fully conditional specification.
-#'
-#' smcfcs imputes missing values of covariates using the Substantive Model Compatible
-#' Fully Conditional Specification multiple imputation approach proposed by
-#' Bartlett \emph{et al} 2015 (see references).
-#'
-#' Currently imputation is supported for linear regression (\code{"lm"}),
-#' logistic regression (\code{"logistic"}), Poisson regression
-#' (\code{"poisson"}), Weibull (\code{"weibull"}) and Cox regression
-#' for time to event data (\code{"coxph"}),
-#' and Cox models for competing risks data (\code{"compet"}). For the latter, a
-#' Cox model is assumed for each cause of failure, and the event indicator
-#' should be integer coded with 0 corresponding to censoring, 1 corresponding to
-#' failure from the first cause etc.
-#'
-#' The function returns a list. The first element \code{impDataset} of the list is a list of the imputed
-#' datasets. Models (e.g. the substantive model) can be fitted to each and results
-#' combined using Rubin's rules using the mitools package, as illustrated in the examples.
-#'
-#' The second element \code{smCoefIter} is a three dimensional array containing the values
-#' of the substantive model parameters obtained at the end of each iteration of the algorithm.
-#' The array is indexed by: imputation number, parameter number, iteration.
-#'
-#' If the substantive model is linear, logistic or Poisson regression,
-#' \code{smcfcs} will automatically impute missing outcomes, if present, using
-#' the specified substantive model. However, even in this case, the user should
-#' specify "" in the element of method corresponding to the outcome variable.
-#'
-#'
-#' The development of this package was supported by a UK Medical Research Council
-#' Fellowship (MR/K02180X/1). Part of its development took place while the author was
-#' kindly hosted by the University of Michigan's Department of Biostatistics & Institute for
-#' Social Research.
-#'
-#' The structure of many of the arguments to \code{smcfcs} are based on those of
-#' the excellent \code{mice} package.
-#'
-#' @param originaldata The original data frame with missing values.
-#' @param smtype A string specifying the type of substantive model. Possible
-#' values are \code{"lm"}, \code{"logistic"}, \code{"poisson"}, \code{"weibull"},
-#' \code{"coxph"} and \code{"compet"}.
-#' @param smformula The formula of the substantive model. For \code{"weibull"} and \code{"coxph"} substantive
-#' models the left hand side should be of the form \code{"Surv(t,d)"}. For \code{"compet"}
-#' substantive models, a list should be passed consisting of the Cox models
-#' for each cause of failure (see example).
-#' @param method A required vector of strings specifying for each variable either
-#' that it does not need to be imputed (""), the type of regression model to be
-#' be used to impute. Possible values are \code{"norm"} (normal linear regression),
-#' \code{"logreg"} (logistic regression), \code{"poisson"} (Poisson regression),
-#' \code{"podds"} (proportional odds regression for ordered categorical variables),
-#' \code{"mlogit"} (multinomial logistic regression for unordered categorical variables),
-#' or a custom expression which defines a passively imputed variable, e.g.
-#' \code{"x^2"} or \code{"x1*x2"}. \code{"latnorm"} indicates the variable is a latent
-#' normal variable which is measured with error. If this is specified for a variable,
-#' the \code{"errorProneMatrix"} argument should also be used.
-#' @param predictorMatrix An optional predictor matrix. If specified, the matrix defines which
-#' covariates will be used as predictors in the imputation models
-#' (the outcome must not be included). The i'th row of the matrix should consist of
-#' 0s and 1s, with a 1 in the j'th column indicating the j'th variable be used
-#' as a covariate when imputing the i'th variable. If not specified, when
-#' imputing a given variable, the imputation model covariates are the other
-#' covariates of the substantive model which are partially observed
-#' (but which are not passively imputed) and any fully observed covariates (if present)
-#' in the substantive model. Note that the outcome variable is implicitly conditioned
-#' on by the rejection sampling scheme used by smcfcs, and should not be specified as a predictor
-#' in the predictor matrix.
-#' @param m The number of imputed datasets to generate. The default is 5.
-#' @param numit The number of iterations to run when generating each imputation.
-#' In a (limited) range of simulations good performance was obtained with the
-#' default of 10 iterations. However, particularly when the proportion of missingness
-#' is large, more iterations may be required for convergence to stationarity.
-#' @param rjlimit Specifies the maximum number of attempts which should be made
-#' when using rejection sampling to draw from imputation models. If the limit is reached
-#' when running a warning will be issued. In this case it is probably advisable to
-#' increase the \code{rjlimit} until the warning does not appear.
-#' @param noisy logical value (default FALSE) indicating whether output should be noisy, which can
-#' be useful for debugging or checking that models being used are as desired.
-#' @param errorProneMatrix An optional matrix which if specified indicates that some variables
-#' are measured with classical measurement error. If the i'th variable is measured with error
-#' by variables j and k, then the (i,j) and (i,k) entries of this matrix should be 1, with the
-#' remainder of entries 0. The i'th element of the method argument should then be specified
-#' as \code{"latnorm"}. See the measurement error vignette for more details.
-#'
-#' @return A list containing:
-#'
-#' \code{impDatasets} a list containing the imputed datasets
-#'
-#' \code{smCoefIter} a three dimension matrix containing the substantive model parameter
-#' values. The matrix is indexed by [imputation,parameter number,iteration]
-#'
-#' @author Jonathan Bartlett \email{j.w.bartlett@@bath.ac.uk} \url{http://www.missingdata.org.uk}
-#' \url{http://thestatsgeek.com}
-#'
-#' @example data-raw/examples.r
-#'
-#' @references Bartlett JW, Seaman SR, White IR, Carpenter JR. Multiple imputation of covariates
-#' by fully conditional specification: accommodating the substantive model. Statistical Methods
-#' in Medical Research 2015; 24(4): 462-487. \url{http://doi.org/10.1177/0962280214521348}
+##******************************##
+## smcfcs with time-fixed coxph ##
+##******************************##
 
-#' @import stats
 
-#' @export
-smcfcs <- function(originaldata,smtype,smformula,method,predictorMatrix=NULL,m=5,numit=10,rjlimit=1000,noisy=FALSE,errorProneMatrix=NULL) {
+# Cite Bartlett here
+
+# Simply a version from https://github.com/jwb133/smcfcs , with all
+# cox models adding the control = coxph.control(timefix = FALSE)
+
+smcfcs_timefix <- function(originaldata,
+                           smtype,
+                           smformula,
+                           method,
+                           predictorMatrix = NULL,
+                           m=5,
+                           numit=10,
+                           rjlimit=1000,
+                           noisy=FALSE,
+                           errorProneMatrix=NULL) {
+  
   #call core  smcfcs function, passing through arguments
-  smcfcs.core(originaldata,smtype,smformula,method,predictorMatrix,m,numit,rjlimit,noisy,errorProneMatrix=errorProneMatrix)
+  smcfcs.core_timefix(originaldata,smtype,smformula,method,predictorMatrix,
+              m,numit,rjlimit,noisy,errorProneMatrix=errorProneMatrix)
 }
 
-#' Substantive model compatible fully conditional specification imputation of covariates for case cohort studies
-#'
-#' Multiply imputes missing covariate values using substantive model compatible
-#' fully conditional specification for case cohort studies.
-#'
-#' This version of \code{smcfcs} is designed for use with case cohort studies but where the analyst does not wish to,
-#' or cannot (due to not having the necessary data) impute the full cohort. The function's arguments are the same
-#' as for the main smcfcs function, except for \code{smformula}, \code{in.subco}, and \code{sampfrac} - see above
-#' for details on how these should be specified.
-#'
-#' @author Ruth Keogh \email{ruth.keogh@@lshtm.ac.uk}
-#' @author Jonathan Bartlett \email{j.w.bartlett@@bath.ac.uk}
-#'
-#' @param originaldata The case-cohort data set (NOT a full cohort data set with a case-cohort substudy within it)
-#' @param smformula A formula of the form "Surv(entertime,t,d)~x", where d is the event (d=1) or censoring (d=0) indicator, t is the event or censoring time and entertime is equal to the time origin (typically 0) for individuals in the subcohort and is equal to (t-0.001) for cases outside the subcohort [this sets cases outside the subcohort to enter follow-up just before their event time. The value 0.001 may need to be modified depending on the time scale.]
-#' @param in.subco The name of a column in the dataset with 0/1s that indicates whether the subject is in the subcohort
-#' @param sampfrac The proportion of individuals from the underlying full cohort who are in the subcohort
-#'
-#' @inheritParams smcfcs
-#'
-#' @example data-raw/cc_example.r
-#'
-#' @export
-smcfcs.casecohort <- function(originaldata,smformula,sampfrac,in.subco,method,predictorMatrix=NULL,m=5,numit=10,rjlimit=1000,noisy=FALSE,
-                              errorProneMatrix=NULL) {
-  smcfcs.core(originaldata,smtype="casecohort",smformula,method,predictorMatrix,m,numit,rjlimit,noisy,sampfrac=sampfrac,in.subco=in.subco,
-              errorProneMatrix=errorProneMatrix)
-}
 
-#' Substantive model compatible fully conditional specification imputation of covariates for nested case control
-#' studies
-#'
-#' Multiply imputes missing covariate values using substantive model compatible
-#' fully conditional specification for nested case control studies.
-#'
-#' This version of \code{smcfcs} is designed for use with nested case control studies. The function's arguments are the same
-#' as for the main smcfcs function, except for \code{smformula}, \code{set}, \code{event} and \code{nrisk} - see above
-#' for details on how these should be specified.
-#'
-#' @author Ruth Keogh \email{ruth.keogh@@lshtm.ac.uk}
-#' @author Jonathan Bartlett \email{j.w.bartlett@@bath.ac.uk}
-#'
-#' @param originaldata The nested case-control data set (NOT a full cohort data set with a case-cohort substudy within it)
-#' @param smformula A formula of the form "Surv(t,case)~x+strata(set)", where case is case-control indicator, t is the event or censoring time. Note that t could be set to the case's event time for the matched controls in a given set. The right hand side should include the case control set as a strata term (see example).
-#' @param set variable identifying matched sets in nested case-control study
-#' @param event variable which indicates who is a case/control in the nested case-control sample. Note that this is distinct from d.
-#' @param nrisk variable which is the number at risk (in the underlying full cohort) at the event time for the case in each matched set (i.e. nrisk is the same for all individuals in a matched set).
-#'
-#' @inheritParams smcfcs
-#' @example data-raw/ncc_example.r
-#' @export
-smcfcs.nestedcc <- function(originaldata,smformula,set,event,nrisk,method,predictorMatrix=NULL,m=5,numit=10,rjlimit=1000,noisy=FALSE,errorProneMatrix=NULL) {
-  smcfcs.core(originaldata,smtype="nestedcc",smformula,method,predictorMatrix,m,numit,rjlimit,noisy,set=set,event=event,nrisk=nrisk,
-              errorProneMatrix=errorProneMatrix)
-}
 
 #this is the core of the smcfcs function, called by wrapper functions for certain different substantive models
-smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NULL,m=5,numit=10,rjlimit=1000,noisy=FALSE,errorProneMatrix=NULL,
-                        ...) {
+smcfcs.core_timefix <- function(originaldata,
+                                smtype,
+                                smformula,
+                                method,
+                                predictorMatrix=NULL,
+                                m=5,
+                                numit=10,
+                                rjlimit=1000,
+                                noisy=FALSE,
+                                errorProneMatrix=NULL, ...) {
+  
   #get extra arguments passed in ...
   extraArgs <- list(...)
   
@@ -189,7 +60,8 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
     outcomeCol <- c(timeCol, dCol)
     d <- originaldata[,dCol]
     
-    nullMod <- survival::coxph(Surv(originaldata[,timeCol],originaldata[,dCol])~1)
+    nullMod <- survival::coxph(Surv(originaldata[,timeCol],originaldata[,dCol])~1,
+                               control = survival::coxph.control(timefix = FALSE))
     basehaz <- survival::basehaz(nullMod)
     H0indices <- match(originaldata[,timeCol], basehaz[,2])
     rm(nullMod)
@@ -210,7 +82,9 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
     outcomeModBeta <- vector("list", numCauses)
     linpred <- vector("list", numCauses)
     for (cause in 1:numCauses) {
-      nullMod <- survival::coxph(as.formula(paste(strsplit(smformula[[cause]],"~")[[1]][1],"~1")), originaldata)
+      nullMod <- survival::coxph(as.formula(paste(strsplit(smformula[[cause]],"~")[[1]][1],"~1")), 
+                                 originaldata,
+                                 control = survival::coxph.control(timefix = FALSE))
       basehaz <- survival::basehaz(nullMod)
       H0[[cause]] <- basehaz[,1]
       H0indices[[cause]] <- match(originaldata[,timeCol], basehaz[,2])
@@ -603,7 +477,8 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
           }
         }
         else if (smtype=="coxph") {
-          ymod <- survival::coxph(as.formula(smformula), imputations[[imp]])
+          ymod <- survival::coxph(as.formula(smformula), imputations[[imp]],
+                                  control = survival::coxph.control(timefix = FALSE))
           outcomeModBeta <- modPostDraw(ymod)
           ymod$coefficients <- outcomeModBeta
           basehaz <- survival::basehaz(ymod, centered=FALSE)[,1]
@@ -624,7 +499,8 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
         }
         else if (smtype=="compet") {
           for (cause in 1:numCauses) {
-            ymod <- survival::coxph(as.formula(smformula[[cause]]), imputations[[imp]])
+            ymod <- survival::coxph(as.formula(smformula[[cause]]), imputations[[imp]],
+                                    control = survival::coxph.control(timefix = FALSE))
             outcomeModBeta[[cause]] <- modPostDraw(ymod)
             ymod$coefficients <- outcomeModBeta[[cause]]
             basehaz <- survival::basehaz(ymod, centered=FALSE)[,1]
@@ -635,7 +511,8 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
           }
         }
         else if (smtype=="casecohort") {
-          ymod <- survival::coxph(as.formula(smformula2), imputations[[imp]])
+          ymod <- survival::coxph(as.formula(smformula2), imputations[[imp]],
+                                  control = survival::coxph.control(timefix = FALSE))
           outcomeModBeta <- modPostDraw(ymod)
           
           cumhaz.denom.elements=exp(model.matrix(as.formula(smformula),imputations[[imp]])[,-1] %*% outcomeModBeta)
@@ -649,7 +526,8 @@ smcfcs.core <- function(originaldata,smtype,smformula,method,predictorMatrix=NUL
           }
         }
         else if (smtype=="nestedcc") {
-          ymod <- survival::coxph(as.formula(smformula), imputations[[imp]])
+          ymod <- survival::coxph(as.formula(smformula), imputations[[imp]],
+                                  control = survival::coxph.control(timefix = FALSE))
           outcomeModBeta <- modPostDraw(ymod)
           
           explan.matrix<-model.matrix(ymod)

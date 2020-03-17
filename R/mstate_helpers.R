@@ -19,37 +19,34 @@ setup_mstate <- function(dat) {
   #' @export
   
   # Set up transition matrix 
-  tmat <- trans.comprisk(2, c("Rel", "NRM"))
+  tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
   covs <- c("X", "Z")
   
   # Long format
-  dat_msprepped <- msprep(time = c(NA, "t", "t"),
-                          status = c(NA, "ev1", "ev2"), 
-                          data = dat,
-                          trans = tmat,
-                          keep = covs) 
-  
+  dat_msprepped <- mstate::msprep(time = c(NA, "t", "t"),
+                                  status = c(NA, "ev1", "ev2"), 
+                                  data = dat,
+                                  trans = tmat,
+                                  keep = covs) 
+                          
   # Expand covariates
-  dat_expanded <- expand.covs(dat_msprepped, covs,
-                              append = TRUE, longnames = F)
+  dat_expanded <- mstate::expand.covs(dat_msprepped, covs,
+                                      append = TRUE, longnames = F)
   
   # Fit long cox model (both transitions)
-  cox_long <- coxph(Surv(time, status) ~ 
-                      X.1 + Z.1 + # Trans == 1
-                      X.2 + Z.2 + # Trans == 2
-                      strata(trans), # Separate baseline hazards
-                    data = dat_expanded)
-  
-  # Prep objects for use with ms fit
-  # Can you feed this into mice? Yes! summary(pool())
-  
+  cox_long <- survival::coxph(Surv(time, status) ~ 
+                                X.1 + Z.1 + # Trans == 1
+                                X.2 + Z.2 + # Trans == 2
+                                strata(trans), # Separate baseline hazards
+                              data = dat_expanded)
+
   return(cox_long)
 }
 
 
 make_covar_grid <- function(dat) {
   
-  #' @title Make grid of covariate combinations.
+  #' Make grid of covariate combinations.
   #' 
   #' @inheritParams get_predictor_mats
   #' 
@@ -77,8 +74,6 @@ make_covar_grid <- function(dat) {
          
   } else {
     
-    # Remove NA since there will be missings
-    # check this?? Use X_orig instead?
     x <- 0 + sd_units * 1 # standard normal
     names(x) <- names(z)
     
@@ -86,12 +81,12 @@ make_covar_grid <- function(dat) {
                             "Z" = names(z), 
                             stringsAsFactors = F) %>% 
       as.data.frame() %>% 
-      unite("scen", c(X, Z), sep = "=") %>% 
-      filter(!(str_detect(.data$scen, "2SD") & 
-                 !str_detect(.data$scen, "mean"))) %>% 
-      separate(.data$scen, c("X", "Z"), sep = "=") %>%            
-      mutate(val_X = x[match(X, names(x))],
-             val_Z = z[match(Z, names(z))])
+      tidyr::unite("scen", c(X, Z), sep = "=") %>% 
+      dplyr::filter(!(str_detect(.data$scen, "2SD") & 
+                        !str_detect(.data$scen, "mean"))) %>% 
+      tidyr::separate(.data$scen, c("X", "Z"), sep = "=") %>%            
+      dplyr::mutate(val_X = x[match(X, names(x))],
+                    val_Z = z[match(Z, names(z))])
     
     # Maybe unite X and Z?
   }
@@ -135,77 +130,6 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 }
 
 
-
-
-preds_mstate <- function(cox_long,
-                         grid_obj,
-                         times,
-                         ev1_pars,
-                         ev2_pars) {
-  
-  #' @title Predicting grids
-  #' 
-  #' @description ...
-  #' 
-  #' @param cox_long Cox model returned by setup_mstate
-  #' @param times Prediction horizon(s) eg. c(2, 5, 10)
-  #' @inheritParams get_true_cuminc
-  #' @param grid_obj Grid object
-  #' 
-  #' @importFrom mstate msfit probtrans
-  #' @importFrom purrr map modify_depth map_dfr imap_dfr
-  #' 
-  #' @return Long cox model
-  #' 
-  #' @export
-  
-  #...
-  
-  # If not look at dat_gener_KMweib for true cuminc functions
-  
-  tmat <- trans.comprisk(2, c("Rel", "NRM"))
-  
-  purrr::map_dfr(1:nrow(grid_obj), function(row) {
-    
-    combo <- grid_obj[row, ]
-    
-    new_dat <- data.frame(X.1 = c(combo$val_X, 0), 
-                          X.2 = c(0, combo$val_X), 
-                          Z.1 = c(combo$val_Z, 0), 
-                          Z.2 = c(0, combo$val_Z), 
-                          trans = c(1, 2), 
-                          strata = c(1, 2))
-    
-    msfit_newdat <- msfit(cox_long, newdata = new_dat,
-                          trans = tmat)
-    
-    preds <- record_warning(probtrans(msfit_newdat, predt = 0))
-      
-    
-    # Add log later after pooling
-    summ <- summary.probtrans(preds$value, 
-                              times = times, conf.type = "none")[[1]]
-    
-    # Add the true ones
-    true_CI <- get_true_cuminc(ev1_pars = ev1_pars, 
-                               ev2_pars = ev2_pars,
-                               combo = combo, 
-                               times = times)
-    
-    cbind.data.frame(summ, 
-                     "X" = combo$X, 
-                     "Z" = combo$Z) %>% 
-      left_join(true_CI, by = "times") %>% 
-      
-      # Record 1 if probtrans error was recorded
-      mutate(
-        warning = ifelse(preds$warning != "0", 1, 0)
-      ) %>% 
-      dplyr::mutate_if(is.factor, as.character) # avoid bind_rows warnings
-  })
-}
-
-
 get_true_cuminc <- function(ev1_pars, 
                             ev2_pars,
                             combo,
@@ -239,7 +163,7 @@ get_true_cuminc <- function(ev1_pars,
   dato <- cbind.data.frame("times" = times, 
                            "true_pstate2" = true_pstate2,
                            "true_pstate3" = true_pstate3) %>% 
-    mutate(true_pstate1 = 1 - (true_pstate2 + true_pstate3))
+    dplyr::mutate(true_pstate1 = 1 - (true_pstate2 + true_pstate3))
   
   return(dato)
 }

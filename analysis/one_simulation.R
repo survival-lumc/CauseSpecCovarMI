@@ -6,8 +6,9 @@
 # Run system time on this whole thing
 
 # Load scenarios RDS
-scen_test <- scens %>% dplyr::slice(18)
-
+scenario <- scens %>% dplyr::slice(4)
+scenario
+rep_num <- 1
 
 one_simulation <- function(scenario, # scenario
                            rep_num) { # repetition number
@@ -22,7 +23,9 @@ one_simulation <- function(scenario, # scenario
 
   # Extract parameters from AFTs ran on MDS-long term data
   baseline <- readRDS(
-    "analysis/data/derived_data/MDS_shape_rates.rds"
+    system.file("testdata", 
+                "MDS_shape_rates.rds", 
+                package = "SimsCauseSpecCovarMiss")
   )
   
   # Parameter Weibull event 1
@@ -42,25 +45,29 @@ one_simulation <- function(scenario, # scenario
   )
 
   # Generate a dataset based on scenario
-  dat <- generate_dat(n = scenario$n,
-                      X_type = scenario$X_level, 
-                      r = scenario$rho, 
-                      ev1_pars = ev1_pars,
-                      ev2_pars = ev2_pars, 
-                      rate_cens = baseline[baseline$state == "EFS", "rate"], 
-                      mech = scenario$miss_mech, 
-                      p = scenario$prop_miss,
-                      eta1 = scenario$eta1)
+  dat <- SimsCauseSpecCovarMiss::generate_dat(
+    n = scenario$n,
+    X_type = scenario$X_level, 
+    r = scenario$rho, 
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars, 
+    rate_cens = baseline[baseline$state == "EFS", "rate"], 
+    mech = scenario$miss_mech, 
+    p = scenario$prop_miss,
+    eta1 = scenario$eta1
+  )
   
   
   # Run reference and CCA models ---- 
   
   
   # Reference (full dataset)
-  mod_ref <- setup_mstate(dat %>% mutate(X = X_orig))
+  mod_ref <- SimsCauseSpecCovarMiss::setup_mstate(
+    dat %>% dplyr::mutate(X = X_orig)
+  )
   
   # Complete case analyses
-  mod_CCA <- setup_mstate(dat)
+  mod_CCA <- SimsCauseSpecCovarMiss::setup_mstate(dat)
   
   
   # Imputation part ----
@@ -71,42 +78,47 @@ one_simulation <- function(scenario, # scenario
   iters_MI <- 5 # Iterations of multiple imputation procedure, = 25
   
   # Set methods and predictor matrices
-  mats <- get_predictor_mats(dat) 
-  methods <- get_imp_models(dat) 
+  mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
+  methods <- SimsCauseSpecCovarMiss::get_imp_models(dat) 
   
   # Ch1 model
-  imp_ch1 <- mice(dat, m = m[length(m)],
-                  method = methods, 
-                  predictorMatrix = mats$CH1,
-                  maxit = iters_MI, 
-                  print = FALSE)
+  imp_ch1 <- mice::mice(dat, m = m[length(m)],
+                        method = methods, 
+                        predictorMatrix = mats$CH1,
+                        maxit = iters_MI, 
+                        print = FALSE)
   
   # Ch12 model
-  imp_ch12 <- mice(dat, m = m[length(m)],
-                   method = methods, 
-                   predictorMatrix = mats$CH12,
-                   maxit = iters_MI, 
-                   print = FALSE)
+  imp_ch12 <- mice::mice(dat, m = m[length(m)],
+                         method = methods, 
+                         predictorMatrix = mats$CH12,
+                         maxit = iters_MI, 
+                         print = FALSE)
+                   
   
   # Ch12_int model
-  imp_ch12_int <- mice(dat, m = m[length(m)],
-                       method = methods, 
-                       predictorMatrix = mats$CH12_int,
-                       maxit = iters_MI, 
-                       print = FALSE)
+  imp_ch12_int <- mice::mice(dat, m = m[length(m)],
+                             method = methods, 
+                             predictorMatrix = mats$CH12_int,
+                             maxit = iters_MI, 
+                             print = FALSE)
   
-  
-  # smcfcs 
-  imp_smcfcs <- quiet(
-    record_warning(
-      smcfcs(originaldata = dat, 
-             smtype = "compet", 
-             smformula = c("Surv(t, eps == 1) ~ X + Z",
-                           "Surv(t, eps == 2) ~ X + Z"), 
-             method = methods, 
-             m = m[length(m)], 
-             numit = iters_MI, #iters_MI,
-             rjlimit = 5000) # 5 times higher than default, avoid rej sampling errors
+  # Smcfcs - quiet stops printing
+  imp_smcfcs <- SimsCauseSpecCovarMiss::quiet(
+    
+    # Record number of rej sampling failures, if any
+    SimsCauseSpecCovarMiss::record_warning(
+      
+      # Smcfcs starts here
+      SimsCauseSpecCovarMiss::smcfcs_timefix(
+        originaldata = dat, 
+        smtype = "compet", 
+        smformula = c("Surv(t, eps == 1) ~ X + Z",
+                      "Surv(t, eps == 2) ~ X + Z"), 
+        method = methods, 
+        m = m[length(m)], 
+        numit = iters_MI, 
+        rjlimit = 5000) # 5 times higher than default, avoid rej sampling errors
     )
   )
   
@@ -123,52 +135,57 @@ one_simulation <- function(scenario, # scenario
   # Summarise/pool regression coefficients ----
   
   
-  estimates <- purrr::imap_dfr(mods_complist, 
-                               ~ pool_diffm(.x, n_imp = m, analy = .y)) %>% 
+  estimates <- purrr::imap_dfr(
+    mods_complist, 
+    ~ SimsCauseSpecCovarMiss::pool_diffm(.x, n_imp = m, analy = .y)
+  ) %>% 
     
     # Bind Bayes, CCA, ref
-    bind_rows(
-      summarise_ref_CCA(mod_ref, analy = "ref"),
-      summarise_ref_CCA(mod_CCA, analy = "CCA")#,
-      #summarise_bayes(mod)
-    ) %>% 
+    dplyr::bind_rows(summarise_ref_CCA(mod_ref, analy = "ref"),
+                     summarise_ref_CCA(mod_CCA, analy = "CCA")) %>% 
     
     # Add true values
-    mutate(true = case_when(
-      str_detect(var, "X.1") ~ ev1_pars$b1,
-      str_detect(var, "Z.1") ~ ev1_pars$gamm1,
-      str_detect(var, "X.2") ~ ev2_pars$b2,
-      str_detect(var, "Z.2") ~ ev2_pars$gamm2
+    dplyr::mutate(true = dplyr::case_when(
+      stringr::str_detect(var, "X.1") ~ ev1_pars$b1,
+      stringr::str_detect(var, "Z.1") ~ ev1_pars$gamm1,
+      stringr::str_detect(var, "X.2") ~ ev2_pars$b2,
+      stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2
     )) %>% 
     
     # Add rej sampling errors for smcfcs
-    mutate(warnings = ifelse(
-      analy == "smcfcs",
-      as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
-      0
-    ))
+    dplyr::mutate(
+      warnings = ifelse(
+        analy == "smcfcs",
+        as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
+        0
+      )
+    )
   
   
   # Prediction part ----
   
   
-  horiz <- c(0.5, 2, 5) # Prediction horizons, 6mo, 2Y, 5Y
+  horiz <- c(0.5, 5, 10) # Prediction horizons, 6mo, 5Y, 10Y
+  covar_grid <- SimsCauseSpecCovarMiss::make_covar_grid(dat)
   
   # Make predictions for cox models fitted in each imputed dataset 
   preds_list <- purrr::modify_depth(
     mods_complist, .depth = 2,
-    ~ preds_mstate(cox_long = .x,
-                   grid_obj = make_covar_grid(dat), 
-                   times = horiz, 
-                   ev1_pars = ev1_pars,
-                   ev2_pars = ev2_pars)
+    ~ SimsCauseSpecCovarMiss::get_preds_grid(
+        cox_long = .x,
+        grid_obj = covar_grid, 
+        times = horiz, 
+        ev1_pars = ev1_pars,
+        ev2_pars = ev2_pars
+    )
   )
   
   
   # Pool predictions
-  pooled_preds <- purrr::imap_dfr(preds_list, 
-                                  ~ pool_diffm_preds(.x, n_imp = m, analy = .y))
-  
+  pooled_preds <- purrr::imap_dfr(
+    preds_list, 
+    ~ SimsCauseSpecCovarMiss::pool_diffm_preds(.x, n_imp = m, analy = .y)
+  )
   
 
   # RDS saving and storing seeds/scen_num ----
@@ -190,6 +207,7 @@ one_simulation <- function(scenario, # scenario
 }
 
 
+# Do the timings!!
 test_run <- one_simulation(scen_test, rep_num = 1)
 
 View(test_run$estims %>%  dplyr::mutate_if(is.numeric, ~ round(., 3)))
@@ -202,20 +220,3 @@ View(test_run$estims %>%  dplyr::mutate_if(is.numeric, ~ round(., 3)))
 
 # -- End
 
-
-# JointAI - make iterations to 1000
-# Pick n.iter such that MCSE/SD smaller than 5% 
-# This is not correct -
-# See Bartlett comp risks paper - bayesian equiv of FCS survival
-
-#mod <- coxph_imp(Surv(t, ev1) ~ X + Z, 
-#                 n.iter = 1000, 
-#                data = dat, 
-#                 models = methods[methods != ""])
-
-# 500 iters (500 adaptation) on datset of 500 takes: 4.65minutes
-# [...] for size = 2000, iters = 1000 takes: 33.44 minutes :o
-# with MCSE/SD or around 0.04-0.05
-
-# Take mean and SD of posterior as estimate + SE
-#MC_error(mod)
