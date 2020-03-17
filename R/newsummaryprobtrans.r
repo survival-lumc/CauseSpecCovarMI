@@ -1,8 +1,7 @@
 ##********************************************##
 ## New summary for probtrans object in mstate ##
-##          Property of H. Putter             ##
+##          Property of Hein Putter           ##
 ##********************************************##
-
 
 
 summary.probtrans <- function(object, times, from=1, to=0, complete=FALSE,
@@ -180,37 +179,4 @@ print.summary.probtrans <- function(x, complete=FALSE, ...)
   }
   return(res)
 }
-
-
-##Todo:
-# - confidence intervals
-# - check als times een van de tijdstippen van data bevat
-# 
-# times <- seq(0, 120, by=12)
-# from <- 0:2
-# from <- 1:3
-# from <- 0
-# 
-# to <- 0:2
-# to <- c(5, 16)
-# to <- 0
-
-#library(mstate)
-# define pt by running the help code of probtrans (help(probtrans))
-#summary(pt)
-#summary(pt, from=2)
-#summary(pt, from=1:3)
-#summary(pt, from=c(1, 3))
-#summary(pt, from=0)
-#summary(pt, to=1:2)
-#summary(pt, to=1:2, conf.int=0.90)
-## summary(pt, to=c(5, 16)) # Error (justified)
-#summary(pt, to=0)
-#summary(pt, times=seq(0, 15, by=3))
-#summary(pt, times=seq(5, 8, by=0.25))
-#summary(pt, times=seq(0, 15, by=3), extend=TRUE)
-#summary(pt, times=seq(0, 15, by=3), conf.type="plain")
-#ummary(pt, times=seq(0, 15, by=3), conf.type="no")
-
-
 

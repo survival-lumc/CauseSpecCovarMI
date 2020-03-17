@@ -37,6 +37,9 @@ imps <- smcfcs(dat, smtype = "coxph",
                m = 5, numit = 5)
 
 
+hazo <- nelsaalen_timefixed(dat, time, eps, timefix = T)
+
+sum(is.na(hazo))
 
 # Why it gives the error --------------------------------------------------
 
@@ -44,6 +47,9 @@ imps <- smcfcs(dat, smtype = "coxph",
 # Run null model 
 mod <- coxph(Surv(time, eps) ~ 1, data = dat)
 H0 <- basehaz(mod, centered = F)
+
+H0
+
 
 nrow(H0) # 9998, two time points are missing
 
@@ -57,3 +63,14 @@ diff(dat[miss_time[1] + seq(-3, 3), "time"])
 diff(tail(sort(dat[dat$time <= .11, ]$time)))
 
 View(dat[order(dat$time), ])
+
+
+# Lets try the timefixed version
+imps_fixed <- SimsCauseSpecCovarMiss::smcfcs_timefix(
+  dat, smtype = "coxph",
+  smformula = "Surv(time, eps) ~ X + Z",
+  method = c("", "", "norm", ""),
+  m = 5, numit = 5
+)
+
+imps_fixed

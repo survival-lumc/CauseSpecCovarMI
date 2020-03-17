@@ -7,7 +7,7 @@
 # Parameters varied -------------------------------------------------------
 
 
-n_sim <- 1000 # change this based on a monte carlo error!!!
+n_sim <- 160 # change this based on a monte carlo error!!!
 
 
 
