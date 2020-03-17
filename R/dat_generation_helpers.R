@@ -69,18 +69,18 @@ generate_dat <- function(n,
                        r$r, 1), nrow = 2)
 
     dat_covars <- data.frame(
-      mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
+      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
     ) %>%
-      rename_all(~ c("X", "Z")) %>%
-      mutate(X = ifelse(X <= r$x_cut, 0, 1))
+      dplyr::rename_all(~ c("X", "Z")) %>%
+      dplyr::mutate(X = ifelse(X <= r$x_cut, 0, 1))
   } else {
     covmat <- matrix(c(1, r,
                        r, 1), nrow = 2)
 
     dat_covars <- data.frame(
-      mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
+      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
     ) %>%
-      rename_all(~ c("X", "Z"))
+      dplyr::rename_all(~ c("X", "Z"))
   }
   
   # Generate event times
@@ -92,8 +92,8 @@ generate_dat <- function(n,
                                   mod_type = mod_type)
   # Add event times
   dat_times <- dat_covars %>% 
-    mutate(t = event_times$t, 
-           eps = as.factor(event_times$eps))
+    dplyr::mutate(t = event_times$t, 
+                  eps = as.factor(event_times$eps))
   
   # Small check to provide if eta1 (when not MCAR)
   # This will also allow complete datasets with mech = NULL and eta1 = NULL
@@ -105,33 +105,28 @@ generate_dat <- function(n,
                          p, mech, eta1) %>% 
     
     # Append original (unimputed) covariate
-    mutate(X_orig = X, # 
-           X = X_miss) %>% 
-    select(-X_miss) %>% #remove redundant variable
+   dplyr::mutate(X_orig = X,
+                 X = X_miss) %>% 
+    dplyr::select(-X_miss) %>% # remove redundant variable
     
-    # Compute cumulative hazards
-    mutate(ev1 = as.numeric(eps == 1),
-           ev2 = as.numeric(eps == 2)) %>% 
+    # Compute individual event indicators
+    dplyr::mutate(ev1 = as.numeric(eps == 1),
+                  ev2 = as.numeric(eps == 2)) %>% 
     
-    # Convert t to month
-    mutate(H1 = nelsonaalen(., t, ev1),
-           H2 = nelsonaalen(., t, ev2)) %>% 
-    
-    # Take care of NAs in H1 & H2 due to time steps that are too small
-    # in this case keep previous cumulative hazard
-    #mutate(H1 = zoo::na.locf(.data$H1),
-    #       H2 = zoo::na.locf(.data$H2)) %>% 
+    # Compute (marginal) cumulative hazards
+    dplyr::mutate(H1 = nelsaalen_timefixed(., t, ev1),
+                  H2 = nelsaalen_timefixed(., t, ev2)) %>% 
     
     # Compute interaction terms
-    mutate(H1_Z = H1 * Z,
-           H2_Z = H2 * Z) %>%
-    arrange(t) 
+    dplyr::mutate(H1_Z = H1 * Z,
+                  H2_Z = H2 * Z) %>%
+    dplyr::arrange(t) 
 
   # Convert to factors if binary
   if (X_type == "binary") {
     dat <- dat %>% 
-      mutate(X = as.factor(dat$X),
-             X_orig = as.factor(dat$X_orig))
+      dplyr::mutate(X = as.factor(dat$X),
+                    X_orig = as.factor(dat$X_orig))
   }
   
   return(dat)
@@ -147,8 +142,8 @@ pbiserial_to_pearson <- function(p, r_pb) {
   #' 
   #' @return Pearson r to use when generating MVN data.
   
-  x0 <- qnorm(p, lower.tail = F) # cutoff
-  h <- dnorm(x0) # 'ordinate' = density/height of curve
+  x0 <- stats::qnorm(p, lower.tail = F) # cutoff
+  h <- stats::dnorm(x0) # 'ordinate' = density/height of curve
   r <- r_pb * sqrt(p * (1 - p)) / h
   return(list("r" = r, "x_cut" = x0))
 }
@@ -212,15 +207,19 @@ gen_cmprsk_times <- function(n,
     # Determine which event occured
     haz_ev1 <- haz_weib(ev1_pars$a1, lam1, t)
     haz_ev2 <- haz_weib(ev2_pars$a2, lam2, t)
-    event <- rbinom(n, 1, prob = haz_ev1 / (haz_ev1 + haz_ev2))
+    event <- stats::rbinom(n, 1, prob = haz_ev1 / (haz_ev1 + haz_ev2))
     eps <- ifelse(event == 1, 1, 2)
   }
   
   # Add censoring
   if (0 < rate_cens) {
-    cens <- rexp(n = n, rate = rate_cens)
+    cens <- stats::rexp(n = n, rate = rate_cens)
     eps <- ifelse(cens < t, 0, eps)
     t <- pmin(cens, t)
+    
+    # Also artificially censor at 10 years
+    eps <- ifelse(t >= 10, 0, eps)
+    t <- pmin(t, 10)
   }
   
   return(cbind.data.frame(t, eps))
@@ -238,9 +237,11 @@ invtrans_weib <- Vectorize(function(n, alph1, lam1, alph2, lam2) {
   }
   
   # Generate uniform values, and find roots
-  samps <- sapply(runif(n), function(u) {
-    root <- uniroot(cdf_U, interval = c(.Machine$double.eps, 1000), 
-                    extendInt = "yes", U = u)$`root`
+  samps <- sapply(stats::runif(n), function(u) {
+    root <- stats::uniroot(
+      cdf_U, interval = c(.Machine$double.eps, 1000), 
+      extendInt = "yes", U = u
+    )$`root`
     return(root)
   })
   
@@ -260,7 +261,7 @@ rweibull_KM <- function(n, alph, lam) {
   #' 
   #' @return n samples from weibull distribution.
   
-  samp <- (-log(1 - runif(n)) / lam)^(1 / alph)
+  samp <- (-log(1 - stats::runif(n)) / lam)^(1 / alph)
   return(samp)
 }
 
@@ -281,36 +282,24 @@ induce_missings <- function(n, dat, p, mech, eta1) {
   #' @return Dataset with missingness induced.
 
   if (is.null(mech) | is.null(p)) {
-    dat <- dat %>%
-      mutate(miss_ind = 0,
-             X_miss = X)
+    pr <- 0
+ 
   } else if (mech == "MCAR") {
-    dat <- dat %>%
-      mutate(miss_ind = rbinom(n, 1, p),
-             X_miss = ifelse(miss_ind == 1, NA, X))
+    pr <- p
     
   } else if (mech == "MAR") {
     pr <- logreg_missings(p, eta1, covar = dat$Z)
-    
-    dat <- dat %>%
-      mutate(miss_ind = rbinom(n, 1, pr),
-             X_miss = ifelse(miss_ind == 1, NA, X))
-    
+
   } else if (mech == "MNAR") {
     pr <- logreg_missings(p, eta1, covar = dat$X)
     
-    dat <- dat %>%
-      mutate(miss_ind = rbinom(n, 1, pr),
-             X_miss = ifelse(miss_ind == 1, NA, X))
-    
   } else if (mech == "MAR_GEN") {
     pr <- logreg_missings(p, eta1, covar = scale(log(dat$t)))
-    
-    dat <- dat %>%
-      mutate(miss_ind = rbinom(n, 1, pr),
-             X_miss = ifelse(miss_ind == 1, NA, X))
-    
   }
+  
+  dat <- dat %>%
+    mutate(miss_ind = stats::rbinom(n, 1, pr),
+           X_miss = ifelse(miss_ind == 1, NA, X))
   
   return(dat)
 }
@@ -330,18 +319,34 @@ logreg_missings <- function(p, eta1, covar) {
   #' @return Probability vector to generate missings.
   
   intercept_solve <- function(eta0, eta1, p) {
-    pr <- plogis(eta0 + eta1 * covar) 
+    pr <- stats::plogis(eta0 + eta1 * covar) 
     return(mean(pr) - p)  
   }
   
-  eta0 <- uniroot(intercept_solve, 
-                  interval = c(-25, 25), 
-                  extendInt = "yes", 
-                  eta1 = eta1, p = p)$`root` # change eta1 to strength
+  eta0 <- stats::uniroot(intercept_solve, 
+                         interval = c(-25, 25), 
+                         extendInt = "yes", 
+                         eta1 = eta1, p = p)$`root` 
   
   # Induce missingness
-  pr <- plogis(eta0 + eta1 * covar)
+  pr <- stats::plogis(eta0 + eta1 * covar)
   
   return(pr)
 }
 
+
+nelsaalen_timefixed <- function(dat,
+                                timevar,
+                                statusvar,
+                                timefix = FALSE) {
+  
+  timevar <- as.character(substitute(timevar))
+  statusvar <- as.character(substitute(statusvar))
+  time <- dat[, timevar]
+  status <- dat[, statusvar]
+  mod <- survival::coxph(Surv(time, status) ~ 1, 
+                         control = survival::coxph.control(timefix = timefix))
+  hazard <- survival::basehaz(mod)
+  idx <- match(time, hazard[, "time"])
+  return(hazard[idx, "hazard"])
+}

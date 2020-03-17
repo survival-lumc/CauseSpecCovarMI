@@ -135,6 +135,11 @@ dat <- generate_dat(
 ev1_mod <- coxph(Surv(t, eps == 1) ~ 1, data = dat)
 aeqSurv(Surv(dat$t, dat$eps == 1))
 
+mod <- coxph(Surv(t, eps == 1) ~ 1, data = dat)
+
+
+testo  
+
 
 basehaz_ev1 <- basehaz(ev1_mod, centered = FALSE)
 
