@@ -20,9 +20,7 @@ cumincs_plot_truepred <- function(cox_long,
   #' @importFrom tidyr replace_na
   #' 
   #' @return Ggplot by state and true/predicted
-  #' 
-  #' @export
-  
+
   # Compute true
   CI_true <- get_true_cuminc(ev1_pars, ev2_pars, 
                              combo, times = dat$t)

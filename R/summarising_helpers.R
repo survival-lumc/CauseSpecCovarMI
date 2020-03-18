@@ -3,6 +3,23 @@
 ##******************************************##
 
 
+# To add summary column
+add_scen_details <- function(scenario,
+                             seed,
+                             rep_num) {
+  
+  scen_dat <- data.frame(t(scenario)) %>% 
+    tibble::rownames_to_column(var = "name") %>% 
+    dplyr::filter(!(name %in% c("pilot", "seed"))) %>% 
+    tidyr::unite("scen", name:X1, sep = "=") 
+  
+  scen_collapse <- paste(scen_dat$scen, collapse = "-")
+  rep <- paste0("rep=", rep_num)
+  seed <- paste0("seed=", seed)
+  
+  return(paste(c(scen_collapse, rep, seed), collapse = "-"))
+}
+
 
 # Test function for rmse and emp se
 emp_SE <- function(theta_i1, theta_hat, nsim) {
