@@ -136,25 +136,45 @@ server <- function(input, output) {
   # Show the values in an HTML table ----
   output$plot_CI <- renderPlot({
     
-    cumincs_plot_truepred(cox_long = setup_mstate(dat_cumin()), 
-                          combo = data.frame(
-                            "val_X" = input$X, 
-                            "val_Z" = input$Z
-                          ),
-                          ev1_pars = list(
-                            "a1" = input$shape_1, 
-                            "h1_0" = input$base_1,
-                            "b1" = input$beta_1, 
-                            "gamm1" = input$gamma_1
-                          ),
-                          ev2_pars = list(
-                            "a2" = input$shape_2, 
-                            "h2_0" = input$base_2, 
-                            "b2" = input$beta_2, 
-                            "gamm2" = input$gamma_2
-                          ), 
-                          dat = dat_cumin()) +
-      xlim(c(0, 10))
+    combo = data.frame(
+      "val_X" = input$X, 
+      "val_Z" = input$Z
+    )                  
+                          
+    ev1_pars = list(
+      "a1" = input$shape_1, 
+      "h1_0" = input$base_1,
+      "b1" = input$beta_1, 
+      "gamm1" = input$gamma_1
+    )    
+    
+    ev2_pars = list(
+      "a2" = input$shape_2, 
+      "h2_0" = input$base_2, 
+      "b2" = input$beta_2, 
+      "gamm2" = input$gamma_2
+    )
+                          
+    get_true_cuminc(ev1_pars, ev2_pars, 
+                    combo, 
+                    times = seq(0, 10, by = 0.25)) %>% 
+      pivot_longer(true_pstate2:true_pstate1,
+                   names_to = "state",
+                   values_to = "prob") %>% 
+      ggplot(aes(times, prob, col = state)) +
+      geom_line(size = 1.5, alpha = .75) +
+      scale_colour_manual(
+        "State", 
+        values = c(1, 2, 3),
+        labels = c("EFS", "REL", "NRM")
+      ) +
+      theme(legend.position = "bottom") +
+      
+      # Title and labs
+      ggtitle(paste0("True state probabilities for X = ",
+                     combo$val_X,", Z = ", combo$val_Z)) +
+      xlab("Time (years)") + 
+      ylab("Probability")
   })
   
   
@@ -167,9 +187,9 @@ server <- function(input, output) {
     
     t <- seq(0.01, 10, by = 0.1)
     
-    lam1 <- input$shape_1 * exp((input$beta_1 * input$X + 
+    lam1 <- input$base_1 * exp((input$beta_1 * input$X + 
                                    input$gamma_1 * input$Z))
-    lam2 <- input$shape_2 * exp((input$beta_2 * input$X + 
+    lam2 <- input$base_2 * exp((input$beta_2 * input$X + 
                                    input$gamma_2 * input$Z))
     
     cumhaz1 <- cumhaz_weib(alph = input$shape_1, lam = lam1, t = t) 
@@ -200,9 +220,9 @@ server <- function(input, output) {
 
     t <- seq(0.01, 10, by = 0.1)
     
-    lam1 <- input$shape_1 * exp((input$beta_1 * input$X + 
+    lam1 <- input$base_1 * exp((input$beta_1 * input$X + 
                                    input$gamma_1 * input$Z))
-    lam2 <- input$shape_2 * exp((input$beta_2 * input$X + 
+    lam2 <- input$base_2 * exp((input$beta_2 * input$X + 
                                    input$gamma_2 * input$Z))
     
     haz1 <- haz_weib(alph = input$shape_1, lam = lam1, t = t) 

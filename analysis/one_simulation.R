@@ -1,14 +1,7 @@
-##******************************************##
-## Test building for running one simulation ##
-##******************************************##
+##*************************************##
+## One replication of one sim scenario ##
+##*************************************##
 
-
-# Run system time on this whole thing
-
-# Load scenarios RDS
-scenario <- scens %>% dplyr::slice(4)
-scenario
-rep_num <- 1
 
 one_simulation <- function(scenario, # scenario
                            rep_num) { # repetition number
@@ -23,9 +16,10 @@ one_simulation <- function(scenario, # scenario
 
   # Extract parameters from AFTs ran on MDS-long term data
   baseline <- readRDS(
-    system.file("testdata", 
-                "MDS_shape_rates.rds", 
-                package = "SimsCauseSpecCovarMiss")
+    #system.file("testdata", 
+    #            "MDS_shape_rates.rds", 
+    #            package = "SimsCauseSpecCovarMiss")
+    "inst/testdata/MDS_shape_rates.rds"
   )
   
   # Parameter Weibull event 1
@@ -74,12 +68,14 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(2, 3, 4) # Number of imputations of interest, should be c(2, 5, 25, 100)
-  iters_MI <- 5 # Iterations of multiple imputation procedure, = 25
+  m <- c(2) # Number of imputations of interest, should be c(5, 25, 100)
+  iters_MI <- 2 # Iterations of multiple imputation procedure, = 25
   
   # Set methods and predictor matrices
   mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
   methods <- SimsCauseSpecCovarMiss::get_imp_models(dat) 
+  
+  cat("Running imp_ch1... \n\n")
   
   # Ch1 model
   imp_ch1 <- mice::mice(dat, m = m[length(m)],
@@ -88,20 +84,28 @@ one_simulation <- function(scenario, # scenario
                         maxit = iters_MI, 
                         print = FALSE)
   
+  cat("\n Running imp_ch12... \n\n")
+  
+  
   # Ch12 model
   imp_ch12 <- mice::mice(dat, m = m[length(m)],
                          method = methods, 
                          predictorMatrix = mats$CH12,
                          maxit = iters_MI, 
-                         print = FALSE)
+                         print = FALSE, 
+                         threshold = 1) # Avoid removing H2 
                    
+  cat("\n Running imp_ch12_int... \n\n")
   
   # Ch12_int model
   imp_ch12_int <- mice::mice(dat, m = m[length(m)],
                              method = methods, 
                              predictorMatrix = mats$CH12_int,
                              maxit = iters_MI, 
-                             print = FALSE)
+                             print = FALSE, 
+                             threshold = 1) # Avoid removing H2, and H2_Z 
+  
+  cat("\n Running smcfcs... \n\n")
   
   # Smcfcs - quiet stops printing
   imp_smcfcs <- SimsCauseSpecCovarMiss::quiet(
@@ -128,21 +132,27 @@ one_simulation <- function(scenario, # scenario
                    "ch12_int" = mice::complete(imp_ch12_int, action = "all"),
                    "smcfcs" = imp_smcfcs$value$impDatasets)
   
+  cat("\n Fitting mstate model in all 400 imputed datasets... \n\n")
+  
   # Run cox models on imputed datasets
   mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate(.x)) 
   
   
   # Summarise/pool regression coefficients ----
   
+  cat("\n Pooling estimates... \n\n")
   
+  # Make this into a function?
   estimates <- purrr::imap_dfr(
     mods_complist, 
     ~ SimsCauseSpecCovarMiss::pool_diffm(.x, n_imp = m, analy = .y)
   ) %>% 
     
     # Bind Bayes, CCA, ref
-    dplyr::bind_rows(summarise_ref_CCA(mod_ref, analy = "ref"),
-                     summarise_ref_CCA(mod_CCA, analy = "CCA")) %>% 
+    dplyr::bind_rows(
+      SimsCauseSpecCovarMiss::summarise_ref_CCA(mod_ref, analy = "ref"),
+      SimsCauseSpecCovarMiss::summarise_ref_CCA(mod_CCA, analy = "CCA")
+    ) %>% 
     
     # Add true values
     dplyr::mutate(true = dplyr::case_when(
@@ -152,21 +162,30 @@ one_simulation <- function(scenario, # scenario
       stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2
     )) %>% 
     
-    # Add rej sampling errors for smcfcs
+    # Add mice warnings and rej sampling errors for smcfcs
     dplyr::mutate(
-      warnings = ifelse(
-        analy == "smcfcs",
-        as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
-        0
-      )
-    )
-  
+      warns = dplyr::case_when(
+        analy == "smcfcs" ~ as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
+        analy == "ch12" ~ as.numeric(!(is.null(imp_ch12$loggedEvents))),
+        analy == "ch12_int" ~ as.numeric(!(is.null(imp_ch12_int$loggedEvents))),
+        analy %in% c("CCA", "ref", "ch1") ~ 0
+      ) 
+    ) %>% 
+    
+    # Add scenario summary
+    cbind.data.frame(scen_summary = add_scen_details(
+      scenario, 
+      seed = seed, 
+      rep_num = rep_num
+    ), row.names = NULL, stringsAsFactors = FALSE)
   
   # Prediction part ----
   
   
-  horiz <- c(0.5, 5, 10) # Prediction horizons, 6mo, 5Y, 10Y
+  horiz <- c(5) # Prediction horizons, 6mo, 5Y, 10Y, c(0.5, 5, 10)
   covar_grid <- SimsCauseSpecCovarMiss::make_covar_grid(dat)
+  
+  cat("\n Making predictions and pooling... \n\n")
   
   # Make predictions for cox models fitted in each imputed dataset 
   preds_list <- purrr::modify_depth(
@@ -185,16 +204,29 @@ one_simulation <- function(scenario, # scenario
   pooled_preds <- purrr::imap_dfr(
     preds_list, 
     ~ SimsCauseSpecCovarMiss::pool_diffm_preds(.x, n_imp = m, analy = .y)
-  )
+  ) %>% 
+    
+    # Add scenario summary label
+    cbind.data.frame(scen_summary = add_scen_details(
+      scenario, 
+      seed = seed, 
+      rep_num = rep_num
+    ), row.names = NULL, stringsAsFactors = FALSE)
   
 
+  cat("\n Replication done!")
+  
   # RDS saving and storing seeds/scen_num ----
-
   
   # Scenario/seed should at least be in the filenames
   
   # Save as RDS in analysis/simulation results/predictions
-  #saveRDS(pooled_preds, file = "scenariolabel/number_repnum_preds")
+  saveRDS(estimates, 
+          file = paste0("analysis/test_results/test_estimates/estims_scen",
+                        scenario$scen_num, "_seed", seed, ".rds"))
+  saveRDS(pooled_preds, 
+          file = paste0("analysis/test_results/test_predictions/preds_scen",
+                        scenario$scen_num, "_seed", seed, ".rds"))
   
   # For shark
   #saveRDS(dat, 
@@ -202,21 +234,6 @@ one_simulation <- function(scenario, # scenario
   
   
   # Remove this return thing after
-  return(list("estims" = estimates,
-              "preds" = pooled_preds))
+  #return(list("estims" = estimates, "preds" = pooled_preds))
 }
-
-
-# Do the timings!!
-test_run <- one_simulation(scen_test, rep_num = 1)
-
-View(test_run$estims %>%  dplyr::mutate_if(is.numeric, ~ round(., 3)))
-
-
-
-
-
-
-
-# -- End
 

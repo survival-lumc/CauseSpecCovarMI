@@ -123,6 +123,7 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
   }
   
   ci_func <- Vectorize(function(upp) {
+    if (upp == 0) upp <- .Machine$double.eps
     stats::integrate(prod, lower = 0, upper = upp)$value
   })
   
