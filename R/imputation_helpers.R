@@ -98,21 +98,17 @@ pool_diffm <- function(mods_impdats,
   #' @param n_imp Vector of m imputations to extract
   #' @param analy String label to attach
   #' 
-  #' @importFrom tibble rownames_to_column
-  #' @importFrom mice pool mice
-  #' @importFrom smcfcs smcfcs
   #' @importFrom magrittr `%$%` 
   #' 
   #' @export
 
-  # @importFrom JointAI coxph_imp MC_error traceplot
-  
   purrr::map_dfr(n_imp, function(m) {
     estims <- mods_impdats[1:m] %$%
       summary(
         mice::pool(., dfcom = 999999), conf.int = T
       ) %>% 
-      tibble::rownames_to_column(var = "var") %>% 
+      dplyr::rename(var = "term") %>% 
+      dplyr::mutate(var = as.character(.data$var)) %>% 
       dplyr::mutate(m = m, 
                     analy = analy) %>% 
       dplyr::select(-.data$statistic, -.data$df)
@@ -181,8 +177,6 @@ pool_diffm_preds <- function(preds_impdats,
   #' @inheritParams pool_diffm
   #' @param preds_impdats List of lalala
   #' 
-  #' @importFrom stats var
-  #' 
   #' @export
   
   pooled_preds <- purrr::map_dfr(n_imp, function(m) {
@@ -230,3 +224,34 @@ pool_diffm_preds <- function(preds_impdats,
   return(pooled_preds)
 }
 
+
+preds_CCA_ref <- function(preds,
+                          analy) {
+  
+  preds %>% 
+    tidyr::pivot_longer(cols = .data$pstate1:.data$pstate3, 
+                        names_to = "state_est", 
+                        values_to = "prob") %>% 
+    tidyr::pivot_longer(cols = .data$true_pstate2:.data$true_pstate1, 
+                        names_to = "state_true", 
+                        values_to = "true") %>% 
+    
+    # Make single state variable
+    tidyr::unite( "state", 
+                  .data$state_est, 
+                  .data$state_true) %>% 
+    dplyr::mutate(state = dplyr::case_when(
+      stringr::str_detect(.data$state, "pstate1_true_pstate1") ~ "1",
+      stringr::str_detect(.data$state, "pstate2_true_pstate2") ~ "2",
+      stringr::str_detect(.data$state, "pstate3_true_pstate3") ~ "3"
+    )) %>% 
+    dplyr::filter(!is.na(.data$state)) %>% 
+    tidyr::unite("combo-X_Z", .data$X, .data$Z, sep = "_X-Z_") %>% 
+    
+    # Labels
+    dplyr::rename(p_pool = "prob") %>% 
+    dplyr::mutate(analy = analy,
+                  m = 0,
+                  sq_err = (.data$p_pool - .data$true)^2)
+  
+}

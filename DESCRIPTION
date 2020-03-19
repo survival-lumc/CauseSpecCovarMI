@@ -6,7 +6,8 @@ Authors@R:
            family = "Bonneville",
            role = c("aut", "cre"),
            email = "e.f.bonneville@lumc.nl")
-Description: Directory for R code of the missing data in competing risks, focusing on cause-specific models.
+Description: Directory for R code of the missing data in competing risks, 
+    focusing on cause-specific models.
 License: MIT + file LICENSE
 ByteCompile: true
 Encoding: UTF-8
@@ -31,5 +32,4 @@ Imports:
     MASS,
     survival,
     mstate,
-    mice,
-    smcfcs,
+    mice

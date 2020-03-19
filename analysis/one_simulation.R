@@ -16,10 +16,7 @@ one_simulation <- function(scenario, # scenario
 
   # Extract parameters from AFTs ran on MDS-long term data
   baseline <- readRDS(
-    #system.file("testdata", 
-    #            "MDS_shape_rates.rds", 
-    #            package = "SimsCauseSpecCovarMiss")
-    "inst/testdata/MDS_shape_rates.rds"
+    "./inst/testdata/MDS_shape_rates.rds"
   )
   
   # Parameter Weibull event 1
@@ -68,8 +65,8 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(2) # Number of imputations of interest, should be c(5, 25, 100)
-  iters_MI <- 2 # Iterations of multiple imputation procedure, = 25
+  m <- c(5, 10, 25, 50, 100) # Number of imputations of interest, should be c(5, 25, 100)
+  iters_MI <- 15 # Iterations of multiple imputation procedure, = 25
   
   # Set methods and predictor matrices
   mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
@@ -165,7 +162,8 @@ one_simulation <- function(scenario, # scenario
     # Add mice warnings and rej sampling errors for smcfcs
     dplyr::mutate(
       warns = dplyr::case_when(
-        analy == "smcfcs" ~ as.numeric(str_extract(imp_smcfcs$warning, "[0-9]+")),
+        analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning,
+                                                            "[0-9]+")),
         analy == "ch12" ~ as.numeric(!(is.null(imp_ch12$loggedEvents))),
         analy == "ch12_int" ~ as.numeric(!(is.null(imp_ch12_int$loggedEvents))),
         analy %in% c("CCA", "ref", "ch1") ~ 0
@@ -182,7 +180,7 @@ one_simulation <- function(scenario, # scenario
   # Prediction part ----
   
   
-  horiz <- c(5) # Prediction horizons, 6mo, 5Y, 10Y, c(0.5, 5, 10)
+  horiz <- c(0.5, 5, 10) # Prediction horizons, 6mo, 5Y, 10Y, c(0.5, 5, 10)
   covar_grid <- SimsCauseSpecCovarMiss::make_covar_grid(dat)
   
   cat("\n Making predictions and pooling... \n\n")
@@ -199,12 +197,31 @@ one_simulation <- function(scenario, # scenario
     )
   )
   
+  # Make predictions also for ref and CCA
+  preds_CCA <- get_preds_grid(cox_long = mod_CCA,
+                              grid_obj = covar_grid, 
+                              times = horiz, 
+                              ev1_pars = ev1_pars,
+                              ev2_pars = ev2_pars)
+  
+  preds_ref <- get_preds_grid(cox_long = mod_ref,
+                              grid_obj = covar_grid, 
+                              times = horiz, 
+                              ev1_pars = ev1_pars,
+                              ev2_pars = ev2_pars)
+    
+  
+  
   
   # Pool predictions
   pooled_preds <- purrr::imap_dfr(
     preds_list, 
     ~ SimsCauseSpecCovarMiss::pool_diffm_preds(.x, n_imp = m, analy = .y)
   ) %>% 
+    
+    # Bind preds for CCA and ref
+    dplyr::bind_rows(preds_CCA_ref(preds_CCA, "CCA"),
+                     preds_CCA_ref(preds_ref, "ref")) %>% 
     
     # Add scenario summary label
     cbind.data.frame(scen_summary = add_scen_details(
@@ -218,22 +235,12 @@ one_simulation <- function(scenario, # scenario
   
   # RDS saving and storing seeds/scen_num ----
   
-  # Scenario/seed should at least be in the filenames
-  
   # Save as RDS in analysis/simulation results/predictions
   saveRDS(estimates, 
-          file = paste0("analysis/test_results/test_estimates/estims_scen",
+          file = paste0("./analysis/results/estimates/estims_scen",
                         scenario$scen_num, "_seed", seed, ".rds"))
   saveRDS(pooled_preds, 
-          file = paste0("analysis/test_results/test_predictions/preds_scen",
+          file = paste0("./analysis/results/predictions/preds_scen",
                         scenario$scen_num, "_seed", seed, ".rds"))
-  
-  # For shark
-  #saveRDS(dat, 
-  # file = "/exports/molepi/users/efbonneville/.../filename/rds")
-  
-  
-  # Remove this return thing after
-  #return(list("estims" = estimates, "preds" = pooled_preds))
 }
 

@@ -11,7 +11,7 @@ add_scen_details <- function(scenario,
   scen_dat <- data.frame(t(scenario)) %>% 
     tibble::rownames_to_column(var = "name") %>% 
     dplyr::filter(!(name %in% c("pilot", "seed"))) %>% 
-    tidyr::unite("scen", name:X1, sep = "=") 
+    tidyr::unite("scen", 1:2, sep = "=") 
   
   scen_collapse <- paste(scen_dat$scen, collapse = "-")
   rep <- paste0("rep=", rep_num)

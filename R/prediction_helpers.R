@@ -71,7 +71,7 @@ get_preds_grid <- function(cox_long,
   #' @export
   
   # Set-up for baseline (covariate values = 0)
-  tmat <- trans.comprisk(2, c("Rel", "NRM"))
+  tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
 
   baseline_dat <- data.frame(X.1 = c(0, 0),
                              X.2 = c(0, 0), 
@@ -81,9 +81,10 @@ get_preds_grid <- function(cox_long,
                              strata = c(1, 2))
   
   # Run msfit once to get baseline cumulative hazards for all causes                        
-  msfit_baseline <- msfit(cox_long,
-                          newdata = baseline_dat,
-                          trans = tmat)
+  msfit_baseline <- mstate::msfit(cox_long,
+                                  newdata = baseline_dat,
+                                  trans = tmat)
+                         
   
   # Get predicted state probabilites for all covariate combos
   preds_grid <- purrr::map_dfr(1:nrow(grid_obj), function(row) {
@@ -91,9 +92,11 @@ get_preds_grid <- function(cox_long,
     combo <- grid_obj[row, ]
     
     # Get state probabilities at all time points, for this combo
-    preds_test <-  get_state_probs(msfit_baseline, 
-                                   combo = combo, 
-                                   cox_long = cox_long)
+    preds_test <-  SimsCauseSpecCovarMiss::get_state_probs(
+      msfit_baseline, 
+      combo = combo, 
+      cox_long = cox_long
+    )
     
     # Summarise for prediction horizions of interest
     summ <- purrr::map_dfr(
@@ -107,10 +110,12 @@ get_preds_grid <- function(cox_long,
     )
     
     # Compute true cumulative incidence at those horizons
-    true_CI <- get_true_cuminc(ev1_pars = ev1_pars, 
-                               ev2_pars = ev2_pars,
-                               combo = combo, 
-                               times = times)
+    true_CI <- SimsCauseSpecCovarMiss::get_true_cuminc(
+      ev1_pars = ev1_pars, 
+      ev2_pars = ev2_pars,
+      combo = combo, 
+      times = times
+    )
     
     # Join the true and predicted state probabilities
     res <- cbind.data.frame(summ,
@@ -124,4 +129,3 @@ get_preds_grid <- function(cox_long,
   
   return(preds_grid)
 }
-

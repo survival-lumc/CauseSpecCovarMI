@@ -49,13 +49,7 @@ generate_dat <- function(n,
   #' @inheritParams gen_cmprsk_times
   #' 
   #' @importFrom magrittr `%>%` 
-  #' @importFrom MASS mvrnorm
-  #' @importFrom mice nelsonaalen
   #' @importFrom rlang .data
-  #' @importFrom dplyr mutate rename_all select arrange filter 
-  #' left_join bind_rows rename case_when group_by summarise ungroup
-  #' @importFrom tidyr gather separate unite
-  #' @importFrom stringr str_detect str_extract
   #' 
   #' @return Data-frame with missings induced
   #' 
@@ -167,9 +161,6 @@ gen_cmprsk_times <- function(n,
   #' @param mod_type Either "latent", weibull times generated from 
   #' separate weibull distribution, or "total", times generated from 
   #' sum of cause-specific hazards (using inverse transform method)
-  #' 
-  #' @importFrom stats rexp rbinom uniroot plogis qnorm approx df dnorm runif uniroot
-  #' @importFrom utils head tail
   #' 
   #' @return Data-frame with missings induced
   
@@ -298,8 +289,8 @@ induce_missings <- function(n, dat, p, mech, eta1) {
   }
   
   dat <- dat %>%
-    mutate(miss_ind = stats::rbinom(n, 1, pr),
-           X_miss = ifelse(miss_ind == 1, NA, X))
+    dplyr::mutate(miss_ind = stats::rbinom(n, 1, pr),
+                  X_miss = ifelse(miss_ind == 1, NA, X))
   
   return(dat)
 }
@@ -339,6 +330,8 @@ nelsaalen_timefixed <- function(dat,
                                 timevar,
                                 statusvar,
                                 timefix = FALSE) {
+  
+  #' @importFrom survival Surv strata
   
   timevar <- as.character(substitute(timevar))
   statusvar <- as.character(substitute(statusvar))

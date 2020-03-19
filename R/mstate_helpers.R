@@ -11,9 +11,6 @@ setup_mstate <- function(dat) {
   #' 
   #' @inheritParams get_predictor_mats
   #' 
-  #' @importFrom mstate msprep trans.comprisk expand.covs msfit probtrans
-  #' @importFrom survival coxph Surv strata survfit
-  #' 
   #' @return Long cox model
   #' 
   #' @export
@@ -67,8 +64,9 @@ make_covar_grid <- function(dat) {
                             "Z" = (names(z)), 
                             stringsAsFactors = F) %>% 
       as.data.frame() %>% 
-      mutate(val_X = x[match(X, names(x))],
-             val_Z = z[match(Z, names(z))])
+      dplyr::filter(!(stringr::str_detect(.data$Z, "2SD"))) %>% 
+      dplyr::mutate(val_X = x[match(X, names(x))],
+                    val_Z = z[match(Z, names(z))])
                    
     # Maybe unite X and Z?
          
@@ -82,8 +80,9 @@ make_covar_grid <- function(dat) {
                             stringsAsFactors = F) %>% 
       as.data.frame() %>% 
       tidyr::unite("scen", c(X, Z), sep = "=") %>% 
-      dplyr::filter(!(str_detect(.data$scen, "2SD") & 
-                        !str_detect(.data$scen, "mean"))) %>% 
+      dplyr::filter(!(stringr::str_detect(.data$scen, "2SD")),
+                    !(stringr::str_detect(.data$scen, "mean"))) %>% 
+      dplyr::add_row(scen = "mean=mean") %>% 
       tidyr::separate(.data$scen, c("X", "Z"), sep = "=") %>%            
       dplyr::mutate(val_X = x[match(X, names(x))],
                     val_Z = z[match(Z, names(z))])
@@ -114,8 +113,6 @@ gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
 
 # Make a general cumulative incidence function
 cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
-  
-  #' @importFrom stats integrate confint
   
   prod <-  function(t) {
     haz_weib(alph_ev, lam_ev, t) * gen_surv_weib(cumhaz_weib(alph_ev, lam_ev, t),
