@@ -1,18 +1,40 @@
 library(tidyverse)
 theme_set(theme_bw(base_size = 18))
 
-summary(dat)
 
-plot(dat$t, dat$H1, type = "l")
-lines(dat$t, dat$H2, col = "blue")
 
-# Plot the parameter estimates
-estimates %>%
-  filter(m %in% c(10, 0)) %>% 
-  ggplot(aes(analy, estimate)) +
+# Plotting scenario 1 (finished) ------------------------------------------
+
+
+# Checks
+estims_scen1 <- readRDS("analysis/results/estimates_summarised/estims_scen1_summarised.rds")
+preds_scen1 <- readRDS("analysis/results/predictions_summarised/preds_scen1_summarised.rds")
+
+# Warnings
+
+
+# What do we do with a scen_summary, if we would like to group by other factors
+# do this after summarising by group_by(scen_summary)
+estims_scen1 %>% 
+  tidyr::separate(col = "scen_summary",
+                  into = c("n", "prop_miss", "beta1", "miss_mech", "X_level",
+                           "rho", "eta1", "scen_num_dupl"),
+                  sep = "-") %>% 
+  dplyr::select(-scen_num_dupl)
+
+
+
+# Exploring estimates -----------------------------------------------------
+
+
+
+# Estimates first
+estims_scen1 %>%
+  filter(m %in% c(0, 100)) %>% 
+  ggplot(aes(analy, est)) +
   geom_hline(aes(yintercept = true), linetype = "dashed") +
-  geom_errorbar(aes(ymin = estimate - 1.96 * std.error,
-                    ymax = estimate + 1.96 * std.error,
+  geom_errorbar(aes(ymin = est - 1.96 * se,
+                    ymax = est + 1.96 * se,
                     colour = var), 
                 width = 0.2,
                 size = 1) +
@@ -26,31 +48,53 @@ estimates %>%
 
 
 
+# Does SE decrease with more imps? ----------------------------------------
 
-pooled_preds %>% 
-  group_by(`combo-X_Z`, m, state, times, analy) %>% 
-  summarise(mean_sq_err = sqrt(mean(sq_err))) %>% 
-  filter(m == 10) %>% 
-  filter(`combo-X_Z` == "-1SD_X-Z_mean") %>% 
-  ggplot(aes(x = analy, y = mean_sq_err, col = analy, group = 1)) +
+
+# Plot empirical SE vs m
+estims_scen1 %>% 
+  filter(m > 0) %>% 
+  pivot_longer(se:emp_se, 
+               names_to = "se_type",
+               values_to = "se") %>%
+  group_by(m, se_type, var) %>% 
+  summarise(se = mean(se)) %>% 
+  ggplot(aes(m, se, col = se_type)) +
   geom_point(size = 2) +
-  geom_line() +
+  geom_line(size = 1) +
+  facet_wrap(. ~ var)
+
+
+# Check out coverage
+estims_scen1 %>% 
+  filter(m %in% c(0, 100)) %>% 
+  ggplot(aes(y = cover, x = analy, fill = analy)) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  facet_grid(state ~ times)
+  facet_wrap(. ~ var) + 
+  geom_bar(stat = "identity", alpha = .75) +
+  geom_hline(yintercept = 0.95, linetype = "dashed") +
+  theme(legend.position = 'none') +
+  ggtitle("Coverage")
+
+# Plot rmse
+estims_scen1 %>% 
+  filter(m %in% c(0, 100)) %>% 
+  ggplot(aes(x = analy, y = rmse, col = analy, group = 1)) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  geom_point(size = 2) +
+  geom_line(size = 1) +
+  facet_wrap(. ~ var)
+
+
+# Trellis for predictions -------------------------------------------------
 
 
 
-pooled_preds %>% 
-  group_by(`combo-X_Z`, m, state, times, analy) %>% 
-  summarise(mean_sq_err = sqrt(mean(sq_err))) %>% 
-  filter(m == 10) %>% 
-  #filter(`combo-X_Z` == "-1SD_X-Z_mean") %>% 
-  filter(`combo-X_Z` == "mean_X-Z_mean" |
-           `combo-X_Z` == "-1SD_X-Z_-1SD" |
-           `combo-X_Z` == "-1SD_X-Z_+1SD" |
-           `combo-X_Z` == "+1SD_X-Z_-1SD" |
-           `combo-X_Z` == "+1SD_X-Z_+1SD" ) %>% 
-  ggplot(aes(x = analy, y = mean_sq_err, col = `combo-X_Z`, group = `combo-X_Z`)) +
+# Try predictions
+preds_scen1 %>% 
+  filter(m %in% c(0, 100)) %>% 
+  ggplot(aes(x = analy, y = rmse,
+             col = `combo-X_Z`, group = `combo-X_Z`)) +
   geom_point(size = 2) +
   geom_line(alpha = .5) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
@@ -59,14 +103,12 @@ pooled_preds %>%
   ylab("Root MSE State Probability")
 
 
-# What do we do with a scen_summary, if we would like to group by other factors
-# do this after summarising by group_by(scen_summary)
-lol <- estims_scen1_seed161 %>% 
-  tidyr::separate(col = "scen_summary",
-                  into = c("n", "prop_miss", "beta1", "miss_mech", "X_level",
-                           "rho", "eta1", "scen_num", "rep", "seed"),
-                  sep = "-") %>% 
-  mutate_if(is.character, ~ gsub(pattern = ".*=", # Remove label before =
-                                 replacement = "", # Empty replace
-                                 x = .))
+# Use time as x axis
+preds_scen1 %>% 
+  filter(m %in% c(0, 100)) %>% 
+  ggplot(aes(x = times, y = rmse, col = analy, group = analy)) +
+  geom_point(size = 2) +
+  geom_line(alpha = .5) +
+  scale_x_continuous(guide = guide_axis(n.dodge = 2)) +
+  facet_grid(`combo-X_Z` ~ state) 
 

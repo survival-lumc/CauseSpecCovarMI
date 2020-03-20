@@ -29,9 +29,10 @@ emp_SE <- function(theta_i1, theta_hat, nsim) {
   return(sqrt(term))
 }
 
-rmse <- function(theta_i1, true, nsim) {
+
+rmse <- function(theta_hat, true, nsim) {
   
-  sq_diffs <- (theta_i1 - true)^2 
+  sq_diffs <- (theta_hat - true)^2 
   term <- sum(sq_diffs) / (nsim - 1)
   return(sqrt(term))
 }

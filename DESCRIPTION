@@ -20,6 +20,7 @@ VignetteBuilder: knitr
 Imports:
     dplyr,
     magrittr,
+    data.table,
     tidyr,
     readr,
     purrr,
