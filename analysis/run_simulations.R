@@ -19,7 +19,8 @@ repl <- as.numeric(args[2])
 source("analysis/one_simulation.R")
 
 # Run one replication of one scenario
+system.time(
 one_simulation(scenario = scenarios[scenarios$scen_num == scen, ],
                rep_num = repl)
-
+)
 

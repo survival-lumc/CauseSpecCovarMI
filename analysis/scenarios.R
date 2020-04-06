@@ -49,7 +49,39 @@ scenarios <- expand.grid("n" = n,
   dplyr::mutate(scen_num = 1:dplyr::n(),
                 seed = n_sim * scen_num)
 
-rm(n_sim, n, prop_miss, beta, mech, X_level, rho, eta1)
+rm(n, prop_miss, beta, mech, X_level, rho, eta1)
   
+# This is full factorial
+scenarios
+
+# 
+pilot_scens <- scenarios[scenarios$pilot == 1, ]
+
+# Now take subset after discussion 25/03/2020
+scenarios_sub <- scenarios %>% 
+  dplyr::filter(
+    !pilot,
+    rho == 0.5,
+    beta1 != 0
+  ) %>% 
+  dplyr::bind_rows(pilot_scens) %>% 
+  dplyr::arrange(dplyr::desc(pilot)) %>% 
+  
+  # Re-do the indices 
+  dplyr::mutate(
+    scen_num = 1:dplyr::n(),
+    seed = n_sim * scen_num
+  )
+
+
 # Save as .RDS file to load in
-saveRDS(scenarios, file = "inst/testdata/scenarios.rds")
+saveRDS(scenarios_sub, file = "inst/testdata/scenarios.rds")
+
+
+# This is for using summarise sims on subset
+# Replace 1 and 2 by some actual number
+list.files(
+       path = "./analysis/sim_results/summarised_reps/estimates/",
+       pattern = ".*(scen28_)|(scen57_).*.rds", 
+       full.names = T
+   )
