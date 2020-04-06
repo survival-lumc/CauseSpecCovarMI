@@ -1,5 +1,5 @@
 library(tidyverse)
-theme_set(theme_bw(base_size = 18))
+theme_set(theme_bw(base_size = 12))
 
 
 
@@ -112,3 +112,57 @@ preds_scen1 %>%
   scale_x_continuous(guide = guide_axis(n.dodge = 2)) +
   facet_grid(`combo-X_Z` ~ state) 
 
+
+# Check scenarios 1 + 2 ---------------------------------------------------
+
+
+estims_scen1_all <- readRDS("analysis/sim_results/summarised_reps/estimates/estims_scenscen_num=1_allreps.rds")
+estims_scen1_summ <- readRDS("analysis/sim_results/summarised_reps/estimates/estims_scen1_summarised.rds")
+
+estims_scen2_all <- readRDS("analysis/sim_results/summarised_reps/estimates/estims_scenscen_num=2_allreps.rds")
+estims_scen2_summ <- readRDS("analysis/sim_results/summarised_reps/estimates/estims_scen2_summarised.rds")
+
+
+library(rsimsum)
+
+simsum_scen2 <- simsum(
+  data = estims_scen2_all %>% 
+    filter(m %in% c(0, 100),
+           !(analy %in% c("ref", "CCA"))),
+  estvarname = "estimate", 
+  se = "std.error",
+  true = "true", 
+  methodvar = "analy",
+  ref = "smcfcs",
+  by = c("var"),
+  x = TRUE
+)
+
+simsum_scen2 <- simsum(
+  data = estims_scen2_all %>% 
+    filter(m %in% c(0, 100)),
+  estvarname = "estimate", 
+  se = "std.error",
+  true = "true", 
+  methodvar = "analy",
+  ref = "smcfcs",
+  by = c("var"),
+  x = TRUE
+)
+
+summary()
+autoplot(simsum_scen2, type = "est")
+autoplot(simsum_scen2, type = "est_ridge")
+autoplot(summary(simsum_scen2), type = "lolly", stats = "bias")
+autoplot(summary(simsum_scen2), type = "forest", stats = "cover")
+autoplot(simsum_scen2, type = "zip")
+
+library(tidyverse)
+# Predictions
+
+
+# Regex testint
+vec <- c("haha_scen_num=10_lol",
+         "haha_scen_num=1_lol")
+
+stringr::str_extract(vec, pattern = "(scen_num=)[10]+_")

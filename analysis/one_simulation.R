@@ -65,8 +65,8 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(5, 10, 25, 50, 100) # Number of imputations of interest, should be c(5, 25, 100)
-  iters_MI <- 15 # Iterations of multiple imputation procedure, = 25
+  m <- c(5, 10, 25, 50) # Number of imputations of interest, should be c(5, 25, 100)
+  iters_MI <- 20 # Iterations of multiple imputation procedure, = 25
   
   # Set methods and predictor matrices
   mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
@@ -105,7 +105,7 @@ one_simulation <- function(scenario, # scenario
   cat("\n Running smcfcs... \n\n")
   
   # Smcfcs - quiet stops printing
-  imp_smcfcs <- SimsCauseSpecCovarMiss::quiet(
+  imp_smcfcs <- #SimsCauseSpecCovarMiss::quiet(
     
     # Record number of rej sampling failures, if any
     SimsCauseSpecCovarMiss::record_warning(
@@ -121,7 +121,7 @@ one_simulation <- function(scenario, # scenario
         numit = iters_MI, 
         rjlimit = 5000) # 5 times higher than default, avoid rej sampling errors
     )
-  )
+  #)
   
   # Store all complete imputed datasets
   complist <- list("ch1" = mice::complete(imp_ch1, action = "all"),
