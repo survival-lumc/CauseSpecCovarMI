@@ -4,7 +4,6 @@ inst/doc
 doc
 Meta
 tests
-analysis/data/raw_data
 .Rhistory
 analysis/simulations/sim-reps_individual/estimates/estims*
 analysis/simulations/sim-reps_individual/predictions/preds*
