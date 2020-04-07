@@ -7,31 +7,32 @@ The is the GitLab directory for the 'Missing data for cause-specific models' pro
 The code directory for this project is set-up as an R-package 'compendium'. Current stucture:
 
 ```
-+-- analysis
-¦   +-- data
-¦   ¦   +-- derived_data
-¦   ¦   +-- raw_data
-¦   +-- notebooks
-¦   ¦   +-- MI_mds-long-term_EBMT
-¦   +-- other
-¦   ¦   +-- out_err_messages
-¦   +-- simulations
-¦   ¦   +-- executables
-¦   ¦   +-- sim-reps_all
-¦   ¦   ¦   +-- estimates
-¦   ¦   ¦   +-- predictions
-¦   ¦   +-- sim-reps_individual
-¦   ¦   +-- sim-reps_summarised
-¦   ¦       +-- estimates
-¦   ¦       +-- predictions
-¦   +-- visualisation
-¦       +-- shiny_sims_visuals
-¦       +-- shiny_weibull_params
-+-- inst
-¦   +-- testdata
-+-- man
-+-- R
-+-- vignettes
+.
+â”œâ”€â”€ analysis
+â”‚Â Â  â”œâ”€â”€ data
+â”‚Â Â  â”‚Â Â  â”œâ”€â”€ derived_data
+â”‚Â Â  â”‚Â Â  â””â”€â”€ raw_data
+â”‚Â Â  â”œâ”€â”€ notebooks
+â”‚Â Â  â”‚Â Â  â””â”€â”€ MI_mds-long-term_EBMT
+â”‚Â Â  â”œâ”€â”€ other
+â”‚Â Â  â”‚Â Â  â””â”€â”€ out_err_messages
+â”‚Â Â  â”œâ”€â”€ simulations
+â”‚Â Â  â”‚Â Â  â”œâ”€â”€ executables
+â”‚Â Â  â”‚Â Â  â”œâ”€â”€ sim-reps_all
+â”‚Â Â  â”‚Â Â  â”‚Â Â  â”œâ”€â”€ estimates
+â”‚Â Â  â”‚Â Â  â”‚Â Â  â””â”€â”€ predictions
+â”‚Â Â  â”‚Â Â  â”œâ”€â”€ sim-reps_individual
+â”‚Â Â  â”‚Â Â  â””â”€â”€ sim-reps_summarised
+â”‚Â Â  â”‚Â Â      â”œâ”€â”€ estimates
+â”‚Â Â  â”‚Â Â      â””â”€â”€ predictions
+â”‚Â Â  â””â”€â”€ visualisation
+â”‚Â Â      â”œâ”€â”€ shiny_sims_visuals
+â”‚Â Â      â””â”€â”€ shiny_weibull_params
+â”œâ”€â”€ inst
+â”‚Â Â  â””â”€â”€ testdata
+â”œâ”€â”€ man
+â”œâ”€â”€ R
+â””â”€â”€ vignettes
 ```
 
 
