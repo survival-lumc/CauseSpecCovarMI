@@ -81,3 +81,4 @@ mod_fixed <- coxph(Surv(time, eps) ~ 1, data = dat,
 H0_fixed <- basehaz(mod_fixed, centered = F)
 
 nrow(H0_fixed) # everything is there!
+
