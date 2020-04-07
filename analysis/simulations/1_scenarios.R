@@ -11,7 +11,7 @@ n_sim <- 160
 
 
 # All possible parameters to vary
-n <- c(n = "500", "large" = 2000)
+n <- c(n = 500, "large" = 2000)
 prop_miss <- c("low" = .10, "high" = .50)
 beta1 <- c("null" = 0, "med" = 0.5, "large" = 1)
 mech <- c("MCAR", "MAR", "MNAR", "MAR_GEN")
@@ -94,7 +94,7 @@ scenarios_remaining <- full_factorial %>%
   ) %>% 
   
   # Add scen_num
-  mutate(scen_num = 1:dplyr::n() + max(pilot_scenarios$scen_num))
+  dplyr::mutate(scen_num = 1:dplyr::n() + max(pilot_scenarios$scen_num))
 
 
 # Bind it all together (n = 500 will come later)
