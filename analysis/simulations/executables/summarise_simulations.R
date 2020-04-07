@@ -9,8 +9,8 @@ devtools::load_all()
 
 # Read individual rds files and collapse into large DT
 list.files(
-  path = "./analysis/results/estimates/",
-  pattern = "*.rds", 
+  path = "./analysis/simulations/sim-reps_individual/",
+  pattern = "estims*", 
   full.names = T
 ) %>% 
   purrr::map(readRDS) %>% 
@@ -71,7 +71,7 @@ list.files(
 
 # Read individual rds files and collapse into large DT
 list.files(
-  path = "./analysis/results/predictions/",
+  path = "./analysis/simulations/sim-reps_individual/",
   pattern = "*.rds", 
   full.names = T
 ) %>% 

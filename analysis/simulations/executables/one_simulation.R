@@ -72,7 +72,7 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(5, 10, 25, 50) # Number of imputations of interest
+  m <- c(2, 3) #c(5, 10, 25, 50) # Number of imputations of interest
   iters_MI <- 20 # Iterations of multiple imputation procedure
   
   # Set methods and predictor matrices
@@ -244,10 +244,10 @@ one_simulation <- function(scenario, # scenario
   
   # Save as RDS in analysis/simulation results/predictions
   saveRDS(estimates, 
-          file = paste0("./analysis/results/estimates/estims_scen",
+          file = paste0("./analysis/simulations/sim-reps_individual/estims_scen",
                         scenario$scen_num, "_seed", seed, ".rds"))
   saveRDS(pooled_preds, 
-          file = paste0("./analysis/results/predictions/preds_scen",
+          file = paste0("./analysis/simulations/sim-reps_individual/preds_scen",
                         scenario$scen_num, "_seed", seed, ".rds"))
 }
 
