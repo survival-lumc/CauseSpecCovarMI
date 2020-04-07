@@ -1,19 +1,17 @@
 #!/bin/bash
-#SBATCH -J sim_causespec_head
-#SBATCH -N 1
-#SBATCH -n 1 
-#SBATCH --time=00:15:00 
-#SBATCH -o ./out_err_messages/job_%J.out
+#SBATCH -J scenario_array
+#SBATCH -n 1
+#SBATCH --time=00:05:00 
+#SBATCH --mem=1G
+#SBATCH --partition=short
+#SBATCH -o ./analysis/other/out_err_messages/scenario%a_job%A.out
+#SBATCH --array=15
 
-# Set variables
-scenario=$i
-replicate=$j
+# run %2 so two running at any given times, each with 12 cores
+
+# Set variables, change array to relevant scenario numbers
+scenario=${SLURM_ARRAY_TASK_ID}
 
 # Change scenarios to 14 (pilot) and replicate to 160
-for scenario in {3..3}
-do
-	for replicate in {1..1}
-	do
-		sbatch analysis/one_simulation.sh $scenario $replicate
-	done	
-done
+sbatch analysis/simulations/executables/one_simulation.sh $scenario 
+	

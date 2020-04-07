@@ -7,5 +7,8 @@ tests
 .Rhistory
 analysis/simulations/sim-reps_individual/estimates/estims*
 analysis/simulations/sim-reps_individual/predictions/preds*
+analysis/simulations/sim-reps_individual/processed
 analysis/simulations/sim-reps_all/estimates/estims*
 analysis/simulations/sim-reps_all/predictions/preds*
+analysis/other/out_err_messages/scenario*
+analysis/other/out_err_messages/job*
