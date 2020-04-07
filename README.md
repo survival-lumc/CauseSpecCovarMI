@@ -6,33 +6,32 @@ The is the GitLab directory for the 'Missing data for cause-specific models' pro
 
 The code directory for this project is set-up as an R-package 'compendium'. Current stucture:
 
-```powershel
-MI-cause-specific_R
-    â”œâ”€â”€â”€analysis
-    â”‚   â”œâ”€â”€â”€data
-    â”‚   â”‚   â”œâ”€â”€â”€derived_data
-    â”‚   â”‚   â””â”€â”€â”€raw_data
-    â”‚   â”œâ”€â”€â”€figures
-    â”‚   â”œâ”€â”€â”€paper
-    â”‚   â””â”€â”€â”€visualisation
-    â”‚       â”œâ”€â”€â”€shiny_sims_visuals
-    â”‚       â””â”€â”€â”€shiny_weibull_params
-    â”œâ”€â”€â”€doc
-    â”œâ”€â”€â”€inst
-    â”‚   â””â”€â”€â”€testdata
-    â”œâ”€â”€â”€man
-    â”œâ”€â”€â”€Meta
-    â”œâ”€â”€â”€R
-    â”œâ”€â”€â”€temp
-    â”‚   â”œâ”€â”€â”€notebooks
-    â”‚   â”‚   â”œâ”€â”€â”€MI-cytoscoring_EBMT
-    â”‚   â”‚   â””â”€â”€â”€MI_mds-long-term_EBMT
-    â”‚   â”‚       â””â”€â”€â”€figures
-    â”‚   â”œâ”€â”€â”€old_helpers
-    â”‚   â””â”€â”€â”€shark
-    â”‚       â”œâ”€â”€â”€data_generation
-    â”‚       â””â”€â”€â”€support_functions
-    â””â”€â”€â”€vignettes
+```
++-- analysis
+¦   +-- data
+¦   ¦   +-- derived_data
+¦   ¦   +-- raw_data
+¦   +-- notebooks
+¦   ¦   +-- MI_mds-long-term_EBMT
+¦   +-- other
+¦   ¦   +-- out_err_messages
+¦   +-- simulations
+¦   ¦   +-- executables
+¦   ¦   +-- sim-reps_all
+¦   ¦   ¦   +-- estimates
+¦   ¦   ¦   +-- predictions
+¦   ¦   +-- sim-reps_individual
+¦   ¦   +-- sim-reps_summarised
+¦   ¦       +-- estimates
+¦   ¦       +-- predictions
+¦   +-- visualisation
+¦       +-- shiny_sims_visuals
+¦       +-- shiny_weibull_params
++-- inst
+¦   +-- testdata
++-- man
++-- R
++-- vignettes
 ```
 
 
