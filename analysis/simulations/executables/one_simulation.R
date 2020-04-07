@@ -19,9 +19,16 @@ one_simulation <- function(scenario, # scenario
     "./inst/testdata/MDS_shape_rates.rds"
   )
   
+  # Check shape of 1st hazard
+  if (scenario$haz_shape == "similar") {
+    shape_ev1 <- baseline[baseline$state == "REL", "shape"]
+  } else {
+    shape_ev1 <- 1.5
+  }
+  
   # Parameter Weibull event 1
   ev1_pars <- list(
-    "a1" = baseline[baseline$state == "REL", "shape"], 
+    "a1" = shape_ev1, 
     "h1_0" = baseline[baseline$state == "REL", "rate"],
     "b1" = scenario$beta1, 
     "gamm1" = 1
@@ -65,8 +72,8 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(5, 10, 25, 50) # Number of imputations of interest, should be c(5, 25, 100)
-  iters_MI <- 20 # Iterations of multiple imputation procedure, = 25
+  m <- c(5, 10, 25, 50) # Number of imputations of interest
+  iters_MI <- 20 # Iterations of multiple imputation procedure
   
   # Set methods and predictor matrices
   mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
@@ -111,7 +118,7 @@ one_simulation <- function(scenario, # scenario
     SimsCauseSpecCovarMiss::record_warning(
       
       # Smcfcs starts here
-      SimsCauseSpecCovarMiss::smcfcs_timefix(
+      smcfcs::smcfcs(
         originaldata = dat, 
         smtype = "compet", 
         smformula = c("Surv(t, eps == 1) ~ X + Z",
