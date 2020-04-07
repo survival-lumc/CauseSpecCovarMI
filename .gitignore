@@ -5,10 +5,6 @@ doc
 Meta
 tests
 analysis/data/raw_data
-analysis/paper/WileyNJD-AMA.bst
-analysis/paper/WileyNJD-v2.cls
-analysis/paper/bibfile.bib
-analysis/paper/paper.log
-analysis/paper/paper.pag
-analysis/paper/paper.pdf
 .Rhistory
+analysis/simulations/sim-reps_all/estimates/estims*
+analysis/simulations/sim-reps_all/predictions/preds*

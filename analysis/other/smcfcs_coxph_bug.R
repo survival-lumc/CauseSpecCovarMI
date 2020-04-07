@@ -39,6 +39,7 @@ dat <- dat[order(dat$time), ]
 head(dat)
 
 # Impute X using smcfcs - will yield error 
+# not anymore from smcfcs 1.4.1!
 imps <- smcfcs(dat, 
                smtype = "coxph",
                smformula = "Surv(time, eps) ~ X + Z",
