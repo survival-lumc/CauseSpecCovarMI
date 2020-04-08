@@ -72,7 +72,7 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(2, 3) #c(5, 10, 25, 50) # Number of imputations of interest
+  m <- c(5, 10, 25, 50) # Number of imputations of interest
   iters_MI <- 20 # Iterations of multiple imputation procedure
   
   # Set methods and predictor matrices
@@ -136,7 +136,7 @@ one_simulation <- function(scenario, # scenario
                    "ch12_int" = mice::complete(imp_ch12_int, action = "all"),
                    "smcfcs" = imp_smcfcs$value$impDatasets)
   
-  cat("\n Fitting mstate model in all 400 imputed datasets... \n\n")
+  cat("\n Fitting mstate model in all 200 imputed datasets... \n\n")
   
   # Run cox models on imputed datasets
   mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate(.x)) 

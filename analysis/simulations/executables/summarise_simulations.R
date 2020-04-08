@@ -60,7 +60,7 @@ list.files(
   purrr::imap(
     ~ saveRDS(
       object = .x,
-      file = paste0("./analysis/results/estimates_summarised/", 
+      file = paste0("./analysis/simulations/sim-reps_summarised/estimates/", 
                     "estims_scen", .y, "_summarised.rds")
     ) 
   )
@@ -72,7 +72,7 @@ list.files(
 # Read individual rds files and collapse into large DT
 list.files(
   path = "./analysis/simulations/sim-reps_individual/",
-  pattern = "*.rds", 
+  pattern = "preds*", 
   full.names = T
 ) %>% 
   purrr::map(readRDS) %>% 
@@ -118,7 +118,7 @@ list.files(
   purrr::imap(
     ~ saveRDS(
       object = .x,
-      file = paste0("./analysis/results/predictions_summarised/", 
+      file = paste0("./analysis/simulations/sim-reps_summarised/predictions/", 
                     "preds_scen", .y, "_summarised.rds")
     ) 
   )
