@@ -3,6 +3,7 @@
 ##******************************************##
 
 
+devtools::load_all()
 library(shiny)
 library(tidyverse)
 
@@ -45,7 +46,7 @@ ui <- fluidPage(
       h3("Weibull params NRM (event 2)", align = "center"),
       sliderInput("shape_2", "Shape Cause 2:",
                   min = 0, max = 6,
-                  value = 0.53, step = 0.01),
+                  value = 0.5262473, step = 0.01),
       
       # Input:  ----
       sliderInput("base_2", "BaseHaz Cause 2:",
@@ -117,7 +118,7 @@ server <- function(input, output) {
   # Reactive expression to create data frame of all input values ----
   dat_cumin <- reactive({
     
-    generate_dat(n = 200,
+    generate_dat(n = 500,
                  X_type = "continous", 
                  r = .4, 
                  ev1_pars = list("a1" = input$shape_1, 
