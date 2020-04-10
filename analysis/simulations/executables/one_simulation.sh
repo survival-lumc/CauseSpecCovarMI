@@ -5,14 +5,11 @@
 #SBATCH --mem=4G 
 #SBATCH --partition=short
 #SBATCH -o ./analysis/other/out_err_messages/job%A_replicate%a.out
-#SBATCH --array=1-160:3%36
+#SBATCH --array=1-160:3%30 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30 after
 
-# Value after % eg. %12 should be multiple of 4?
-# %A is master task ID, and 
+# Read in args
 scenario=$1 # First argument, the scenario
 replicate=${SLURM_ARRAY_TASK_ID} # Second argument, the replicate
-
-#i=$i
 
 # Purge
 module purge
@@ -20,11 +17,7 @@ module purge
 # Load module
 module load statistical/R/3.6.2/gcc.8.3.1.lua
 
-# Uncomment next line if batching happening:
-#Rscript analysis/simulations/executables/run_simulations.R $scenario $replicate
-
-# The below is how to batch - must be proceede by 1-10:3 (for batch size = 3)
-
+# The below is how to batch
 i=$i
 
 # Batch size and end of sequence - minus one since we only want a batch of x
@@ -36,5 +29,9 @@ seqo=$(seq $replicate $end)
 
 for i in $seqo
 do
+  if [ $i -gt 160 ] # Stop if index is greater than (-gt) n_sim
+  then
+      break
+  fi
 	Rscript analysis/simulations/executables/run_simulations.R $scenario $i
 done
