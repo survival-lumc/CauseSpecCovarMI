@@ -22,14 +22,20 @@ one_simulation <- function(scenario, # scenario
   # Check shape of 1st hazard
   if (scenario$haz_shape == "similar") {
     shape_ev1 <- baseline[baseline$state == "REL", "shape"]
+    base_rate_ev1 <- baseline[baseline$state == "REL", "rate"]
+    
   } else {
+    
+    # shape > 1 so increasing hazard -> lower base rate to 0.04
+    # which avoids 10y EFS of zero!
     shape_ev1 <- 1.5
+    base_rate_ev1 <- 0.04
   }
   
   # Parameter Weibull event 1
   ev1_pars <- list(
     "a1" = shape_ev1, 
-    "h1_0" = baseline[baseline$state == "REL", "rate"],
+    "h1_0" = base_rate_ev1,
     "b1" = scenario$beta1, 
     "gamm1" = 1
   )

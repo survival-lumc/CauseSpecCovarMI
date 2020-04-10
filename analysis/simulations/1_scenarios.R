@@ -93,6 +93,9 @@ scenarios_remaining <- full_factorial %>%
     n == 2000
   ) %>% 
   
+  # Sort by X_level and haz_shape (for batching)
+  dplyr::arrange(X_level, haz_shape) %>% 
+
   # Add scen_num
   dplyr::mutate(scen_num = 1:dplyr::n() + max(pilot_scenarios$scen_num))
 
@@ -108,6 +111,7 @@ scenarios_updated <- dplyr::bind_rows(
 # Save as .RDS file to load in
 saveRDS(scenarios_updated, file = "inst/testdata/scenarios.rds")
 
+# Need n = 500 scens last...
 
 
 # Other -------------------------------------------------------------------
