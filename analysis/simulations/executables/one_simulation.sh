@@ -5,7 +5,7 @@
 #SBATCH --mem=4G 
 #SBATCH --partition=short
 #SBATCH -o ./analysis/other/out_err_messages/job%A_replicate%a.out
-#SBATCH --array=1-160:3 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
+#SBATCH --array=4-160:6 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
 
 # Read in args
 scenario=$1 # First argument, the scenario
