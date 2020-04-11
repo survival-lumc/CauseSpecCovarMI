@@ -87,6 +87,8 @@ estims_allreps %>%
     ) 
   )
   
+# Clean env
+rm(estims_allreps) 
  
 # Predictions -------------------------------------------------------------
 
