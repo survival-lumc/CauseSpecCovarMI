@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH -J repl_array
 #SBATCH -n 1
-#SBATCH --time=00:55:00 
+#SBATCH --time=01:15:00 
 #SBATCH --mem=4G 
-#SBATCH --partition=short
 #SBATCH -o ./analysis/other/out_err_messages/job%A_replicate%a.out
-#SBATCH --array=4-160:6 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
+#SBATCH --array=1-160:8 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
 
 # Read in args
 scenario=$1 # First argument, the scenario
@@ -21,7 +20,7 @@ module load statistical/R/3.6.2/gcc.8.3.1.lua
 i=$i
 
 # Batch size and end of sequence - minus one since we only want a batch of x
-batch_size=3
+batch_size=8
 end=$(($replicate + $batch_size - 1)) # double brackets is called 'arithmetic expansion', need dollar sign before though
 
 # Begin sequence
