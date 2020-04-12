@@ -5,7 +5,7 @@
 #SBATCH --mem=1G
 #SBATCH --partition=short
 #SBATCH -o ./analysis/other/out_err_messages/scenario%a_job%A.out
-#SBATCH --array=27,28 # These are the scenario numbers
+#SBATCH --array=92-119 # These are the scenario numbers
 
 # run %2 so two running at any given times, each with 12 cores
 
