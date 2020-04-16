@@ -1,0 +1,80 @@
+---
+title: "Visualising estimates"
+author: "Ed Bonneville"
+date: "14-4-2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load compendium + tidyverse for plotting
+devtools::load_all()
+
+library(tidyverse)
+theme_set(theme_bw(base_size = 14))
+```
+
+##
+
+```{r readin}
+# Load in processed results
+all_preds <- read_rds("all_preds.rds")
+
+```
+
+
+
+```{r test_lolly}
+all_preds %>% 
+  filter(
+    m %in% c(0, 50),
+    beta1 == "1",
+    eta1 %in% c("Weak", "None"),
+    haz_shape == "similar",
+    `combo-X_Z` == "mean_X-Z_mean",
+    X_level == "continuous",
+    prop_miss == "50%"
+  ) %>%
+  ggplot(aes(analy, rmse, col = analy, 
+             group = state, shape = state,
+             linetype = state)) +
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  geom_point(position = position_dodge(0.75), size = 2) + 
+  geom_linerange(aes(ymin = 0, ymax = rmse, 
+                     xmin = analy, xmax = analy),
+                 position = position_dodge(0.75)) +
+  coord_flip() + 
+  facet_grid(miss_mech ~ times) +
+  scale_color_brewer(palette="Dark2") +
+  xlab("Analysis") +
+  ylab("Root MSE State Probability") +
+  ggtitle("For combo mean_X-Z_mean")
+```
+
+
+
+```{r time_x}
+all_preds %>% 
+  filter(
+    m %in% c(0, 50),
+    beta1 == "1",
+    eta1 %in% c("Weak", "None"),
+    haz_shape == "similar",
+    `combo-X_Z` == "-1SD_X-Z_-1SD",
+    X_level == "continuous",
+    prop_miss == "50%"
+  ) %>% 
+  ggplot(aes(x = times, y = prob, col = analy, group = analy)) +
+  geom_point(size = 2) +
+  geom_line(alpha = .5) +
+  #scale_x_continuous(guide = guide_axis(n.dodge = 2)) +
+  facet_grid(miss_mech ~ state) +
+  ylim(c(0, 1)) +
+  scale_color_brewer(palette="Dark2") 
+
+# Can also just plot rmse instead
+
+```
