@@ -128,12 +128,12 @@ all_estims %>%
     X_level == "continuous",
     prop_miss == "50%"
   ) %>% 
-  ggplot(aes(analy, est, col = analy)) +
+  ggplot(aes(analy, bias, col = analy)) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   geom_segment(
     aes(
-      y = est - qnorm(0.975) * emp_se,
-      yend = est + qnorm(0.975) * emp_se,
+      y = bias - qnorm(0.975) * emp_se,
+      yend = bias + qnorm(0.975) * emp_se,
       x = analy,
       xend = analy
     ), 
@@ -143,7 +143,7 @@ all_estims %>%
   geom_point(size = 2) +
   xlab("Methods") +
   ylab("Estimate (95% Emp SE-based CI)") +
-  geom_hline(aes(yintercept = true), linetype = "dashed")  +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")  +
   facet_grid(miss_mech ~ var) +
   scale_color_brewer(palette="Dark2") +
   theme(legend.position = "none")
