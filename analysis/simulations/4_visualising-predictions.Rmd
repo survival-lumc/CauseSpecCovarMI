@@ -1,20 +1,40 @@
 ---
-title: "Visualising estimates"
+title: "Visualising predictions"
 author: "Ed Bonneville"
-date: "14-4-2020"
-output: html_document
+date: "22-4-2020"
+output: 
+  html_document:
+    toc: yes
+    toc_float: true
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Knitr options
+knitr::opts_chunk$set(
+  #root.dir = normalizePath(
+  #  rprojroot::find_package_root_file()
+  #),
+  #dev = 'svg', 
+  fig.retina = 2, 
+  out.width = '95%',
+  fig.height = 8,
+  echo = FALSE
+)
 
 # Load compendium + tidyverse for plotting
 devtools::load_all()
 
 library(tidyverse)
-theme_set(theme_bw(base_size = 14))
+library(scales)
+library(RColorBrewer)
+
+# Set ggplot theme
+theme_set(
+  theme_bw(base_size = 14) +
+    theme(legend.position = "bottom")
+)
 ```
 
 ##
