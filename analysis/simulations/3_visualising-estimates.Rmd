@@ -59,7 +59,7 @@ scenarios %>%
 
 ## Plotting estimates
 
-### 1. Estimate variability vs. number of imputated datasets
+### 1. Estimate variability vs. number of imputed datasets
 
 First, we can plot the average (estimated) model standard error against the number of imputed datasets $m$. 
 

@@ -21,7 +21,7 @@ ggplot_lolly <- function(dat,
                          conf.int = 0.95,
                          dodge = 0.75,
                          scales = "fixed",
-                         lims_estim) {
+                         lims_estim = NULL) {
   
   # Check if true is numeric or a variable
   if (is.numeric(true)) dat$true <- true
@@ -113,7 +113,9 @@ get_nlp_steps <- function(dat,
                           estim,
                           step_factors,
                           step_labels,
-                          top_step) {
+                          top_step,
+                          height_betw_steps,
+                          height_steps) {
   
   # Extract number of step factors
   num_steps <- length(step_factors)
@@ -130,8 +132,9 @@ get_nlp_steps <- function(dat,
   
   # Set up height of steps and space between them, based on range
   range_data <- range(dat[[estim]], na.rm = T)
-  height_steps <- 0.1 * diff(range_data)
-  height_betw_steps <- (2 / 3) * height_steps
+  
+  if (is.null(height_steps)) height_steps <- 0.1 * diff(range_data)
+  if (is.null(height_betw_steps)) height_betw_steps <- (2 / 3) * height_steps
   
   # Location of top of the first step
   if (is.null(top_step)) top_step <- range_data[1] - (1 / 4) * diff(range_data)
@@ -225,6 +228,8 @@ ggplot_nlp <- function(dat,
                        point_dodge = 0.75,
                        text_size = 4,
                        top_step = NULL,
+                       height_betw_steps = NULL,
+                       height_steps = NULL,
                        step_labels = NULL) {
   
   
@@ -243,7 +248,9 @@ ggplot_nlp <- function(dat,
                               estim = estim, 
                               step_factors, 
                               step_labels = step_labels, 
-                              top_step = top_step)
+                              top_step = top_step,
+                              height_betw_steps = height_betw_steps,
+                              height_steps = height_steps)
   
   # Prepare data for plotting
   dat_obj <- prep_nlp_data(dat = dat,
@@ -300,9 +307,6 @@ ggplot_nlp <- function(dat,
       data = dat_obj$df_steps,
       ggplot2::aes(x = scenario, y = scaled_vals, group = step_ID)
     ) +
-    ggplot2::scale_color_manual(
-      values = palo(length(unique(dat_obj$df_steps$scenario)))
-    ) +
     ggplot2::guides(colour = F) +
     ggplot2::theme(legend.position = "bottom", axis.ticks.x = element_blank()) +
     
@@ -328,7 +332,7 @@ ggplot_estimates <- function(dat,
                              method_var,
                              se,
                              true,
-                             facets,
+                             facets = NULL,
                              scales = "fixed",
                              conf.int = 0.95,
                              lims_estim = NULL) {

@@ -8,3 +8,5 @@ analysis
 LICENSE.md
 .Rhistory
 .git
+vignettes/one_simulation_demo.Rmd
+vignettes/predicted_probabilities.Rmd
