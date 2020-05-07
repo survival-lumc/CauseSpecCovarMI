@@ -37,6 +37,15 @@ dat_orig <- read.spss("analysis/data/raw_data/Final_MDS_Longterm_20200106_LK.sav
 LdW_schetelig_subset <- read.spss("analysis/data/raw_data/mds_longterm_aaauto.sav",
                                   to.data.frame = T)
 
+# Add centre var
+centre_dat <- read.spss(
+  "analysis/data/raw_data/MDS_longterm_R_180614.sav",
+  to.data.frame = T,
+  use.value.labels = T,
+  use.missings = T
+) %>% 
+  select_keeplabs("AA_AUTO", "CENTRE_allo1")
+
 # Depends on tidyverse - give to EBMT people
 select_keeplabs <- function(.data, ...) {
   
@@ -61,12 +70,13 @@ vars_keep <- c("AA_AUTO", "PATSEX", "age_allo1", "YEAR_allo1",
                "mdsclass", "donorrel", "ric_allo1", "bm_allo1",
                "pb_allo1", "pb_diag1", "bm_diag1", "AGEDONOR_allo1_1", "rel_s_allo1",
                "rel_allo1", "ci_s_allo1", "ci_allo1", "srv_s_allo1",
-               "srv_allo1")
+               "srv_allo1", "yearlastfu")
 
 # Keep variables from study 
 dat_mds <- dat_orig %>% 
   select_keeplabs(vars_keep) %>% 
-  filter(AA_AUTO %in% LdW_schetelig_subset$AA_AUTO)
+  filter(AA_AUTO %in% LdW_schetelig_subset$AA_AUTO) %>% 
+  left_join(centre_dat)
 ```
 
 
@@ -141,12 +151,17 @@ dat_mds %>%
 #dat_mds <- 
 dat_mds_aft <- dat_mds %>% 
 
-  mutate(time = ci_allo1 * 30.5) %>% # Put in days
+  mutate(time = ci_allo1 / 12) %>% # Put in yrs
   filter(!is.na(time)) %>%  # excludes 86 patients with missing prog/rel data
+  mutate(delta = as.numeric(ci_s_allo1) - 1,
+         srv_s_allo1 = as.numeric(srv_s_allo1) - 1, # this we will change after
+         stat1 = as.numeric(delta == 1),
+         stat2 = as.numeric(delta == 2))
+  
   
   # Aritifical censor at 10Y
-  mutate(time = ifelse(time > 120 * 30.5, 120 * 30.5, time),
-         delta = ifelse(time == 120 * 30.5, 0,
+  mutate(time = ifelse(time > 10, 10, time),
+         delta = ifelse(time == 10, 0,
                         as.numeric(ci_s_allo1) - 1),
          srv_s_allo1 = as.numeric(srv_s_allo1) - 1, # this we will change after
          stat1 = as.numeric(delta == 1),
@@ -162,7 +177,7 @@ ev2 <- basehaz(coxph(Surv(time, delta == 2) ~ 1,
   mutate(ev = 2)
 
 bind_rows(ev1, ev2) %>% 
-  ggplot(aes(time / 365, hazard, col = factor(ev))) +
+  ggplot(aes(time, hazard, col = factor(ev))) +
   geom_point()
 
 
@@ -463,13 +478,14 @@ mds_msfit <- msfit(cox_rel_long, newdata = new_mds,
 
 ```{r}
 # Try a model with donor age and patient age
-dat_mds_MI <- dat_mds %>% 
-  select_keeplabs(age_allo1, AGEDONOR_allo1_1, time, 
-                  delta, stat1, stat2) %>% 
+dat_mds_MI <- dat_mds_aft %>% 
+  select_keeplabs("age_allo1", "AGEDONOR_allo1_1", "time", 
+                  "delta", "stat1", "stat2", "CENTRE_allo1") %>% 
   # Compute baselines hazards
   mutate(H1 = nelsonaalen(., time, stat1),
          H2 = nelsonaalen(., time, stat2),
-         delta = factor(delta))
+         delta = factor(delta),
+         yearlastfu = factor(CENTRE_allo1, ordered = F))
 
 # Which vars actually have some data missing?
 var_names_miss <- miss_var_which(dat_mds_MI)
@@ -490,7 +506,7 @@ diag(matpred) <- 0 # dont impute a var using itself
 # We don't use time is imputation models, justuse delta as factor
 matpred[, c("time", "stat1", "stat2")] <- 0
 
-# We only imputer donor age
+# We only impute donor age
 matpred[!(rownames(matpred) %in% "AGEDONOR_allo1_1"), ] <- 0
 ```
 
@@ -505,3 +521,75 @@ complete(imps, 1) # first imputed datset
   
 # Run mstate on each imputeddataset, and pool cumincs according to Rubins rules?
 ```
+
+
+
+# Try smcfcs with year last fu as multilevel factor var
+
+
+```{r smcfcs}
+dat_mds_MI <- dat_mds_aft %>% 
+  select_keeplabs("age_allo1", "AGEDONOR_allo1_1", "time", 
+                  "delta", "stat1", "stat2", "CENTRE_allo1",
+                  "mdsclass", "donorrel", "ric_allo1",
+                  "bm_allo1") %>% 
+  # Compute baselines hazards
+  mutate(H1 = nelsonaalen(., time, stat1),
+         H2 = nelsonaalen(., time, stat2),
+         delta = factor(delta),
+         CENTRE_allo1 = factor(CENTRE_allo1, ordered = F),
+         mdsclass = droplevels(mdsclass))
+
+library(data.table)
+
+data.table(dat_mds_MI) %>% 
+  .[, .("N" = .N) , by = CENTRE_allo1] %>% 
+  View()
+
+# Which vars actually have some data missing?
+var_names_miss <- miss_var_which(dat_mds_MI)
+
+# Set methods accordingly, mlogit
+meth_miss <- setNames(c("norm", "logreg", "norm"), var_names_miss)
+
+# Prep imputation methods
+meths <- setNames(rep("", ncol(dat_mds_MI)), names(dat_mds_MI))
+meths[var_names_miss] <- meth_miss
+
+# Create matrix for MI
+matpred <- matrix(1, ncol(dat_mds_MI), ncol(dat_mds_MI),
+                  dimnames = list(names(dat_mds_MI), names(dat_mds_MI)))
+
+diag(matpred) <- 0 # dont impute a var using itself
+
+# We don't use time is imputation models, justuse delta as factor
+matpred[, c("time", "stat1", "stat2")] <- 0
+matpred[, c("H1", "H2", "delta")] <- 0
+
+matpred
+
+# We only imputer donor age
+matpred[!(rownames(matpred) %in% c("AGEDONOR_allo1_1", 
+                                   "ric_allo1",
+                                   "bm_allo1")), ] <- 0
+
+test <- smcfcs(originaldata = dat_mds_MI, 
+               smtype = "compet", 
+               smformula = c("Surv(time, delta == 1) ~ age_allo1 + AGEDONOR_allo1_1 + bm_allo1 + ric_allo1 + mdsclass + donorrel",
+                             "Surv(time, delta == 2) ~ age_allo1 + AGEDONOR_allo1_1 + bm_allo1 + ric_allo1 + mdsclass + donorrel"),
+               method = meths, 
+               predictorMatrix = matpred, 
+               m = 5)
+
+plot(test$smCoefIter[, 1, 10])
+
+# Things that go wrong:
+# - don't include centre in substantive model - the cause-specific cox wont converge
+# - Pick correct imputation methods
+# - If you have subsetted factors, make sure all levels are non-zero
+# just use droplevels() to be safe
+# - No problem however including centre in the imputation models, specify it
+# in matpred before hand
+```
+
+
