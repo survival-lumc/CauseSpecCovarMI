@@ -109,7 +109,7 @@ scenarios_updated <- dplyr::bind_rows(
 
 
 # Add the n = 500 pilot scenarios
-n_sim_500 <- 625 # 0.25^2/0.01^2
+n_sim_500 <- 400 # 0.2^2/0.01^2
   
 scens_final <- pilots_n500 %>% 
   dplyr::mutate(

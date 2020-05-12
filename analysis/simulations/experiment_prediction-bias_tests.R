@@ -45,7 +45,7 @@ ev2_pars <- list(
 # Generate a dataset based on scenario
 dat <- SimsCauseSpecCovarMiss::generate_dat(
   n = 500,
-  X_type = "binary", 
+  X_type = "continous", 
   r = 0.5, 
   ev1_pars = ev1_pars,
   ev2_pars = ev2_pars, 
@@ -67,7 +67,7 @@ summary(
 lol <- replicate(n = 250, expr = {
   dat <- SimsCauseSpecCovarMiss::generate_dat(
     n = 500,
-    X_type = "binary", 
+    X_type = "continuous", 
     r = 0.5, 
     ev1_pars = ev1_pars,
     ev2_pars = ev2_pars, 
