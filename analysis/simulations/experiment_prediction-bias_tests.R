@@ -45,17 +45,50 @@ ev2_pars <- list(
 # Generate a dataset based on scenario
 dat <- SimsCauseSpecCovarMiss::generate_dat(
   n = 500,
-  X_type = "continuous", 
+  X_type = "binary", 
   r = 0.5, 
   ev1_pars = ev1_pars,
   ev2_pars = ev2_pars, 
-  #rate_cens = baseline[baseline$state == "EFS", "rate"], 
-  rate_cens = 0.026,
-  mech = "MAR", 
-  p = 0,
+  rate_cens = baseline[baseline$state == "EFS", "rate"], 
+  #rate_cens = 0.026,
+  mech = "MAR_GEN", 
+  p = 0.5,
   eta1 = -1
 )
 
+
+
+summary(
+  survival::coxph(Surv(t, eps == 1) ~ X + Z, data = dat)
+)$coefficients[1,3]
+
+
+
+lol <- replicate(n = 250, expr = {
+  dat <- SimsCauseSpecCovarMiss::generate_dat(
+    n = 500,
+    X_type = "binary", 
+    r = 0.5, 
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars, 
+    rate_cens = baseline[baseline$state == "EFS", "rate"], 
+    #rate_cens = 0.026,
+    mech = "MAR_GEN", 
+    p = 0.5,
+    eta1 = -1
+  )
+  
+  
+  
+  summary(
+    survival::coxph(Surv(t, eps == 1) ~ X + Z, data = dat)
+  )$coefficients[1,3]
+  
+})
+
+mean(lol)
+
+hist(lol)
 
 # Checking the baseline hazards -------------------------------------------
 

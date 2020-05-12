@@ -108,8 +108,19 @@ scenarios_updated <- dplyr::bind_rows(
   dplyr::mutate(seed = scen_num * n_sim)
 
 
+# Add the n = 500 pilot scenarios
+n_sim_500 <- 625 # 0.25^2/0.01^2
+  
+scens_final <- pilots_n500 %>% 
+  dplyr::mutate(
+    scen_num = 1:dplyr::n() + max(scenarios_updated$scen_num),
+    seed = scen_num * n_sim_500 
+  ) %>% 
+  dplyr::bind_rows(scenarios_updated) %>% 
+  dplyr::arrange(scen_num) 
+
 # Save as .RDS file to load in
-saveRDS(scenarios_updated, file = "inst/testdata/scenarios.rds")
+saveRDS(scens_final, file = "inst/testdata/scenarios.rds")
 
 # Need n = 500 scens last...
 
