@@ -4,7 +4,7 @@
 #SBATCH --time=01:15:00 
 #SBATCH --mem=4G 
 #SBATCH -o ./analysis/other/out_err_messages/job%A_replicate%a.out
-#SBATCH --array=1-625:5  #1-160:8 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
+#SBATCH --array=1-400:5  #1-160:8 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
 
 # Read in args
 scenario=$1 # First argument, the scenario
@@ -32,7 +32,7 @@ seqo=$(seq $replicate $end)
 
 for i in $seqo
 do
-  if [ $i -gt 625 ] # Stop if index is greater than (-gt) n_sim, 160 for n = 200 and 625 for n = 500
+  if [ $i -gt 400 ] # Stop if index is greater than (-gt) n_sim, 160 for n = 200 and 625 for n = 500
   then
       break
   fi
