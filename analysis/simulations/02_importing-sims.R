@@ -116,8 +116,8 @@ all_estims <- grep(
     ),
     n = factor(
       n,
-      levels = "n=2000",
-      labels = "2000"
+      levels = c("n=500", "n=2000"),
+      labels = c("500", "2000")
     )
   )]
 
@@ -224,8 +224,8 @@ all_preds <- grep(
     ),
     n = factor(
       n,
-      levels = "n=2000",
-      labels = "2000"
+      levels = c("n=500", "n=2000"),
+      labels = c("500", "2000")
     )
   )] %>% 
   
