@@ -83,8 +83,14 @@ dat_mds <- dat_orig %>%
 # Basic exploration
 
 ```{r vis_explor}
-gg_miss_var(dat_mds, show_pct = T)
+theme_set(theme_bw(base_size = 14))
+p <- gg_miss_var(dat_mds, show_pct = T) +
+  theme_bw(base_size = 16) + xlab(NULL)
 miss_var_summary(dat_mds)
+
+install.packages("svglite")
+ggsave("mds_long-term_missings.svg", dpi = "retina", units = "in",
+       width = 8, height = 10)
 
 dat_mds %>% 
   group_by(mdsclass) %>% 

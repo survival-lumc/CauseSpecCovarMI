@@ -1,0 +1,407 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+  ---
+title: "MI on EBMT Data DJE"
+author: "Ed Bonneville"
+date: "20-8-2019"
+output: md_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Set directory 
+#setwd("EBMT_data_example")
+
+#if (suppressWarnings(!require("pacman", character.only = T))) install.packages("pacman", dep = T); library(pacman)
+
+#pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
+#                "mitools", "survival", "foreign",
+#                "naniar", "VIM")
+
+set.seed(1984)
+```
+
+
+## Data prep & exploration
+
+
+```{r read_in}
+# Read-in DJE data 
+dat_orig <- suppressWarnings(read.spss("../../data/raw_data/sAML_final_20160630_withcytoscoring_b.sav", 
+                                       to.data.frame = T,
+                                       use.value.labels = T, 
+                                       use.missings = T)) 
+  
+
+dat <- dat_orig %>% 
+  
+  # Select vars from paper 
+  dplyr::select(age_recat, # age in decades
+         #AGEDIAG_diag1, # age at diagnosis
+         classification_diag1, # disease classification
+         donor, # donor type
+         source, # stem cell source
+         CR_s_allo1, # complete remission
+         karnofsky, # dichotom karnofsky
+         #karnofsk3,
+         cmvpat,# CMV serostatus
+         cytog_recat, # Cytogenics
+         #cytog_comp,
+         tcelexvivo_allo1, # ex-vivo t-cell depl
+         tbi_allo1, # total body irradiation
+         ric, # conditioning 
+         srv_s, 
+         srv_t, 
+         ci_s, 
+         ci_t) %>% 
+  
+  # Label all other na values
+  replace_with_na(replace = list(karnofsky = -997,
+                                 cytog_recat = "Missing")) %>%
+  
+  # Clean up other labels
+  mutate(age_recat = as.numeric(age_recat),
+         karnofsky = case_when(karnofsky == "<70" ~ "<=80",
+                               karnofsky == "70-80" ~ "<=80",
+                               karnofsky == "90-100" ~ ">=90")) %>% 
+  
+  # Relevel some factors, add cum hazard for overall survival
+  mutate(karnofsky = factor(karnofsky, levels = c(">=90", "<=80")),
+         cytog_recat = factor(cytog_recat, levels = c("good", "intermediate", "poor"), 
+                              ordered = T),
+         cumhaz_OS = nelsonaalen(., srv_t, srv_s))
+
+
+
+# Not when prepapring data, replace_with_na() is one of the possible functions
+# replace_with_na_all() is even more concise
+
+```
+
+
+Using `naniar`, `VIM` package for missing descriptives/visulisations:
+
+
+```{r naniar}
+# Overall, set show_pct = F for absolute numbers
+p <- gg_miss_var(dat, show_pct = T) +
+  theme_bw(base_size = 16) + xlab(NULL)
+
+ggsave("cytoscoring_missings.svg", dpi = "retina", units = "in",
+       width = 8, height = 10)
+
+# By classification
+gg_miss_var(dat, show_pct = T, facet = classification_diag1)
+
+# Numerical summary - general
+miss_var_summary(dat)
+
+# Faceted by classification
+dat %>% 
+  group_by(classification_diag1) %>% 
+  miss_var_summary() %>% 
+  as.data.frame()
+
+# What about some quick-fire stats?
+# Look through different functions using naniar:: + tab
+
+# Eg.
+prop_complete_case(dat) # proportion of complete cases
+n_case_miss(dat) # number of cases with missingness
+#which_na(dat) # where are these cases? (vector)
+#n_miss_row(dat) # number of missings per case (vector)
+miss_case_table(dat) # number of cases with 1, 2 .. n missing data (in a table)
+
+# etc.
+
+
+# Patterns using vim
+aggr(dat, col = c('navyblue', 'red'), numbers=TRUE, 
+     combined = T, #of niet
+     sortVars = TRUE, labels = names(data), cex.axis=.7, gap=3, 
+     ylab = c("Histogram of missing data", "Pattern"))
+
+
+# There are more useful visualisations, but so far developed only for continuous data
+# here is an example with simulated data
+dat_sim <- data.frame(x <- runif(100, 0, 20),
+                      y <- 2 * cos(x) +  x + rnorm(100)) %>% 
+  # Induce some missing
+  mutate(miss_x = rbinom(n(), 1, 0.35),
+         miss_y = rbinom(n(), 1, 0.2),
+         x_new = ifelse(miss_x == 1, NA, x),
+         y_new = ifelse(miss_y == 1, NA, y))
+
+# See the missings
+ggplot(dat_sim, aes(x_new, y_new)) + geom_miss_point()
+
+# The alternative is doing the below, and getting "Warning: removed z rows containing missings"
+ggplot(dat_sim, aes(x_new, y_new)) + geom_point()
+
+```
+
+
+## MI
+
+
+### First model for overall survival
+
+
+```{r mice_prep}
+
+# For overall survival we leave out ci_t and ci_s (or else smcfcs doesn't like it)
+dat_os <- dat %>% 
+  select(-ci_s, -ci_t)
+
+# Which vars actually have some data missing?
+var_names_miss <- miss_var_which(dat_os)
+
+# Set methods accordingly
+meth_miss <- setNames(c("logreg", "logreg", "logreg", "polr", "logreg", "logreg", "logreg"),
+                 var_names_miss)
+
+
+# Prep imputation methods
+meths <- setNames(rep("", ncol(dat_os)), names(dat_os))
+meths[var_names_miss] <- meth_miss
+
+
+# Create matrix for MI
+matpred <- matrix(1, ncol(dat_os), ncol(dat_os),
+                  dimnames = list(names(dat_os), names(dat_os)))
+
+diag(matpred) <- 0
+
+# We don't use time is imputation models
+matpred[, "srv_t"] <- 0
+
+# We don"t impute it either
+matpred["srv_t", ] <- 0
+
+```
+
+
+Run some MICE: 
+
+
+```{r MICE}
+imps <- mice(dat_os, m = 5, predictorMatrix = matpred, method = meths)
+
+imps$imp$cytog_recat
+
+res <- with(imps, coxph(Surv(srv_t, srv_s) ~ age_recat + classification_diag1 + donor + 
+                   source + CR_s_allo1 + karnofsky + cmvpat + cytog_recat + 
+                   tcelexvivo_allo1 + tbi_allo1 + ric)) %>% 
+  pool() %>% 
+  summary() %>% 
+  as.data.frame() 
+
+# Add hazard ratio
+res$HR <- exp(res$estimate)
+
+res
+```
+
+
+SMCFCS - Bartlett (2015):
+
+
+```{r smcfcs}
+
+# change polr to podds
+meths["cytog_recat"] <- "podds"
+
+
+mod_smcfcs <- smcfcs(originaldata = dat_os, 
+                     smtype = "coxph", 
+                     smformula = "Surv(srv_t, srv_s) ~ age_recat + classification_diag1 + donor + 
+                     source + CR_s_allo1 + karnofsky + cmvpat + cytog_recat +
+                     tcelexvivo_allo1 + tbi_allo1 + ric", 
+                     method = meths,
+                     predictorMatrix = matpred, 
+                     m = 5)
+
+# Runs
+impobj <- imputationList(mod_smcfcs$impDatasets)
+models <- with(impobj, coxph(Surv(srv_t, srv_s) ~ age_recat + classification_diag1 + donor + 
+                     source + CR_s_allo1 + karnofsky + cmvpat + cytog_recat +
+                     tcelexvivo_allo1 + tbi_allo1 + ric))
+
+res2 <-summary(MIcombine(models))
+
+res2$HR <- exp(res2$results)
+
+# Compare smcfcs & mice results
+res
+res2
+```
+
+
+# Fitting a weibull model to the data
+
+
+```{r weibz}
+library(cmprsk)
+
+# Get hazards without admin censoring at 36 mo
+dat_orig <- dat_orig %>% 
+  mutate(ci_s_new = case_when(ci_s_allo1 == "rfs" ~ 0,
+                              ci_s_allo1 == "nrm" ~ 2,
+                              ci_s_allo1 == "relapse" ~ 1)) 
+
+cuminc_1 <- cuminc(dat_orig$ci_allo1, dat_orig$ci_s_new)
+plot(cuminc_1, xlab = "Months", col = c("blue", "black"), curvlab = c("Relapse", "NRM"),
+     xlim = c(0, 60))
+
+
+# Relapse
+mod_rel <- survreg(Surv(ci_allo1 / 12, ci_s_new == 1) ~ 1, data = dat_orig, dist = "weibull")
+coefs_rel <- mod_rel$coefficients
+shape_rel <- 1 / mod_rel$scale
+rate_rel <- exp(coefs_rel[1])^(-shape_rel)
+
+# Print it 
+shape_rel
+rate_rel
+
+
+# NRM
+mod_nrm <- survreg(Surv(ci_allo1 / 12, ci_s_new == 2) ~ 1, data = dat_orig, dist = "weibull")
+coefs_nrm <- mod_nrm$coefficients
+shape_nrm <- 1 / mod_nrm$scale
+rate_nrm <- exp(coefs_nrm[1])^(-shape_nrm)
+
+shape_nrm
+rate_nrm
+
+
+mod_cens <- survreg(Surv(srv_allo1 / 12, srv_s_allo1 == "alive") ~ 1, data = dat_orig, dist = "exponential")
+
+coefs_cens <- mod_cens$coefficients
+shape_cens <- 1 / mod_cens$scale
+rate_cens <- exp(coefs_cens[1])^(-shape_cens)
+
+shape_cens
+rate_cens
+
+```
+
+
+# Try artifical censoring at 60 months 
+
+
+```{r}
+# Artifical 60 mo. censoring 
+dat_60mo <- dat_orig %>% 
+  mutate(ci_s_60 = ifelse(ci_allo1 > 60, 0, ci_s_new),
+         ci_allo1_60 = ifelse(ci_allo1 > 60, 60, ci_allo1),
+         srv_s_60 = ifelse(srv_allo1 > 60, 1, srv_s_allo1),
+         srv_allo1_60 = ifelse(srv_allo1 > 60, 60, srv_allo1)) %>% 
+  select(ci_s_new, ci_allo1, srv_s_allo1, srv_allo1,
+         ci_s_60, ci_allo1_60, srv_s_60, srv_allo1_60)
+
+cuminc_2 <- cuminc(dat_60mo$ci_allo1_60, dat_60mo$ci_s_60)
+plot(cuminc_2, xlab = "Months", col = c("blue", "black"), curvlab = c("Relapse", "NRM"))
+
+
+# This is censoring distirbution
+hist(dat_60mo[dat_60mo$srv_s_60 == 1,]$srv_allo1_60, breaks = 15)
+hist(dat_orig[dat_orig$srv_s_allo1 == "alive", ]$srv_allo1, breaks = 15)
+
+
+# Fit weibull model on this
+
+# Relapse
+mod_rel_60 <- survreg(Surv(ci_allo1_60 / 12, ci_s_60 == 1) ~ 1, 
+                      data = dat_60mo, dist = "weibull")
+coefs_rel_60 <- mod_rel_60$coefficients
+shape_rel_60 <- 1 / mod_rel_60$scale
+rate_rel_60 <- exp(coefs_rel_60[1])^(-shape_rel_60)
+
+# Print it 
+shape_rel_60
+rate_rel_60
+
+
+# NRM
+mod_nrm_60 <- survreg(Surv(ci_allo1_60 / 12, ci_s_60 == 2) ~ 1, 
+                      data = dat_60mo, dist = "weibull")
+coefs_nrm_60 <- mod_nrm_60$coefficients
+shape_nrm_60 <- 1 / mod_nrm_60$scale
+rate_nrm_60 <- exp(coefs_nrm_60[1])^(-shape_nrm_60)
+
+shape_nrm_60
+rate_nrm_60
+
+# Subset data before 60 mo?
+
+```
+
+
+# Censoring work
+
+
+```{r}
+# Note in srv_s vars 1 is alive and 2 is dead
+# Censoring is event and people alive after 60 die at 60,01
+dat_60mo_cens <- dat_orig %>% 
+  mutate(srv_s_60 = ifelse(srv_allo1 > 60, 2, srv_s_allo1),
+         srv_allo1_60 = ifelse(srv_allo1 > 60, 60.01, srv_allo1))
+  
+hist(dat_60mo_cens[dat_60mo_cens$srv_s_60 == 1, ]$srv_allo1_60, breaks = 30)
+
+revkm <- survfit(Surv(srv_allo1_60, srv_s_60 == 1) ~ 1, data = dat_60mo_cens)
+  
+plot(revkm)
+
+mod_cens <- survreg(Surv(srv_allo1 / 12, srv_s_allo1 == "alive") ~ 1, 
+                    data = dat_60mo_cens, dist = "exponential")
+
+coefs_cens <- mod_cens$coefficients
+shape_cens <- 1 / mod_cens$scale
+rate_cens <- exp(coefs_cens[1])^(-shape_cens)
+
+shape_cens
+rate_cens
+```
+
+
+# Additional code
+
+```{r}
+# For plotting
+haz_weib <- Vectorize(function(alph, lam, t) {
+  return(alph * lam * t^(alph - 1))
+})
+
+dens_weib <- Vectorize(function(alph, lam, t) {
+  haz_weib(alph, lam, t) * exp(-lam * t^alph)
+})
+
+curve(dens_weib(shape_rel, rate_rel, x))
+curve(dens_weib(shape_nrm, rate_nrm, x), add = TRUE)
+
+plot(density(dat_orig[dat_orig$ci_s_new == 1, ]$ci_allo1, na.rm = T))
+lines(density(dat_orig[dat_orig$ci_s_new == 2, ]$ci_allo1, na.rm = T))
+
+
+  # Other code survfit 
+dat$ci_s <- factor(dat$ci_s, levels = 0:2, labels = c("Censored", "Relapse","NRM"))
+cuminc_1.1 <- survfit(Surv(ci_t, ci_s) ~ 1, data = dat)
+plot(cuminc_1.1, mark.time = FALSE, lwd = 2)
+```
+
+## Set back
+
+```{r}
+## Set working directory back to head if want to go back to head
+#setwd("../../code_MI_comprisks/")
+#file.edit("simulations_main.R")
+
+```
