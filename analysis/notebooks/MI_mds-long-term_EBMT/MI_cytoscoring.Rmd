@@ -33,7 +33,7 @@ set.seed(1984)
 
 ```{r read_in}
 # Read-in DJE data 
-dat_orig <- suppressWarnings(read.spss("../../data/raw_data/sAML_final_20160630_withcytoscoring_b.sav", 
+dat_orig <- suppressWarnings(read.spss("analysis/data/raw_data/sAML_final_20160630_withcytoscoring_b.sav", 
                                        to.data.frame = T,
                                        use.value.labels = T, 
                                        use.missings = T)) 
@@ -91,7 +91,7 @@ Using `naniar`, `VIM` package for missing descriptives/visulisations:
 ```{r naniar}
 # Overall, set show_pct = F for absolute numbers
 p <- gg_miss_var(dat, show_pct = T) +
-  theme_bw(base_size = 16) + xlab(NULL)
+  theme_bw(base_size = 30) + xlab(NULL)
 
 ggsave("cytoscoring_missings.svg", dpi = "retina", units = "in",
        width = 8, height = 10)

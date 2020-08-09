@@ -186,7 +186,7 @@ gen_cmprsk_times <- function(n,
     
   } else if (mod_type == "total") {
     
-    # n = 1 is misleading: this is vectorised so we actually obtain n samples
+    # This is a mistake - change this
     t <- invtrans_weib(
       n = 1, 
       alph1 = ev1_pars$a1, 

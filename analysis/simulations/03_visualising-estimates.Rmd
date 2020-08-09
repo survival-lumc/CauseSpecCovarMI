@@ -1,7 +1,7 @@
 ---
 title: "Visualising estimates"
 author: "Ed Bonneville"
-date: "16-4-2020"
+date: "17-6-2020"
 output: 
   html_document:
     toc: yes
@@ -36,6 +36,9 @@ theme_set(
   theme_bw(base_size = 14) +
     theme(legend.position = "bottom")
 )
+
+palo <- colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))
+#scale_color_manual(values = palo(n))
 ```
 
 
@@ -111,19 +114,20 @@ scenarios %>% filter(
    eta1 == "-2" | is.na(eta1),
     haz_shape == "similar",
     beta1 == "1",
+    n == 2000,
     X_level == "continous",
     prop_miss == "0.5"
 ) %>% 
   knitr::kable()
 ```
 
-This time, the columns are the variables and the rows are the missingness mechanisms. The dashed lines in the facets are the true (data-generating)
-coefficient value, and the 95\% confidence intervals are built symmetrically based on the empirical SEs.
+This time, the columns are the variables and the rows are the missingness mechanisms. The y axis plots estimated - true, and the 95\% confidence intervals are built symmetrically based on the empirical SEs.
 
 ```{r onescen}
 all_estims %>% 
   filter(
     m %in% c(0, 50),
+    n == 2000,
     eta1 != "Weak",
     haz_shape == "similar",
     beta1 == "1",
@@ -144,7 +148,7 @@ all_estims %>%
   ) + 
   geom_point(size = 2) +
   xlab("Methods") +
-  ylab("Estimate (95% Emp SE-based CI)") +
+  ylab("Estimate - True (95% Emp SE-based CI)") +
   geom_hline(aes(yintercept = 0), linetype = "dashed")  +
   facet_grid(miss_mech ~ var) +
   scale_color_brewer(palette="Dark2") +
@@ -158,17 +162,18 @@ all_estims %>%
   filter(
     m %in% c(0, 50),
     eta1 != "Weak",
+    n == 2000,
     haz_shape == "similar",
     beta1 == "1",
     #X_level == "continuous",
     prop_miss == "50%"
   ) %>% 
-  ggplot(aes(analy, est, col = analy)) +
+  ggplot(aes(analy, bias, col = analy)) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   geom_segment(
     aes(
-      y = est - qnorm(0.975) * emp_se,
-      yend = est + qnorm(0.975) * emp_se,
+      y = bias - qnorm(0.975) * emp_se,
+      yend = bias + qnorm(0.975) * emp_se,
       x = analy,
       xend = analy
     ), 
@@ -177,8 +182,8 @@ all_estims %>%
   ) + 
   geom_point(size = 2) +
   xlab("Methods") +
-  ylab("Estimate (95% Emp SE-based CI)") +
-  geom_hline(aes(yintercept = true), linetype = "dashed")  +
+  ylab("Estimate - True (95% Emp SE-based CI)") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")  +
   facet_grid(miss_mech * X_level ~ var) +
   scale_color_brewer(palette="Dark2") +
   theme(legend.position = "none")
@@ -196,6 +201,7 @@ scenarios %>% filter(
     !is.na(eta1),
     haz_shape == "similar",
     beta1 == "1",
+    n == 2000,
     #X_level == "continous",
     prop_miss == "0.5") %>% 
   knitr::kable()
@@ -214,6 +220,7 @@ all_estims %>%
     m %in% c(0, 50),
     haz_shape == "similar",
     miss_mech != "MCAR",
+    n == 2000,
     beta1 == "1",
     #X_level == "continuous",
     prop_miss == "50%"
@@ -250,6 +257,7 @@ scenarios %>% filter(
     is.na(eta1) | eta1 == "-2",
     #haz_shape == "similar",
     beta1 == "1",
+    n == 2000,
     #X_level == "continous",
     prop_miss == "0.5") %>% 
   knitr::kable()
@@ -263,6 +271,7 @@ all_estims %>%
     #haz_shape == "similar",
     #miss_mech != "MCAR",
     beta1 == "1",
+    n == 2000,
     eta1 == "Strong" | is.na(eta1),
     #X_level == "continuous",
     prop_miss == "50%"
@@ -304,6 +313,7 @@ all_estims %>%
     #miss_mech != "MCAR",
     beta1 == "1",
     eta1 == "Strong",
+    n == 2000
     #X_level == "continuous",
     #prop_miss == "50%"
   ) %>% 
@@ -343,99 +353,45 @@ The following 16 scenarios will be shown:
 scenarios %>% filter(
     miss_mech == "MAR",
     X_level == "continous",
+    n == 2000,
     beta1 != "0") %>% 
   knitr::kable()
 ```
 
-Here is the plot:
+Here is the plot (*For variable X.1 only*):
 
 ```{r nested_loop_X1}
 
 # Attempt at nested loop plot for X1
-dat_nlp <- all_estims %>% 
-  filter(m %in% c(0, 50),
-         var == "X.1",
-         beta1 != "0",
-         miss_mech != "MCAR")
-
-# We only plot est, and the colours are the methods
-# What is varied?
-# - Prop miss (two levels)
-# - Beta1 (0.5 and 1, two levels)
-# - miss mech (4 levels, maybe use facets?)
-# - eta1 (2 real levels, only relevant for three of the mechs)
-# - haz shape two levels
-# - Facet by X_level after
-
-# Need library scales
-
-# Order of nesting
-#Propmiss then haz shape, then beta1, then eta1
-dat_nlp_plot <- dat_nlp %>% 
-  
- # You first order by facets, then nesting order 
- arrange(beta1, X_level, prop_miss, haz_shape, eta1) %>% 
-  mutate(
-    inter = interaction(
-      analy, miss_mech, X_level, beta1, 
-      prop_miss, haz_shape, eta1, 
-      lex.order = T # important
-    ),
-    scenario = interaction(
-      beta1, prop_miss, haz_shape, eta1
-    )
-  ) %>% 
-
-  # Rescale vars 
-  mutate(
-    beta1 = as.numeric(as.character(beta1)),
-    prop_miss = rescale(as.numeric(prop_miss), to = c(0.25, 0.3)),
-    haz_shape = rescale(as.numeric(haz_shape), to = c(0.15, 0.20)),
-    eta1 = rescale(as.numeric(eta1), to = c(0.05, 0.1))
-  ) 
-
-
-palo <- colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))
-
-
-dat_nlp_plot %>% 
-  filter(
-    miss_mech == "MAR",
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
     X_level == "continuous"
-  ) %>% 
-  #group_by(miss_mech, X_level) %>% 
-  mutate(
-    scen = seq_along(inter) * 2 - 2
-  ) %>%
-  ggplot(aes(scen, est, shape = analy,
-             col = scenario)) +
-  geom_point(size = 2, alpha = 0.8) +
-  ylim(c(0, 1.2)) + 
-  geom_step(aes(x = scen, y = beta1, group = 1), col = "black",
-            linetype = "dashed", alpha = 0.75) + 
-  geom_step(aes(x = scen, y = prop_miss, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = haz_shape, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = eta1, group = 1), 
-            col = "black") +
-  annotate("text", label = "Missing: 10%, 50%", 
-           x = 3, y = 0.33,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Haz shape: similar, diff", 
-           x = 3, y = 0.23,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Eta1: weak, strong", 
-           x = 3, y = 0.13,
-           size = 3, hjust = 0) +
-  coord_cartesian(expand = 0) + 
-  guides(colour = F) +
-  scale_x_continuous(NULL, breaks = NULL) +
-  scale_color_manual(values = palo(
-    length(levels(dat_nlp_plot$scenario))
-  )) + 
-  ylab("Estimate (X.1)") +
-  ggtitle("Nested loop plot for  MAR and contin X")  
+] %>% 
+  
+  # Add relative bias 
+  .[, rel_bias := 100 * bias / true]
+
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "rel_bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = NULL) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias")
+
+  #ylab("Estimate (X.1)") +
+  #ggtitle("Nested loop plot for  MAR and contin X")  
 #what am i looking at
 
 # Make function! and look at below!
@@ -449,49 +405,30 @@ Scenarios are ordered along the x axis based on some manipulated variables (eta1
 In the plot below (for example) we can identify a scenario as follows:
 
 ```{r}
-dat_nlp_plot %>% 
-  filter(
-    miss_mech == "MAR",
-    X_level == "continuous"
-  ) %>% 
-  #group_by(miss_mech, X_level) %>% 
-  mutate(
-    scen = seq_along(inter) * 2 - 2
-  ) %>%
-  ggplot(aes(scen, est, shape = analy,
-             col = scenario)) +
-    geom_rect(aes(xmin = 72, xmax = 84, ymin = 0, ymax = 1.2),
-            alpha = 0.3, fill = "grey70", col = NA) +
+p <- ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = NULL) + 
   annotate("text", label = "Scenario 52 \n (50%, diff, strong)",
-           x = 78, y = 0.8,
+           x = 7.5, y = -0.15,
            size = 3, hjust = 0.5, angle = 90) +
-  geom_point(size = 2, alpha = 0.8) +
-  ylim(c(0, 1.2)) + 
-  geom_step(aes(x = scen, y = beta1, group = 1), col = "black",
-            linetype = "dashed", alpha = 0.75) + 
-  geom_step(aes(x = scen, y = prop_miss, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = haz_shape, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = eta1, group = 1), 
-            col = "black") +
-  annotate("text", label = "Missing: 10%, 50%", 
-           x = 3, y = 0.33,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Haz shape: similar, diff", 
-           x = 3, y = 0.23,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Eta1: weak, strong", 
-           x = 3, y = 0.13,
-           size = 3, hjust = 0) +
-  coord_cartesian(expand = 0) + 
-  guides(colour = F) +
-  scale_x_continuous(NULL, breaks = NULL) +
-  scale_color_manual(values = palo(
-    length(levels(dat_nlp_plot$scenario))
-  )) +  
-  ylab("Estimate (X.1)") +
-  ggtitle("Nested loop plot for  MAR and contin X") 
+  #scale_color_brewer(palette="Dark2") +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias")
+
+p$layers <- c(
+  geom_rect(aes(xmin = 7, xmax = 8, ymin = -0.4, ymax = 0.1),
+            alpha = 0.1, fill = "grey70", col = NA),
+  p$layers
+)
+p
 ```
 
 Just by looking across the plot, you can already make some tentative statements (which of course will need further investigation). In this case, for the estimated $\hat{\beta_1}$ with missingness at random and continous $X$:
@@ -514,107 +451,566 @@ If we go one step further and use facets, we can display a whopping **96 scenari
 Given how cramped it looks on a vertical html, this would be plotted full page on an A4 in landscape.
 
 ```{r nlp_one}
-dat_nlp_plot %>% 
-  group_by(miss_mech, X_level) %>% 
-  mutate(
-    scen = seq_along(inter) * 2
-  ) %>%
-  ggplot(aes(scen, est, shape = analy,
-             col = scenario)) +
-  geom_point(size = 2, alpha = 0.8) +
-  ylim(c(0, 1.2)) + 
-  geom_step(aes(x = scen, y = beta1, group = 1), col = "black",
-            linetype = "dashed", alpha = 0.75) + 
-  geom_step(aes(x = scen, y = prop_miss, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = haz_shape, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = eta1, group = 1), 
-            col = "black") +
-  annotate("text", label = "Missing: 10%, 50%", 
-           x = 3, y = 0.33,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Haz shape: similar, diff", 
-           x = 3, y = 0.23,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Eta1: weak, strong", 
-           x = 3, y = 0.13,
-           size = 3, hjust = 0) +
-  facet_grid(X_level ~ miss_mech) + # X_level * eta
-  coord_cartesian(expand = 0) + 
-  guides(colour = F) +
-  scale_x_continuous(NULL, breaks = NULL) +
-  scale_color_manual(values = palo(
-    length(levels(dat_nlp_plot$scenario))
-  )) + 
-  ylab("Estimate") 
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech != "MCAR" #&
+    #X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = NULL) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") +
+  facet_grid(X_level ~ miss_mech) 
 ```
 
 
-## Extra: the 'traditional' NLP
 
-Really not suitable for this study in my opinion. Plus rather lelijk
+## NLPs - in tabs (still X.1) {.tabset}
 
-```{r}
-# Traditional nested loop
-dat_nlp_plot <- dat_nlp %>% 
-  
- # You first order by facets, then nesting order 
- arrange(beta1, X_level, prop_miss, haz_shape, eta1) %>% 
-  mutate(
-    inter = interaction(
-      miss_mech, X_level, beta1, 
-      prop_miss, haz_shape, eta1, 
-      lex.order = T # important
-    ),
-    scenario = interaction(
-      beta1, prop_miss, haz_shape, eta1, lex.order = T
-    )
-  ) %>% 
+We can use the tab functionality in Rmarkdown to cycle through these plots.
 
-  # Rescale vars 
-  mutate(
-    beta1 = as.numeric(as.character(beta1)),
-    prop_miss = rescale(as.numeric(prop_miss), to = c(0.25, 0.3)),
-    haz_shape = rescale(as.numeric(haz_shape), to = c(0.15, 0.20)),
-    eta1 = rescale(as.numeric(eta1), to = c(0.05, 0.1))
-  ) 
+### MAR (X contin.)
 
-library(RColorBrewer)
 
-palo <- colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))
+```{r NLP_MAR_contin, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "continuous"
+]
 
-dat_nlp_plot %>% 
-  group_by(miss_mech, X_level) %>% 
-  mutate(
-    scen = as.numeric(scenario),
-    scen = scen - scen[1] + 1 #seq_along(inter) * 2
-  ) %>%
-  ggplot(aes(scen, est, col = analy, group = analy)) +
-  geom_step(size = 1.5, alpha = .9) +
-  ylim(c(0, 1.2)) + 
-  geom_step(aes(x = scen, y = beta1, group = 1), col = "black",
-            linetype = "dashed", alpha = 0.9) + 
-  geom_step(aes(x = scen, y = prop_miss, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = haz_shape, group = 1), 
-            col = "black") +
-  geom_step(aes(x = scen, y = eta1, group = 1), 
-            col = "black") +
-  annotate("text", label = "Missing: 10%, 50%", 
-           x = 3, y = 0.33,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Haz shape: similar, diff", 
-           x = 3, y = 0.23,
-           size = 3, hjust = 0) +
-  annotate("text", label = "Eta1: weak, strong", 
-           x = 3, y = 0.13,
-           size = 3, hjust = 0) +
-  facet_grid(X_level ~ miss_mech) + # X_level * eta
-  coord_cartesian(expand = 0)  +
-  scale_x_continuous(NULL, breaks = NULL) +
-  scale_color_manual(values = palo(
-    length(levels(dat_nlp_plot$analy))
-  )) + 
-  ylab("Estimate")
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR (X .binary)
+
+
+```{r NLP_MAR_binary, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X .contin)
+
+
+```{r NLP_MNAR_contin, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X binary)
+
+
+```{r NLP_MNAR_binary, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X contin)
+
+
+```{r NLP_MARG_contin, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X binary)
+
+
+```{r NLP_MARG_binary, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+
+
+
+## NLPs - X.2 {.tabset}
+
+We do the same, but now showing the results for **X.2**
+
+### MAR (X contin.)
+
+
+```{r NLP_MAR_contin_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR (X .binary)
+
+
+```{r NLP_MAR_binary_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X .contin)
+
+
+```{r NLP_MNAR_contin_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X binary)
+
+
+```{r NLP_MNAR_binary_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X contin)
+
+
+```{r NLP_MARG_contin_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.3) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X binary)
+
+
+```{r NLP_MARG_binary_X2, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "X.2" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+
+## NLPs - Z.1 {.tabset}
+
+We do the same, but now showing the results for **Z.1**. We then omit the results for Z.2, as they are very similar (little bias)
+
+### MAR (X contin.)
+
+
+```{r NLP_MAR_contin_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR (X .binary)
+
+
+```{r NLP_MAR_binary_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X .contin)
+
+
+```{r NLP_MNAR_contin_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MNAR (X binary)
+
+
+```{r NLP_MNAR_binary_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MNAR" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X contin)
+
+
+```{r NLP_MARG_contin_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "continuous"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.3) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
+```
+
+
+### MAR_GEN (X binary)
+
+
+```{r NLP_MARG_binary_Z1, fig.height=6}
+dat_nlp <- all_estims[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    var == "Z.1" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" &
+    X_level == "binary"
+]
+
+ggplot_nlp(dat = dat_nlp,
+           estim = "bias", 
+           method_var = "analy", 
+           true = 0, 
+           step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+           point_dodge = 1,
+           text_size = 3, 
+           pointsize = 1.5, 
+           step_labels = NULL,
+           top_step = -0.25) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  ylab("Bias") 
 ```
