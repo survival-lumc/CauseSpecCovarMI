@@ -299,7 +299,7 @@ ggplot_nlp <- function(dat,
                    linetype = !!method_var, 
                    group = !!method_var),
       position =  ggplot2::position_dodge(point_dodge),
-      size = pointsize * .5
+      size = pointsize * .25
     ) +
     
     # There are the step functions

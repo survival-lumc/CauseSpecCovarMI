@@ -1,7 +1,7 @@
 ---
 title: "Visualising predictions"
 author: "Ed Bonneville"
-date: "22-4-2020"
+date: "17-6-2020"
 output: 
   html_document:
     toc: yes
@@ -45,8 +45,9 @@ palo <- colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))
 
 ```{r readin}
 # Load in processed results
-all_preds <- readRDS("all_preds.rds")
-#all_preds <- readRDS("analysis/simulations/all_preds.rds")
+all_preds <- readRDS("all_preds.rds") %>% 
+  .[n != 500]
+#all_preds <- readRDS("analysis/simulations/all_preds.rds") %>%  .[n != 500]
 
 scenarios <- readRDS("../../inst/testdata/scenarios.rds")
 #scenarios <- readRDS("inst/testdata/scenarios.rds")
@@ -410,20 +411,22 @@ all_preds[m %in% c(0, 50) &
             miss_mech == "MAR" & 
             times == "10 years" &  
             #haz_shape == "similar" &
-            `combo-X_Z` %in% c("1_X-Z_-1SD",
+            `combo-X_Z` %in% c(#"1_X-Z_-1SD",
                                "-1SD_X-Z_-1SD") & 
             #X_level == "continuous"& 
             prop_miss == "50%"
           ] %>% 
+  # Add rel_bias
+  .[, rel_bias := 100 * bias / true] %>% 
   ggplot_nlp(dat = .,
-             estim = "bias", 
+             estim = "rel_bias", 
              method_var = "analy", 
              true = 0, 
              step_factors = c("state", "beta1",
                               "haz_shape", "eta1"),# "eta1"), 
              text_size = 3, 
              pointsize = 1,
-             top_step = -0.02,
+             #top_step = -0.02,
              height_betw_steps = 0.0075,
              height_steps = 0.005
              ) +

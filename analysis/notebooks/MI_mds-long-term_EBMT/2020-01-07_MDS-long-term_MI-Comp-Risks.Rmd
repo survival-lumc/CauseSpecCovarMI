@@ -16,6 +16,9 @@ pacman::p_load("MASS", "tidyverse", "mice", "smcfcs",
                "mitools", "survival", "cmprsk", "foreign",
                "naniar", "VIM", "mstate")
 
+# Set contrasts for ordered factors
+options(contrasts = rep("contr.treatment", 2))  
+
 set.seed(1984)
 ```
 
@@ -46,25 +49,6 @@ centre_dat <- read.spss(
 ) %>% 
   select_keeplabs("AA_AUTO", "CENTRE_allo1")
 
-# Depends on tidyverse - give to EBMT people
-select_keeplabs <- function(.data, ...) {
-  
-  # Subsetted data
-  new_dat <- .data %>% dplyr::select(...)
-  
-  # Character vector of variables kept
-  vars_kept <- names(new_dat)
-  
-  # Adjust attributes
-  attr_obj <- attributes(new_dat)$variable.labels
-  var_labs <- attr_obj[names(attr_obj) %in% vars_kept]
-  matched_labs <- var_labs[order(match(names(var_labs), vars_kept))]
-
-  attributes(new_dat)$variable.labels <- matched_labs
-  
-  return(new_dat)
-}
-
 #selecto <- function(.data) ...
 vars_keep <- c("AA_AUTO", "PATSEX", "age_allo1", "YEAR_allo1",
                "mdsclass", "donorrel", "ric_allo1", "bm_allo1",
@@ -74,7 +58,7 @@ vars_keep <- c("AA_AUTO", "PATSEX", "age_allo1", "YEAR_allo1",
 
 # Keep variables from study 
 dat_mds <- dat_orig %>% 
-  select_keeplabs(vars_keep) %>% 
+  #select_keeplabs(vars_keep) %>% 
   filter(AA_AUTO %in% LdW_schetelig_subset$AA_AUTO) %>% 
   left_join(centre_dat)
 ```
@@ -85,10 +69,10 @@ dat_mds <- dat_orig %>%
 ```{r vis_explor}
 theme_set(theme_bw(base_size = 14))
 p <- gg_miss_var(dat_mds, show_pct = T) +
-  theme_bw(base_size = 16) + xlab(NULL)
+  theme_bw(base_size = 30) + xlab(NULL)
 miss_var_summary(dat_mds)
 
-install.packages("svglite")
+library("svglite")
 ggsave("mds_long-term_missings.svg", dpi = "retina", units = "in",
        width = 8, height = 10)
 

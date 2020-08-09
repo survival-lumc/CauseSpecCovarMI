@@ -95,6 +95,35 @@ hist(lol)
 
 tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
 
+tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
+covs <- c("X", "Z")
+covs <- c("X_fac", "Z")
+
+
+dat$X_fac <- with(
+  dat, cut(X_orig, breaks = c(-Inf, -1, 1.5, Inf), 
+           labels = c("low", "med", "high"))
+)
+
+# Long format
+dat_msprepped <- mstate::msprep(time = c(NA, "t", "t"),
+                                status = c(NA, "ev1", "ev2"), 
+                                data = dat,
+                                trans = tmat,
+                                keep = covs) 
+
+# Expand covariates
+dat_expanded <- mstate::expand.covs(dat_msprepped, covs,
+                                    append = TRUE, longnames = T)
+
+
+cox_long <- survival::coxph(Surv(time, status) ~ 
+                              X.1 + Z.1 + # Trans == 1
+                              X.2 + Z.2 + # Trans == 2
+                              strata(trans), # Separate baseline hazards
+                            data = dat_expanded)
+
+
 # Fit model
 mod <- setup_mstate(dat)
 
@@ -381,7 +410,7 @@ test %>%
   ) %>% 
   ggplot(aes(Z, X_orig, col = miss_ind)) +
   geom_point(alpha = 0.75, size = 2) +
-  scale_colour_manual("Missing indicator",
+  scale_colour_manual("Missingness indicator",
                       labels = c("Observed", "Missing"),
                       values = c(9, 6)) +
   xlab("Z") +
@@ -389,6 +418,29 @@ test %>%
   facet_wrap(. ~ eta1) +
   theme(legend.position = "top")
 
+
+
+test %>% 
+  dplyr::mutate(
+    miss_ind = factor(miss_ind),
+    eta1 = factor(eta1, levels = as.character(etas),
+                  labels = paste0("eta1 = ", as.character(etas)))
+  ) %>% 
+  filter(eta1 %in% c("eta1 = 0", "eta1 = -0.5", "eta1 = -2")) %>% 
+  ggplot(aes(Z, X_orig, col = miss_ind)) +
+  geom_point(alpha = 0.75, size = 2) +
+  scale_colour_manual("",
+                      labels = c("Observed", "Missing"),
+                      values = c(9, 6)) +
+  xlab("Z") +
+  ylab("X") +
+  facet_wrap(. ~ eta1, nrow = 3) +
+  theme_bw(base_size = 30)+
+  theme(legend.position = "top") 
+
+
+ggsave("MAR_X-Z.svg", dpi = "retina", units = "in",
+       width = 8, height = 10)
 
 
 # Example with rnorm around 5
@@ -480,7 +532,7 @@ test %>%
 
 
 # Plots of cumulative incidences and hazards
-theme_set(theme_bw(base_size = 14))
+theme_set(theme_bw(base_size = 24))
 library(tidyverse)
 
 
@@ -524,7 +576,7 @@ cuminc_similar <- get_true_cuminc(ev1_pars, ev2_pars,
         plot.title = element_text(hjust = 0.5)) +
   
   # Title and labs
-  xlab("Time") + 
+  xlab("Time (years)") + 
   ylab("Probability")  +
   ggtitle("haz_shape = 'similar'")
 
@@ -599,7 +651,7 @@ cuminc_diff <-get_true_cuminc(ev1_pars, ev2_pars,
         plot.title = element_text(hjust = 0.5)) +
   
   # Title and labs
-  xlab("Time") + 
+  xlab("Time (years)") + 
   ylab("Probability") +
   ggtitle("haz_shape = 'different'")
 
@@ -642,3 +694,14 @@ ggarrange(cuminc_similar, cuminc_diff,
           haz_similar, haz_diff, ncol = 2, nrow = 2, 
           common.legend = T,
           legend = "bottom")
+
+
+p <- ggarrange(cuminc_similar,
+          cuminc_diff, nrow = 2,
+          legend = "bottom",
+          common.legend = T) 
+
+p
+
+ggsave("cumincs.svg", dpi = "retina", units = "in",
+       width = 8, height = 9)
