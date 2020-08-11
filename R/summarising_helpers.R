@@ -66,23 +66,3 @@ loadRDS <- function(fileName){
   get(ls()[ls() != "fileName"])
 }
 
-
-
-# Depends on tidyverse - give to EBMT people
-select_keeplabs <- function(.data, ...) {
-  
-  # Subsetted data
-  new_dat <- .data %>% dplyr::select(...)
-  
-  # Character vector of variables kept
-  vars_kept <- names(new_dat)
-  
-  # Adjust attributes
-  attr_obj <- attributes(new_dat)$variable.labels
-  var_labs <- attr_obj[names(attr_obj) %in% vars_kept]
-  matched_labs <- var_labs[order(match(names(var_labs), vars_kept))]
-  
-  attributes(new_dat)$variable.labels <- matched_labs
-  
-  return(new_dat)
-}
