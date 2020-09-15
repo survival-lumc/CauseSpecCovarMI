@@ -386,3 +386,67 @@ ggplot_estimates <- function(dat,
   
   return(p)
 }
+
+
+
+# smcfcs: function to plot convergence ------------------------------------
+
+ggplot_smcfcs_converg <- function(imps_obj,
+                                  smformula,
+                                  dat) {
+  
+  # Extract meta data
+  m <- dim(imps_obj$smCoefIter)[1]
+  iters <- dim(imps_obj$smCoefIter)[3]
+  
+  # Number of comp risk models
+  K <- length(smformula)
+  
+  # Get column names for smcoefiter
+  coef_names_list <- lapply(X = 1:K, FUN = function(k) {
+    rhs <- gsub(x = smformula[k], pattern = ".*~", replacement = "")
+    
+    model_mat <- stats::model.matrix(
+      object <- as.formula(paste0("~ 1 +", rhs)), 
+      data <- dat
+    )
+    
+    model_mat <- model_mat[, !(colnames(model_mat) %in% "(Intercept)")]
+    
+    coef_names_modk <- paste0(colnames(model_mat), ".", as.character(k))
+  })
+  
+  # Unlist for names of smcoefiter
+  coef_names <- unlist(coef_names_list)
+  
+  # Diagnostics of convergence\
+  ests_list <- lapply(X = 1:m, function(i) {
+    
+    coef_dat <- as.data.frame(t(imps_obj$smCoefIter[i, ,]))
+    coef_dat$iter <- 1:iters
+    coef_dat$imp <- i 
+    
+    return(coef_dat)
+  })
+  
+  ests_df <- data.table::setDT(do.call(rbind.data.frame, ests_list))
+  
+  # Set names
+  data.table::setnames(ests_df, new = c(coef_names, "iter", "imp"))
+  
+  # Make plot
+  p <- data.table::melt.data.table(
+    data = ests_df, 
+    variable.name = "covar",
+    value.name = "value", 
+    id.vars = c("imp","iter")
+  ) %>% 
+    ggplot2::ggplot(ggplot2::aes(iter, value, col = factor(imp))) +
+    ggplot2::geom_line() +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2::facet_wrap(~ covar) 
+  
+  return(p)
+}
+
