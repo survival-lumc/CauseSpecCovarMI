@@ -16,12 +16,14 @@
 #+ echo = FALSE, message = FALSE, warning = FALSE
 # SETUP -----------------------------------------------------------------------
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+
 knitr::opts_chunk$set(
   echo = FALSE, 
   out.width = "100%", 
   warning = FALSE, 
   message = FALSE
 )
+
 options(knitr.kable.NA = '', scipen=999)
 
 
@@ -54,27 +56,40 @@ set.seed(1984)
 # Reading in data ---------------------------------------------------------
 
 
-# Read-in data with extra vars
+# Read-in data with hctci
 dat_blasts <- sjlabelled::read_spss(
-  path = "analysis/data/raw_data/Final_MDS_Longterm_20200106_LK.sav" 
+  path = "analysis/data/raw_data/Final_MDS_Longterm_20200903_LK.sav" 
 ) %>% 
   
   # Clean variable names (i.e. bring lower case, with _ in between)
   janitor::clean_names() %>% 
   
   # Make into data.table
-  data.table() %>% 
+  setDT() %>% 
   
   # Subset aa_auto for matching and new vars
   .[, .(
     aa_auto,
-    bm_diag1,
-    bm_allo1,
-    pb_diag1,
-    pb_allo1,
+    hctci,
+    hctci_risk,
     agedonor_allo1_1
   )]
 
+
+# Load-in cytogenetics data
+load("analysis/data/raw_data/cytodata.RData")
+data.table::setDT(cytodata) 
+setnames(cytodata, new = c("aa_auto", "cyto_score", "vchromos"))
+cytodata[, ':=' (
+  vchromos = droplevels(vchromos),
+  cytog_threecat = cut(
+    cyto_score, 
+    breaks = c(0, 3, 4, Inf),
+    include.lowest = T, 
+    ordered_result = T,
+    labels = c("good(<=3)", "poor(4)", "very-poor(5)")
+  )
+)]
 
 # Read-in original data for Schetelig and LdW (with published subset)
 dat_orig <- sjlabelled::read_spss(
@@ -83,16 +98,13 @@ dat_orig <- sjlabelled::read_spss(
   
   # Clean variable names
   janitor::clean_names() %>%
-  data.table() %>% 
-  
-  # Merge data - warning is just because of 'display_width' attr - can ignore
-  data.table::merge.data.table(
-    x = ., 
-    y = dat_blasts, 
-    all.x = TRUE, 
-    by = "aa_auto"
-  )
+  setDT() 
 
+# Reduce + merge
+dat_combined <- Reduce(
+  f = function(x, y) merge.data.table(x, y, all.x = T, by = "aa_auto"),
+  x = list(dat_orig, dat_blasts, cytodata)
+)
 
 # Clean env
 rm(dat_blasts)
@@ -114,10 +126,6 @@ vars_keep <- c(
   "year_allo1",
   "mdsclass", 
   "donorrel", 
-  "bm_allo1", 
-  "pb_allo1", # take it ref. DJE paper
-  "pb_diag1", 
-  "bm_diag1", 
   "agedonor_allo1_1", 
   "karnofsk_allo1",
   "crnocr", 
@@ -267,71 +275,6 @@ dat_mds_reg %>%
 # Visualise missingness
 naniar::gg_miss_var(x = dat_mds_reg, facet = mdsclass, show_pct = T)
 naniar::gg_miss_upset(dat_mds_reg, nsets = n_var_miss(dat_mds_reg))
-
-
-# Density plots MDS / cross tables with CR --------------------------------
-
-#' # Density plots MDS / cross tables with CR
-
-
-# Select blast variables
-blast_vars <- stringr::str_subset(names(dat_mds_reg), "^bm_|^pb_")
-
-list_densplots <- purrr::map(
-  .x = blast_vars,
-  .f = ~ {
-    dat_mds_reg %>% 
-      ggplot(aes(x = .[[.x]], fill = mdsclass)) +
-      geom_density(alpha= .5, adjust = 1, na.rm = T) +
-      xlim(c(0, 50)) +
-      ggtitle(.x) +
-      theme(axis.title = element_blank(),
-            plot.title = element_text(hjust = 0.5)) 
-  }
-)
-
-p <- ggarrange(plotlist = list_densplots, nrow = 2, ncol = 2, 
-               common.legend = T, legend = "top")
-
-annotate_figure(p, left = "Density", bottom = "Blast percentage")
-
-
-# For CR groups
-blast_vars_allo <- stringr::str_subset(names(dat_mds_reg), "^bm_allo1|^pb_allo1")
-
-list_densplots_allo <- purrr::map(
-  .x = blast_vars_allo,
-  .f = ~ {
-    dat_mds_reg %>% 
-      .[!is.na(crnocr)] %>% 
-      ggplot(aes(x = .[[.x]], fill = crnocr)) +
-      geom_density(alpha= .5, adjust = 1, na.rm = T) +
-      xlim(c(0, 50)) +
-      ggtitle(.x) +
-      theme(axis.title = element_blank(),
-            plot.title = element_text(hjust = 0.5)) +
-      scale_colour_discrete(na.translate = F)
-  }
-)
-
-p_allo <- ggarrange(
-  plotlist = list_densplots_allo,
-  ncol = 2, 
-  common.legend = T, 
-  legend = "top"
-)
-
-annotate_figure(p_allo, left = "Density", bottom = "Blast percentage (at allo)")
-
-
-# Cross tables crnocr and mds class
-dat_mds_reg %>% 
-  .[, c("crnocr", "mdsclass")] %>% 
-  tbl_summary(by = mdsclass)
-
-dat_mds_reg %>% 
-  .[, c("crnocr", "bm_allo1")] %>% 
-  tbl_summary(by = "crnocr")
 
 
 # Univ cox models relapse -------------------------------------------------
@@ -535,7 +478,7 @@ iters <- 15
 # )
 
 # Load object 
-imps_mice <- readRDS("imps_mice.rds")
+imps_mice <- readRDS("imp_objects/imps_mice.rds")
 
 # Diagnostic
 plot(imps_mice)
@@ -618,7 +561,7 @@ matpred[, "centre_allo1"] <- 0
 # )
 
 # Load object 
-imps_micenopb <- readRDS("imps_mice.rds")
+imps_micenopb <- readRDS("imp_objects/imps_mice.rds")
 
 
 # For relapse
@@ -741,7 +684,7 @@ smform_smcfcs <- c(
 # )
 
 #saveRDS(imps_smcfcs, file = "imps_smcfcs.rds")
-imps_smcfcs <- readRDS("imps_smcfcs.rds")
+imps_smcfcs <- readRDS("imp_objects/imps_smcfcs.rds")
 
 # Check convergence
 ggplot_smcfcs_converg(
@@ -869,7 +812,7 @@ smform_smcfcs_nopb <- c(
 #   method = meths
 # )
 
-imps_smcfcs_nopb <- readRDS("imps_smcfcs_nopb.rds")
+imps_smcfcs_nopb <- readRDS("imp_objects/imps_smcfcs_nopb.rds")
 
 # Check convergence
 ggplot_smcfcs_converg(
@@ -994,4 +937,39 @@ round(res_nrm_pb, 2) %>%
   as.data.frame() %>% 
   knitr::kable(caption = "NRM results")
 
+
+
+
+# Cross-tab liesbeth CR ---------------------------------------------------
+
+
+
+dat_crosstabs <- data.table::copy(dat_mds_reg)
+
+dat_crosstabs[, pb_allo1 := cut(
+  pb_allo1, 
+  breaks = c(-Inf, 5, 10, 20, Inf), 
+  include.lowest = T, 
+  ordered_result = F,
+  labels = c("<=5", "(5,10]", "(10, 20]", ">20")
+)]
+
+
+dat_crosstabs[, bm_allo1 := cut(
+  bm_allo1, 
+  breaks = c(-Inf, 5, 10, 20, Inf), 
+  include.lowest = T, 
+  ordered_result = F,
+  labels = c("<=5", "(5,10]", "(10, 20]", ">20")
+)]
+
+dat_crosstabs %>% 
+  .[, c("crnocr", "bm_allo1")] %>% 
+  tbl_summary(by = "crnocr") %>% 
+  add_n(statistic = "{p_miss}%", col_label = "% missing")
+
+dat_crosstabs %>% 
+  .[, c("crnocr", "pb_allo1")] %>% 
+  tbl_summary(by = "crnocr") %>% 
+  add_n(statistic = "{p_miss}%", col_label = "% missing") 
 

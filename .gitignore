@@ -12,3 +12,4 @@ analysis/simulations/sim-reps_all/estimates/estims*
 analysis/simulations/sim-reps_all/predictions/preds*
 analysis/other/out_err_messages/scenario*
 analysis/other/out_err_messages/job*
+analysis/data/raw_data/
