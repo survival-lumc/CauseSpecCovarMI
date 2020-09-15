@@ -15,7 +15,7 @@
 
 #+ echo = FALSE, message = FALSE, warning = FALSE
 # SETUP -----------------------------------------------------------------------
-knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file()) # or here
 
 knitr::opts_chunk$set(
   echo = FALSE, 
@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 options(knitr.kable.NA = '', scipen=999)
 
-
+devtools::load_all()
 
 # Load libraries
 pacman::p_load(
@@ -43,7 +43,8 @@ pacman::p_load(
   broom,
   naniar,
   ggpubr, # will load ggplot with it
-  gtsummary
+  gtsummary,
+  survminer
 )
 
 # Set contrasts for ordered factors
@@ -57,7 +58,7 @@ set.seed(1984)
 
 
 # Read-in data with hctci
-dat_blasts <- sjlabelled::read_spss(
+dat_hctci <- sjlabelled::read_spss(
   path = "analysis/data/raw_data/Final_MDS_Longterm_20200903_LK.sav" 
 ) %>% 
   
@@ -80,6 +81,8 @@ dat_blasts <- sjlabelled::read_spss(
 load("analysis/data/raw_data/cytodata.RData")
 data.table::setDT(cytodata) 
 setnames(cytodata, new = c("aa_auto", "cyto_score", "vchromos"))
+
+# Recat into three ordered levels
 cytodata[, ':=' (
   vchromos = droplevels(vchromos),
   cytog_threecat = cut(
@@ -91,7 +94,7 @@ cytodata[, ':=' (
   )
 )]
 
-# Read-in original data for Schetelig and LdW (with published subset)
+# Read-in original data from Schetelig and LdW (with published subset)
 dat_orig <- sjlabelled::read_spss(
   path = "analysis/data/raw_data/MDS_longterm_R_180614.sav"
 ) %>% 
@@ -100,14 +103,15 @@ dat_orig <- sjlabelled::read_spss(
   janitor::clean_names() %>%
   setDT() 
 
-# Reduce + merge
+
+# Combine all three files via Reduce + merge 
 dat_combined <- Reduce(
   f = function(x, y) merge.data.table(x, y, all.x = T, by = "aa_auto"),
-  x = list(dat_orig, dat_blasts, cytodata)
+  x = list(dat_orig, dat_hctci, cytodata)
 )
 
 # Clean env
-rm(dat_blasts)
+rm(dat_hctci, cytodata)
 
 
 # Define variables to keep - see table for motivation
@@ -122,21 +126,18 @@ vars_keep <- c(
   # aa_auto and (possible) covariates
   "aa_auto", 
   "patsex", 
+  #"donsex_allo1_1", Only needed if match_allo1_1 does not work out
+  "match_allo1_1",
   "age_allo1", 
-  "year_allo1",
   "mdsclass", 
   "donorrel", 
   "agedonor_allo1_1", 
   "karnofsk_allo1",
   "crnocr", 
-  "tceldepl_allo1",
-  "centre_allo1",
-  "vcmvpat_allo1"
+  "cmv_combi_allo1_1",
+  "cytog_threecat",
+  "hctci_risk"
 )
-
-# Omitted possible covars:
-# c("source_allo1", "tbi_allo1", "DONRL_allo1_1",
-# "ric_allo1", "match_allo1_1")
 
 
 # Data / variable formatting ----------------------------------------------
@@ -146,55 +147,43 @@ vars_keep <- c(
 vars_val_labs <- c(
   "mdsclass",
   "crnocr",
-  "tceldepl_allo1",
   "patsex",
   "donorrel",
-  "centre_allo1",
-  "vcmvpat_allo1"
+  "hctci_risk",
+  "cmv_combi_allo1_1",
+  #"donsex_allo1_1",
+  "match_allo1_1"
 )
 
 # Make dataset ready for regression
-dat_mds_reg <- data.table::copy(dat_orig) %>% 
+dat_mds_reg <- data.table::copy(dat_combined) %>% 
   
-  # Select variables
-  .[, ..vars_keep] %>% 
+  # Select variables, Remove one patient with wrong donor age (data error)
+  .[aa_auto != 357439, ..vars_keep] %>% 
   
-  # Set time in years
+  # Set time in years, age allo and donor age in decades
   .[, ':=' (
     ci_allo1 = ci_allo1 / 12,
-    srv_allo1 = srv_allo1 / 12
-  )] %>% 
-  
-  # Admin censoring at 120 mo., age allo and donor age in decades
-  .[, ':=' (
-    ci_allo1 = ifelse(ci_allo1 >= 10, 10, ci_allo1),
-    ci_s_allo1 = ifelse(ci_allo1 == 10, 0, sjlabelled::as_numeric(ci_s_allo1)),
+    srv_allo1 = srv_allo1 / 12,
     agedonor_allo1_decades = agedonor_allo1_1 / 10,
     age_allo1_decades = age_allo1 / 10
+  )] %>% 
+  
+  # Admin censoring at 120 mo. (10 years) 
+  .[, ':=' (
+    ci_allo1 = ifelse(ci_allo1 >= 10, 10, ci_allo1),
+    srv_allo1 = ifelse(srv_allo1 >= 10, 10, srv_allo1)
+  )] %>% 
+  
+  # Adjust statuses based on admin cens
+  .[, ':=' (
+    ci_s_allo1 = ifelse(ci_allo1 == 10, 0, sjlabelled::as_numeric(ci_s_allo1)),
+    srv_s_allo1 = ifelse(srv_allo1 == 10, 0, sjlabelled::as_numeric(srv_s_allo1))
   )] %>% 
   
   # For some vars, use the spss values labels as factor labels
   .[, (vars_val_labs) := lapply(.SD, sjlabelled::as_label), 
     .SDcols = vars_val_labs] %>% 
-  
-  # cmv patients missings code
-  .[vcmvpat_allo1 %in% c("unknown", "Not evaluated"), 
-    vcmvpat_allo1 := NA_character_] %>% 
-    
-  # Group categories of t-cell depletion
-  .[, tceldepl_allo1 := fcase(
-    tceldepl_allo1 == "yes invivo, no exvivo", "invivo_only",
-    tceldepl_allo1 == "yes invivo+exvivo", "exvivo",
-    tceldepl_allo1 == "yes exvivo, no invivo", "exvivo",
-    tceldepl_allo1 == "no", "no"
-  )] %>% 
-  
-  # Make tcels into ordered factor
-  .[, tceldepl_allo1 := factor(
-    tceldepl_allo1, 
-    levels = c("no", "invivo_only", "exvivo"), 
-    ordered = T
-  )] %>% 
   
   # Make Karnofsky into ordered three cats
   .[, karnofsk_allo1 := cut(
@@ -210,22 +199,16 @@ dat_mds_reg <- data.table::copy(dat_orig) %>%
     karnofsk_allo1, levels = rev(levels(karnofsk_allo1))
   )] %>% 
   
-  # Reorder crnocr, relevel sex
+  # Reorder crnocr, relevel sex, order hctci
   .[, ':=' (
     crnocr = factor(
       crnocr, 
       levels = c("Untreated/not aimed at remission", "noCR", "CR")
     ),
-    patsex = relevel(patsex, ref = "Female")
-  )] %>% 
-  
-  # Dichtomise bm_allo1 at <= 1
-  .[, dichot_pb_allo1 := cut(
-    x = pb_allo1, 
-    breaks = c(0, 1, 100),
-    include.lowest = TRUE, 
-    labels = c("<=1", ">1") 
-  )] %>% 
+    patsex = relevel(patsex, ref = "Female"),
+    #donsex_allo1_1 = relevel(donsex_allo1_1, ref = "Female"),
+    hctci_risk = as.ordered(hctci_risk)
+  )] %>%
   
   # Delete redundant age and donor age not in decades (they are in dat_orig)
   .[, ':=' (
@@ -242,9 +225,6 @@ dat_mds_reg <- data.table::copy(
   sjlabelled::copy_labels(df_new = dat_mds_reg, df_origin = dat_orig)
 )
 
-# View
-#dat_mds_reg
-
 
 # Table 1 -----------------------------------------------------------------
 
@@ -255,22 +235,12 @@ dat_mds_reg %>%
     "srv_s_allo1", 
     "srv_allo1",
     "aa_auto", 
-    "pb_diag1", 
-    #"pb_allo1", 
-    "bm_diag1",
-    "ci_allo1",
-    "centre_allo1"
-  )] %>% 
-  
-  # Unorder karnofsky and tcels or it causes issues
-  .[, ':=' (
-    karnofsk_allo1 = factor(karnofsk_allo1, ordered = F),
-    tceldepl_allo1 = factor(tceldepl_allo1, ordered = F)
+    "ci_allo1"
   )] %>% 
 
   # Set label if desired
-  tbl_summary(by = "mdsclass") %>%
-  add_n(statistic = "{p_miss}%", col_label = "% missing")
+  tbl_summary(by = "mdsclass")# %>%
+  #add_n(statistic = "{p_miss}%", col_label = "% missing")
 
 # Visualise missingness
 naniar::gg_miss_var(x = dat_mds_reg, facet = mdsclass, show_pct = T)
@@ -283,18 +253,25 @@ naniar::gg_miss_upset(dat_mds_reg, nsets = n_var_miss(dat_mds_reg))
 #' # Univariable cox models relapse
 
 
+#  Vector of predictors mod1 
+predictors_mod1 <- c(
+  "age_allo1_decades",
+  "mdsclass", 
+  "donorrel", 
+  "agedonor_allo1_decades",
+  "karnofsk_allo1", 
+  "match_allo1_1",
+  "crnocr", 
+  "cmv_combi_allo1_1",
+  "cytog_threecat",
+  "hctci_risk"
+)
 
-#  Vector of  predictors 
-predictors <- c("patsex", "age_allo1_decades",
-                "mdsclass", "donorrel", 
-                "dichot_pb_allo1", "agedonor_allo1_decades",
-                "karnofsk_allo1", "crnocr", "vcmvpat_allo1")
-
-names(predictors) <- predictors
+names(predictors_mod1) <- predictors_mod1
 
 # Univariate cause-specific models (relapse)
 univ_mods_rel <- purrr::map(
-  .x = predictors,
+  .x = predictors_mod1,
   .f = ~ {
     form <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", .x))
     mod <- coxph(form, data = dat_mds_reg)
@@ -347,15 +324,14 @@ purrr::map(univ_mods_nrm, ~ plot(cox.zph(.x)))
 
 
 # RHS of formula
-preds <- paste(predictors, collapse = " + ")
+preds <- paste(predictors_mod1, collapse = " + ")
 preds 
 
 # For relapse
 form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", preds))
 form_rel
 
-mod_rel <- coxph(formula = form_rel, 
-                 data = dat_mds_reg)
+mod_rel <- coxph(formula = form_rel, data = dat_mds_reg)
 
 
 summary(mod_rel)
@@ -366,20 +342,16 @@ cox.zph(mod_rel)
 # For nrm
 form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", preds))
 form_nrm
-mod_nrm <- coxph(formula = form_nrm, 
-                 data = dat_mds_reg)
+mod_nrm <- coxph(formula = form_nrm, data = dat_mds_reg)
 
 summary(mod_nrm)
 cox.zph(mod_nrm)
 
+#dev.new()
+#ggforest(mod_rel, data = dat_mds_reg, main = "Rel")
 
-
-# Multivariable models without pb_allo1 dichot ----------------------------
-
-
-
-mod_rel_nopb <- update(mod_rel, . ~ . - dichot_pb_allo1)
-mod_nrm_nopb <- update(mod_nrm, . ~ . - dichot_pb_allo1)
+#dev.new()
+#ggforest(mod_nrm, data = dat_mds_reg, main = "NRM")
 
 
 # Prep mice matrix --------------------------------------------------------
@@ -401,22 +373,59 @@ dat_mds_reg[, ':=' (
 )]
 
 
-# Which vars actually have some data missing?
+# Which vars actually have some data missing? (no binary vars)
 var_names_miss <- naniar::miss_var_which(dat_mds_reg)
 
+set_mi_methods <- function(dat,
+                           var_names_miss,
+                           imp_type = "mice",
+                           cont_method = "norm") {
+  
+  # Set up methods vector
+  n_vars_miss <- length(var_names_miss)
+  meths_miss <- setNames(character(n_vars_miss), var_names_miss)
+  
+  # Get indicators:
+  ordered_ind <- sapply(dat_mds_reg[, ..var_names_miss], is.ordered)
+  contin_ind <- sapply(dat_mds_reg[, ..var_names_miss], is.numeric)
+  
+  unordered_ind <- sapply(
+    dat_mds_reg[, ..var_names_miss], 
+    function(col) length(levels(col)) > 2 & !is.ordered(col)
+  )
+  
+  binary_ind <- sapply(
+    dat_mds_reg[, ..var_names_miss], 
+    function(col) length(levels(col)) == 2 & !is.ordered(col)
+  )
+  
+  # Set up methods 
+  meths_miss[ordered_ind] <- "polr"
+  meths_miss[contin_ind] <- cont_method
+  meths_miss[unordered_ind] <- "polyreg"
+  meths_miss[binary_ind] <- "logreg"
+  
+  # Adjust if for smcfcs
+  if (imp_type == "smcfcs") {
+    meths_miss[which(meths_miss == "polyreg")] <- "mlogit"
+    meths_miss[which(meths_miss == "polr")] <- "podds"
+  }
+  
+  # Make global vec
+  meths <- setNames(character(ncol(dat)), names(dat))
+  meths[var_names_miss] <- meths_miss
+  
+  return(meths)
+}
+
+
 # Set methods accordingly
-meth_miss <- setNames(
-  object = c(rep("", 4),  "polr", "polyreg", "", "logreg", "norm", "logreg"),
-  nm = var_names_miss
+meths <- set_mi_methods(
+  dat = dat_mds_reg,
+  var_names_miss = var_names_miss, 
+  imp_type = "mice",
+  cont_method = "norm"
 )
-
-meth_miss
-
-# Join with rest of variable names
-meths <- setNames(rep("", ncol(dat_mds_reg)), names(dat_mds_reg))
-meths[var_names_miss] <- meth_miss
-
-meths
 
 
 # Create matrix for MI
@@ -432,28 +441,13 @@ matpred[, c(
   "ci_allo1", 
   "srv_allo1", 
   "srv_s_allo1", 
-  "aa_auto", 
-  "year_allo1",
-  "bm_allo1",
-  "bm_diag1",
-  "pb_allo1",
-  "pb_diag1",
-  "tceldepl_allo1",
-  "centre_allo1" # exclude centres here
+  "aa_auto",
+  "patsex"
 )] <- 0
 
 
 # We don't impute any complete variable
 matpred[!(rownames(matpred) %in% var_names_miss), ] <- 0
-
-# We also don't impute the bm and pb (non dichot vars, along with tcel)
-matpred[rownames(matpred) %in% c(
-  "bm_allo1",
-  "bm_diag1",
-  "pb_allo1",
-  "pb_diag1",
-  "tceldepl_allo1"
-), ] <- 0
 
 # Should read as: row gets imputed using cols with 1 as predictors
 # If a row entirely 0: var is not going to be imputed
@@ -465,20 +459,20 @@ matpred[rownames(matpred) %in% c(
 
 
 # Set for smcfcs too
-m <- 10 
-iters <- 15 
+m <- 20
+iters <- 15
 
 # Run imputations 
-# imps_mice <- mice(
-#   data = dat_mds_reg, 
-#   m = m, 
-#   maxit = iters,  
-#   method = meths, 
-#   predictorMatrix = matpred
-# )
+imps_mice <- mice(
+  data = dat_mds_reg,
+  m = m,
+  maxit = iters,
+  method = meths,
+  predictorMatrix = matpred
+)
 
 # Load object 
-imps_mice <- readRDS("imp_objects/imps_mice.rds")
+saveRDS(imps_mice, file = "imps_mice.rds")
 
 # Diagnostic
 plot(imps_mice)
@@ -489,9 +483,9 @@ plot(imps_mice)
 # For relapse
 mice_rel <- with(
   imps_mice,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
+  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ age_allo1_decades + mdsclass + 
+          donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+          crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
 ) %>% 
   pool() %>% 
   summary()
@@ -499,152 +493,12 @@ mice_rel <- with(
 # For NRM
 mice_nrm <- with(
   imps_mice,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
+  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ age_allo1_decades + mdsclass + 
+          donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+          crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
 ) %>% 
   pool() %>% 
   summary()
-
-
-
-# Center as aux var (with dichot_pb_allo1 in model) -----------------------
-
-
-matpred[rowSums(matpred) > 0, "centre_allo1"] <- 1
-
-# This will be much, much slower 
-# imps_mice_centre <- mice(
-#   data = dat_mds_reg, 
-#   m = m, 
-#   maxit = iters,  
-#   method = meths, 
-#   predictorMatrix = matpred
-# )
-
-# For relapse
-# mice_rel_centre <- with(
-#   imps_mice_centre,
-#   coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-#           donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-#           crnocr + vcmvpat_allo1)
-# ) %>% 
-#   pool() %>% 
-#   summary()
-# 
-# # For NRM
-# mice_nrm_centre <- with(
-#   imps_mice_centre,
-#   coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-#           donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-#           crnocr + vcmvpat_allo1)
-# ) %>% 
-#   pool() %>% 
-#   summary()
-
-
-# MICE (no dichot_pb_allo1) -----------------------------------------------
-
-
-# Exclude it from imps, exclude center again
-matpred["dichot_pb_allo1", ] <- 0
-matpred[, "dichot_pb_allo1"] <- 0
-matpred[, "centre_allo1"] <- 0
-
-
-# imps_mice_nopb <- mice(
-#   data = dat_mds_reg, 
-#   m = m, 
-#   maxit = iters,  
-#   method = meths, 
-#   predictorMatrix = matpred
-# )
-
-# Load object 
-imps_micenopb <- readRDS("imp_objects/imps_mice.rds")
-
-
-# For relapse
-mice_rel_nopb <- with(
-  imps_mice,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel  + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
-) %>% 
-  pool() %>% 
-  summary()
-
-# For NRM
-mice_nrm_nopb <- with(
-  imps_mice,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
-) %>% 
-  pool() %>% 
-  summary()
-
-
-# smcfcs: function to plot convergence ------------------------------------
-
-ggplot_smcfcs_converg <- function(imps_obj,
-                                  smformula,
-                                  dat) {
-  
-  # Extract meta data
-  m <- dim(imps_obj$smCoefIter)[1]
-  iters <- dim(imps_obj$smCoefIter)[3]
-  
-  # Number of comp risk models
-  K <- length(smformula)
-  
-  # Get column names for smcoefiter
-  coef_names_list <- lapply(X = 1:K, FUN = function(k) {
-    rhs <- gsub(x = smformula[k], pattern = ".*~", replacement = "")
-    
-    model_mat <- model.matrix(
-      object <- as.formula(paste0("~ 1 +", rhs)), 
-      data <- dat
-    )
-    
-    model_mat <- model_mat[, !(colnames(model_mat) %in% "(Intercept)")]
-    
-    coef_names_modk <- paste0(colnames(model_mat), ".", as.character(k))
-  })
-  
-  # Unlist for names of smcoefiter
-  coef_names <- unlist(coef_names_list)
-  
-  # Diagnostics of convergence\
-  ests_list <- lapply(X = 1:m, function(i) {
-    
-    coef_dat <- as.data.frame(t(imps_obj$smCoefIter[i, ,]))
-    coef_dat$iter <- 1:iters
-    coef_dat$imp <- i 
-    
-    return(coef_dat)
-  })
-  
-  ests_df <- data.table(do.call(rbind.data.frame, ests_list))
-  
-  # Set names
-  setnames(ests_df, new = c(coef_names, "iter", "imp"))
-  
-  # Make plot
-  p <- melt.data.table(
-    data = ests_df, 
-    variable.name = "covar",
-    value.name = "value", 
-    id.vars = c("imp","iter")
-  ) %>% 
-    ggplot(aes(iter, value, col = factor(imp))) +
-    geom_line() +
-    theme_bw() +
-    theme(legend.position = "none") +
-    ggplot2::facet_wrap(~ covar) 
-  
-  return(p)
-}
 
 
 # Run smcfcs --------------------------------------------------------------
@@ -652,39 +506,35 @@ ggplot_smcfcs_converg <- function(imps_obj,
 
 # smcfcs will throw an error if there are variables in the data
 # That will not be used at all (as per matpred), but still have missings
-# (Like with bm_allo1, pb_allo1 etc.), let's exclude them
-vars_excl <- c("bm_allo1", "pb_allo1", "bm_diag1", "pb_diag1", "tceldepl_allo1")
-dat_mds_reg[, (vars_excl) := NULL]
 
 # Change coding of polr and polyreg, exclude the prev vars
-meths[which(meths == "polyreg")] <- "mlogit"
-meths[which(meths == "polr")] <- "podds"
-meths <- meths[!(names(meths) %in% vars_excl)]
+meths <- set_mi_methods(
+  dat = dat_mds_reg,
+  var_names_miss = var_names_miss, 
+  imp_type = "smcfcs",
+  cont_method = "norm"
+)
 
 # No need for matpred smcfcs will use other var of the subs model 
 
 # Make formula
 smform_smcfcs <- c(
-  "Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass +
-    donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 +
-    crnocr + vcmvpat_allo1",
-  "Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass +
-    donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 +
-    crnocr + vcmvpat_allo1"
+  Reduce(paste, deparse(form_rel)),
+  Reduce(paste, deparse(form_nrm))
 )
 
 # You need the == ==
-# imps_smcfcs <- smcfcs::smcfcs(
-#   originaldata = dat_mds_reg, 
-#   smtype = "compet", 
-#   smformula = smform_smcfcs,
-#   m = m, 
-#   numit = iters,
-#   method = meths
-# )
+imps_smcfcs <- smcfcs::smcfcs(
+  originaldata = dat_mds_reg,
+  smtype = "compet",
+  smformula = smform_smcfcs,
+  m = m,
+  numit = iters,
+  method = meths
+)
 
-#saveRDS(imps_smcfcs, file = "imps_smcfcs.rds")
-imps_smcfcs <- readRDS("imp_objects/imps_smcfcs.rds")
+saveRDS(imps_smcfcs, file = "imps_smcfcs.rds")
+#imps_smcfcs <- readRDS("imp_objects/imps_smcfcs.rds")
 
 # Check convergence
 ggplot_smcfcs_converg(
@@ -700,9 +550,9 @@ implist_smcfcs <- mitools::imputationList(imps_smcfcs$impDatasets)
 # Relapse 
 smcfcs_rel <- with(
   implist_smcfcs,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
+  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ age_allo1_decades + mdsclass + 
+          donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+          crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
 ) %>% 
   mitools::MIcombine() %>% 
   summary()
@@ -711,9 +561,9 @@ smcfcs_rel <- with(
 # NRM 
 smcfcs_nrm <- with(
   implist_smcfcs,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + dichot_pb_allo1 + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
+  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ age_allo1_decades + mdsclass + 
+          donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+          crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
 ) %>% 
   mitools::MIcombine() %>% 
   summary()
@@ -729,175 +579,6 @@ smcfcs_nrm <- with(
 # In smcfcs doing this is possible, but implies centre is indepdendent
 # of outcome, conditional on covariates in the subst. model
 # See: https://cran.r-project.org/web/packages/smcfcs/vignettes/smcfcs-vignette.html
-
-
-# # Exclude from df
-# matpred_smcfcs <- matrix(0, ncol(dat_mds_reg), ncol(dat_mds_reg),
-#                   dimnames = list(names(dat_mds_reg), names(dat_mds_reg)))
-# 
-# # Use covariates from subst as predictors
-# matpred_smcfcs[, colnames(matpred_smcfcs) %in% predictors] <- 1
-# diag(matpred_smcfcs) <- 0
-# 
-# # Add centre as aux
-# matpred_smcfcs[, "centre_allo1"] <- 1
-# 
-# # We don't impute any complete variable
-# matpred_smcfcs[!(rownames(matpred_smcfcs) %in% var_names_miss), ] <- 0
-# 
-# # Run
-# # imps_smcfcs_centre <- smcfcs::smcfcs(
-# #   originaldata = dat_mds_reg, 
-# #   smtype = "compet", 
-# #   smformula = smform_smcfcs,
-# #   m = m, 
-# #   numit = iters,
-# #   method = meths,
-# #   predictorMatrix = matpred_smcfcs
-# # )
-# 
-# 
-# 
-# 
-# # Pool results
-# implist_smcfcs_centre <- mitools::imputationList(imps_smcfcs_nopb$impDatasets)
-# 
-# # Relapse 
-# smcfcs_rel_centre <- with(
-#   implist_smcfcs_centre,
-#   coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-#           donorrel + agedonor_allo1_decades + karnofsk_allo1 + 
-#           crnocr + vcmvpat_allo1)
-# ) %>% 
-#   mitools::MIcombine() %>% 
-#   summary()
-# 
-# 
-# # NRM 
-# smcfcs_nrm_centre <- with(
-#   implist_smcfcs_centre,
-#   coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-#           donorrel + agedonor_allo1_decades + karnofsk_allo1 + 
-#           crnocr + vcmvpat_allo1)
-# ) %>% 
-#   mitools::MIcombine() %>% 
-#   summary()
-
-
-
-# smcfcs no pb ------------------------------------------------------------
-
-# Exclude from df
-dat_mds_reg[, dichot_pb_allo1 := NULL]
-meths <- meths[!(names(meths) %in% "dichot_pb_allo1")]
-
-
-# Make formula without pb allo
-smform_smcfcs_nopb <- c(
-  "Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass +
-    donorrel + agedonor_allo1_decades + karnofsk_allo1 +
-    crnocr + vcmvpat_allo1",
-  "Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass +
-    donorrel + agedonor_allo1_decades + karnofsk_allo1 +
-    crnocr + vcmvpat_allo1"
-)
-
-# Omit pb_allo from subs model
-# imps_smcfcs_nopb <- smcfcs::smcfcs(
-#   originaldata = dat_mds_reg, 
-#   smtype = "compet", 
-#   smformula = smform_smcfcs_nopb,
-#   m = m, 
-#   numit = iters,
-#   method = meths
-# )
-
-imps_smcfcs_nopb <- readRDS("imp_objects/imps_smcfcs_nopb.rds")
-
-# Check convergence
-ggplot_smcfcs_converg(
-  imps_obj = imps_smcfcs_nopb, 
-  smformula = smform_smcfcs_nopb, 
-  dat = dat_mds_reg
-)
-
-# Pool results
-implist_smcfcs_nopb <- mitools::imputationList(imps_smcfcs_nopb$impDatasets)
-
-# Relapse 
-smcfcs_rel_nopb <- with(
-  implist_smcfcs_nopb,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
-) %>% 
-  mitools::MIcombine() %>% 
-  summary()
-
-
-# NRM 
-smcfcs_nrm_nopb <- with(
-  implist_smcfcs_nopb,
-  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ patsex + age_allo1_decades + mdsclass + 
-          donorrel + agedonor_allo1_decades + karnofsk_allo1 + 
-          crnocr + vcmvpat_allo1)
-) %>% 
-  mitools::MIcombine() %>% 
-  summary()
-
-
-
-
-
-# Comparison models with dichot_pb_allo1 ----------------------------------
-
-
-#' # Comparison models (with dichot pb allo1)
-
-
-# Relapse:
-#mod_rel
-#mice_rel
-#smcfcs_rel
-
-names_preds <- names(mod_rel$coefficients)
-
-res_rel <- cbind.data.frame(
-  "CCA" = mod_rel$coefficients,
-  "mice" = mice_rel$estimate,
-  "smcfcs" = smcfcs_rel$results,
-  "CCA_se" = broom::tidy(mod_rel)$std.error,
-  "mice_se" = mice_rel$std.error,
-  "smcfcs_se" = smcfcs_rel$se
-)
-
-rownames(res_rel) <- names_preds
-round(res_rel, 2) %>% 
-  as.data.frame() %>% 
-  knitr::kable(caption = "REL results")
-
-
-# NRM
-# mod_nrm
-# mice_nrm
-# smcfcs_nrm
-
-
-res_nrm <- cbind.data.frame(
-  "CCA" = mod_nrm$coefficients,
-  "mice" = mice_nrm$estimate,
-  "smcfcs" = smcfcs_nrm$results,
-  "CCA_se" = broom::tidy(mod_nrm)$std.error,
-  "mice_se" = mice_nrm$std.error,
-  "smcfcs_se" = smcfcs_nrm$se
-)
-
-rownames(res_nrm) <- names_preds
-round(res_nrm, 2) %>% 
-  as.data.frame() %>% 
-  knitr::kable(caption = "NRM results")
-
-
 
 
 # Comparison models without dichot_pb_allo1 -------------------------------
@@ -940,36 +621,105 @@ round(res_nrm_pb, 2) %>%
 
 
 
-# Cross-tab liesbeth CR ---------------------------------------------------
+# Forest attempts ---------------------------------------------------------
+
+
+# Try relapse first
+rel_smcfcs_tidy <- smcfcs_rel %>% 
+  data.table(keep.rownames = "term") %>% 
+  setnames(old = c("results", "se"), new = c("estimate", "std.error")) %>% 
+  .[, .(term, estimate, std.error)]
+
+dat_rel <- rbind(rel_smcfcs_tidy, mice_rel, broom::tidy(mod_rel),
+                 fill = T, idcol = "method") %>% 
+  .[, .(method, term, estimate, std.error)] %>% 
+  .[, method := factor(
+    method,
+    levels = 1:3,
+    labels = c("smcfcs", "mice", "CCA")
+  )] %>% 
+  
+  # Make CI
+  .[, ':=' (
+    estimate = exp(estimate),
+    CI_low = exp(estimate - pnorm(0.975) * std.error),
+    CI_upp = exp(estimate + pnorm(0.975) * std.error)
+  )] %>% 
+  
+  # colors
+  .[, color_row := rep(c("white", "gray"), length.out = .N)]
+
+
+p_rel <- dat_rel %>% 
+  ggplot(aes(x = term, y = estimate, group = method, shape = method)) +
+  geom_vline(aes(xintercept = term, col = color_row), size = 13) +
+  geom_linerange(aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term),
+                 position = position_dodge(width = 0.75), size = 1) +
+  geom_point(position = position_dodge2(width = 0.75), size = 2) +
+  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 2, 3, 5)) +
+  geom_hline(yintercept = 1, linetype = "dotted") +
+  theme_bw(base_size = 14) + 
+  coord_flip(ylim = c(0.5, 4)) +
+  scale_color_manual(values = c("white", "lightgray"), guide = "none") + 
+  ggtitle("Relapse") +
+  theme(legend.position = "bottom",
+        panel.grid = element_blank(), 
+        plot.title = element_text(hjust = 0.5)) + 
+  #scale_color_discrete_qualitative(guide = "none", palette = "Dark 3")+
+  xlab(NULL) +
+  ylab("Hazard ratio (95% CI)")
 
 
 
-dat_crosstabs <- data.table::copy(dat_mds_reg)
 
-dat_crosstabs[, pb_allo1 := cut(
-  pb_allo1, 
-  breaks = c(-Inf, 5, 10, 20, Inf), 
-  include.lowest = T, 
-  ordered_result = F,
-  labels = c("<=5", "(5,10]", "(10, 20]", ">20")
-)]
+# Try nrm 
+nrm_smcfcs_tidy <- smcfcs_nrm %>% 
+  data.table(keep.rownames = "term") %>% 
+  setnames(old = c("results", "se"), new = c("estimate", "std.error")) %>% 
+  .[, .(term, estimate, std.error)]
+
+dat_nrm <- rbind(nrm_smcfcs_tidy, mice_nrm, broom::tidy(mod_nrm),
+                 fill = T, idcol = "method") %>% 
+  .[, .(method, term, estimate, std.error)] %>% 
+  .[, method := factor(
+    method,
+    levels = 1:3,
+    labels = c("smcfcs", "mice", "CCA")
+  )] %>% 
+  
+  # Make CI
+  .[, ':=' (
+    estimate = exp(estimate),
+    CI_low = exp(estimate - pnorm(0.975) * std.error),
+    CI_upp = exp(estimate + pnorm(0.975) * std.error)
+  )] %>% 
+  
+  # colors
+  .[, color_row := rep(c("white", "gray"), length.out = .N)]
 
 
-dat_crosstabs[, bm_allo1 := cut(
-  bm_allo1, 
-  breaks = c(-Inf, 5, 10, 20, Inf), 
-  include.lowest = T, 
-  ordered_result = F,
-  labels = c("<=5", "(5,10]", "(10, 20]", ">20")
-)]
+p_nrm <- dat_nrm %>% 
+  ggplot(aes(x = term, y = estimate, group = method, shape = method)) +
+  geom_vline(aes(xintercept = term, col = color_row), size = 13) +
+  geom_linerange(aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term),
+                 position = position_dodge(width = 0.75), size = 1,
+                 col = "black") +
+  geom_point(position = position_dodge2(width = 0.75), size = 2) +
+  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 2, 3, 5)) +
+  geom_hline(yintercept = 1, linetype = "dotted") +
+  theme_bw(base_size = 14) + 
+  coord_flip(ylim = c(0.5, 4)) +
+  scale_color_manual(values = c("white", "lightgray"), guide = "none") + 
+  ggtitle("NRM") +
+  theme(legend.position = "bottom",
+        panel.grid = element_blank(), 
+        plot.title = element_text(hjust = 0.5)) + 
+  xlab(NULL) +
+  ylab("Hazard ratio (95% CI)") 
 
-dat_crosstabs %>% 
-  .[, c("crnocr", "bm_allo1")] %>% 
-  tbl_summary(by = "crnocr") %>% 
-  add_n(statistic = "{p_miss}%", col_label = "% missing")
+p_nrm
 
-dat_crosstabs %>% 
-  .[, c("crnocr", "pb_allo1")] %>% 
-  tbl_summary(by = "crnocr") %>% 
-  add_n(statistic = "{p_miss}%", col_label = "% missing") 
 
+ggpubr::ggarrange(p_rel, p_nrm + theme(axis.text.y = element_blank()), 
+                  common.legend = T, ncol = 2, widths = c(1.5, 1), 
+                  legend = "bottom")
