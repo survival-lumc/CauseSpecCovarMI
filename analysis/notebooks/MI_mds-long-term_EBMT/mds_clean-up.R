@@ -44,7 +44,8 @@ pacman::p_load(
   naniar,
   ggpubr, # will load ggplot with it
   gtsummary,
-  survminer
+  survminer,
+  ggforestplot
 )
 
 # Set contrasts for ordered factors
@@ -297,7 +298,7 @@ purrr::map(univ_mods_rel, ~ plot(cox.zph(.x)))
 
 # Univariate cause-specific models (nrm)
 univ_mods_nrm <- purrr::map(
-  .x = predictors,
+  .x = predictors_mod1,
   .f = ~ {
     form <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", .x))
     mod <- coxph(form, data = dat_mds_reg)
@@ -314,6 +315,15 @@ purrr::map(univ_mods_nrm, summary)
 # Plot all coxzphs
 purrr::map(univ_mods_nrm, ~ plot(cox.zph(.x)))
 
+
+
+# Marginal cumulative incidences -------------------------------------------
+
+
+#...
+# - Missing category
+# - Marginal cumulative incidences?
+# - 
 
 
 
@@ -463,16 +473,18 @@ m <- 20
 iters <- 15
 
 # Run imputations 
-imps_mice <- mice(
-  data = dat_mds_reg,
-  m = m,
-  maxit = iters,
-  method = meths,
-  predictorMatrix = matpred
-)
+# imps_mice <- mice(
+#   data = dat_mds_reg,
+#   m = m,
+#   maxit = iters,
+#   method = meths,
+#   predictorMatrix = matpred
+# )
 
 # Load object 
-saveRDS(imps_mice, file = "imps_mice.rds")
+#saveRDS(imps_mice, file = "imps_mice.rds")
+
+imps_mice <- readRDS("imps_mice.rds")
 
 # Diagnostic
 plot(imps_mice)
@@ -524,17 +536,17 @@ smform_smcfcs <- c(
 )
 
 # You need the == ==
-imps_smcfcs <- smcfcs::smcfcs(
-  originaldata = dat_mds_reg,
-  smtype = "compet",
-  smformula = smform_smcfcs,
-  m = m,
-  numit = iters,
-  method = meths
-)
+# imps_smcfcs <- smcfcs::smcfcs(
+#   originaldata = dat_mds_reg,
+#   smtype = "compet",
+#   smformula = smform_smcfcs,
+#   m = m,
+#   numit = iters,
+#   method = meths
+# )
 
-saveRDS(imps_smcfcs, file = "imps_smcfcs.rds")
-#imps_smcfcs <- readRDS("imp_objects/imps_smcfcs.rds")
+#saveRDS(imps_smcfcs, file = "imps_smcfcs.rds")
+imps_smcfcs <- readRDS("imps_smcfcs.rds")
 
 # Check convergence
 ggplot_smcfcs_converg(
@@ -557,6 +569,16 @@ smcfcs_rel <- with(
   mitools::MIcombine() %>% 
   summary()
 
+
+# With original formula object!
+lapply(implist_smcfcs$imputations, 
+       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
+  mitools::MIcombine()
+
+lapply(mice::complete(imps_mice, action = "all"), 
+       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
+  pool() %>% 
+  summary()
 
 # NRM 
 smcfcs_nrm <- with(
@@ -581,145 +603,159 @@ smcfcs_nrm <- with(
 # See: https://cran.r-project.org/web/packages/smcfcs/vignettes/smcfcs-vignette.html
 
 
-# Comparison models without dichot_pb_allo1 -------------------------------
 
-#' # Comparison models (no dichot pb allo1)
-
-
-names_preds <- names(mod_rel_nopb$coefficients)
-
-res_rel_nopb <- cbind.data.frame(
-  "CCA" = mod_rel_nopb$coefficients,
-  "mice" = mice_rel_nopb$estimate,
-  "smcfcs" = smcfcs_rel_nopb$results,
-  "CCA_se" = broom::tidy(mod_rel_nopb)$std.error,
-  "mice_se" = mice_rel_nopb$std.error,
-  "smcfcs_se" = smcfcs_rel_nopb$se
-)
-
-rownames(res_rel_nopb) <- names_preds
-round(res_rel_nopb, 2) %>% 
-  as.data.frame() %>% 
-  knitr::kable(caption = "REL results")
+# Indicator method --------------------------------------------------------
 
 
-# NRM
-res_nrm_pb <- cbind.data.frame(
-  "CCA" = mod_nrm_nopb$coefficients,
-  "mice" = mice_nrm_nopb$estimate,
-  "smcfcs" = smcfcs_nrm_nopb$results,
-  "CCA_se" = broom::tidy(mod_nrm_nopb)$std.error,
-  "mice_se" = mice_nrm_nopb$std.error,
-  "smcfcs_se" = smcfcs_nrm_nopb$se
-)
+miss_facts <- var_names_miss[!(var_names_miss %in% "agedonor_allo1_decades")]
 
-rownames(res_nrm_pb) <- names_preds
-round(res_nrm_pb, 2) %>% 
-  as.data.frame() %>% 
-  knitr::kable(caption = "NRM results")
+dat_mds_missind <- data.table::copy(dat_mds_reg) %>% 
+  
+  # Age donor edit - this will need adding to the formula with update()
+  .[, agedonor_NAind := factor(is.na(agedonor_allo1_decades))] %>% 
+  .[is.na(agedonor_allo1_decades), agedonor_allo1_decades := 0] %>% 
+  
+  # Add missing category to all categorical variables
+  .[, (miss_facts) := lapply(.SD, addNA), .SDcols = miss_facts]
 
+# Update formulas
+form_missind_rel <- update(form_rel, . ~ . + agedonor_NAind)
+form_missind_nrm <- update(form_nrm, . ~ . + agedonor_NAind)
 
+# Run models
+mod_rel_missind <- coxph(form_missind_rel, data = dat_mds_missind)
+mod_nrm_missind <- coxph(form_missind_nrm, data = dat_mds_missind)
 
+# Tidy them
+missind_rel <- broom::tidy(mod_rel_missind) %>% 
+  data.table() %>% 
+  .[!grepl("NA", term),]
 
-# Forest attempts ---------------------------------------------------------
+missind_nrm <- broom::tidy(mod_nrm_missind) %>% 
+  data.table() %>% 
+  .[!grepl("NA", term),]
 
+#' # Comparison models 
+  
+# Relapse formatting
+dat_rel <- data.table(smcfcs_rel, keep.rownames = "term") %>% 
+  setnames(
+    old = c("results", "se"),
+    new = c("estimate", "std.error")
+  ) %>% 
 
-# Try relapse first
-rel_smcfcs_tidy <- smcfcs_rel %>% 
-  data.table(keep.rownames = "term") %>% 
-  setnames(old = c("results", "se"), new = c("estimate", "std.error")) %>% 
-  .[, .(term, estimate, std.error)]
-
-dat_rel <- rbind(rel_smcfcs_tidy, mice_rel, broom::tidy(mod_rel),
-                 fill = T, idcol = "method") %>% 
+  # Bind mice and CCA
+  rbind(
+    mice_rel, 
+    broom::tidy(mod_rel),
+    missind_rel,
+    fill = T, 
+    idcol = "method"
+  ) %>% 
   .[, .(method, term, estimate, std.error)] %>% 
   .[, method := factor(
     method,
-    levels = 1:3,
-    labels = c("smcfcs", "mice", "CCA")
-  )] %>% 
+    levels = 1:4,
+    labels = c("smcfcs", "mice", "CCA", "missind")
+  )] 
+
+
+# Start with nrm, then bind
+dat_nrm <- data.table(smcfcs_nrm, keep.rownames = "term") %>% 
+  setnames(
+    old = c("results", "se"), 
+    new = c("estimate", "std.error")
+  ) %>% 
+
+  # Bind mice and CCA
+  rbind(
+    mice_nrm, 
+    broom::tidy(mod_nrm),
+    missind_nrm,
+    fill = T, 
+    idcol = "method"
+  ) %>% 
+  .[, .(method, term, estimate, std.error)] %>% 
+  .[, method := factor(
+    method,
+    levels = 1:4,
+    labels = c("smcfcs", "mice", "CCA", "missind")
+  )] 
+
+
+#
+
+
+
+# Combine
+dat_forest <- rbind(dat_rel, dat_nrm, idcol = "comp_ev") %>% 
   
-  # Make CI
+  # Make CI, label comp_ev and row colours
   .[, ':=' (
+    comp_ev = factor(comp_ev, levels = 1:2, labels = c("Relapse", "NRM")),
     estimate = exp(estimate),
     CI_low = exp(estimate - pnorm(0.975) * std.error),
     CI_upp = exp(estimate + pnorm(0.975) * std.error)
   )] %>% 
-  
-  # colors
-  .[, color_row := rep(c("white", "gray"), length.out = .N)]
+  .[, colour_row := rep(c("white", "gray"), length.out = .N), by = comp_ev]
 
 
-p_rel <- dat_rel %>% 
-  ggplot(aes(x = term, y = estimate, group = method, shape = method)) +
-  geom_vline(aes(xintercept = term, col = color_row), size = 13) +
-  geom_linerange(aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term),
-                 position = position_dodge(width = 0.75), size = 1) +
-  geom_point(position = position_dodge2(width = 0.75), size = 2) +
-  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 2, 3, 5)) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
+# Personal attempt forest plot - note CCA is based on 18% of all cases (see mod_rel)
+dat_forest %>% 
+  ggplot(aes(x = term, y = estimate, group = method)) +
+  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 1.5, 2, 3)) + 
+  geom_rect(
+    aes(fill = colour_row),
+    ymin = -Inf,
+    ymax = Inf,
+    xmin = as.numeric(dat_forest$term) - 0.5,
+    xmax = as.numeric(dat_forest$term) + 0.5
+  ) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_linerange(
+    aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term, col = method),
+    position = position_dodge(width = 0.75), 
+    size = 1
+  ) +
+  geom_point(
+    aes(col = method), 
+    position = position_dodge2(width = 0.75), 
+    size = 1.5
+  ) +
   theme_bw(base_size = 14) + 
-  coord_flip(ylim = c(0.5, 4)) +
-  scale_color_manual(values = c("white", "lightgray"), guide = "none") + 
-  ggtitle("Relapse") +
-  theme(legend.position = "bottom",
-        panel.grid = element_blank(), 
-        plot.title = element_text(hjust = 0.5)) + 
-  #scale_color_discrete_qualitative(guide = "none", palette = "Dark 3")+
-  xlab(NULL) +
-  ylab("Hazard ratio (95% CI)")
-
-
-
-
-# Try nrm 
-nrm_smcfcs_tidy <- smcfcs_nrm %>% 
-  data.table(keep.rownames = "term") %>% 
-  setnames(old = c("results", "se"), new = c("estimate", "std.error")) %>% 
-  .[, .(term, estimate, std.error)]
-
-dat_nrm <- rbind(nrm_smcfcs_tidy, mice_nrm, broom::tidy(mod_nrm),
-                 fill = T, idcol = "method") %>% 
-  .[, .(method, term, estimate, std.error)] %>% 
-  .[, method := factor(
-    method,
-    levels = 1:3,
-    labels = c("smcfcs", "mice", "CCA")
-  )] %>% 
+  coord_flip(ylim = c(0.5, 4), expand = 0) +
+  ylab("Log hazard ratio (95% CI)") + 
+  xlab(NULL) + 
+  facet_grid(. ~ comp_ev) +
+  scale_fill_manual(values = c("gray90", "white"), guide = "none") +
+  scale_color_brewer(palette = "Dark2") + 
+  theme(legend.position = "bottom") 
   
-  # Make CI
-  .[, ':=' (
-    estimate = exp(estimate),
-    CI_low = exp(estimate - pnorm(0.975) * std.error),
-    CI_upp = exp(estimate + pnorm(0.975) * std.error)
-  )] %>% 
-  
-  # colors
-  .[, color_row := rep(c("white", "gray"), length.out = .N)]
+
+lapply(mice::complete(imps_mice, action = "all"), 
+       function(imp_dat) table(imp_dat$mdsclass, imp_dat$ci_s_allo1))
+
+round(table(dat_mds_reg$mdsclass, 
+                        dat_mds_reg$ci_s_allo1) / 
+         nrow(dat_mds_reg), 2)
+
+round(table(dat_mds_reg[complete.cases(dat_mds_reg),]$mdsclass, 
+            dat_mds_reg[complete.cases(dat_mds_reg),]$ci_s_allo1) / 
+  nrow(dat_mds_reg[complete.cases(dat_mds_reg),]), 2)
+
+# Other package options ---------------------------------------------------
 
 
-p_nrm <- dat_nrm %>% 
-  ggplot(aes(x = term, y = estimate, group = method, shape = method)) +
-  geom_vline(aes(xintercept = term, col = color_row), size = 13) +
-  geom_linerange(aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term),
-                 position = position_dodge(width = 0.75), size = 1,
-                 col = "black") +
-  geom_point(position = position_dodge2(width = 0.75), size = 2) +
-  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 2, 3, 5)) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
-  theme_bw(base_size = 14) + 
-  coord_flip(ylim = c(0.5, 4)) +
-  scale_color_manual(values = c("white", "lightgray"), guide = "none") + 
-  ggtitle("NRM") +
-  theme(legend.position = "bottom",
-        panel.grid = element_blank(), 
-        plot.title = element_text(hjust = 0.5)) + 
-  xlab(NULL) +
-  ylab("Hazard ratio (95% CI)") 
+# Using ggforest
+ggforestplot::forestplot(
+  df = dat_forest,
+  estimate = estimate, 
+  name = term,
+  se = std.error, 
+  colour = method, 
+  logodds = F, 
+  ci = 0.95, 
+)
 
-p_nrm
-
-
-ggpubr::ggarrange(p_rel, p_nrm + theme(axis.text.y = element_blank()), 
-                  common.legend = T, ncol = 2, widths = c(1.5, 1), 
-                  legend = "bottom")
+forestmodel::forest_model(mod_rel)
+survminer::ggforest(mod_rel, data = dat_mds_reg)
