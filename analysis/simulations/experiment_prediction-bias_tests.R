@@ -41,11 +41,14 @@ ev2_pars <- list(
   "b2" = .5, 
   "gamm2" = .5
 )
+    
+devtools::load_all()
+set.seed(4328)
 
 # Generate a dataset based on scenario
 dat <- SimsCauseSpecCovarMiss::generate_dat(
-  n = 500,
-  X_type = "continous", 
+  n = 5000,
+  X_type = "binary", 
   r = 0.5, 
   ev1_pars = ev1_pars,
   ev2_pars = ev2_pars, 
@@ -56,7 +59,13 @@ dat <- SimsCauseSpecCovarMiss::generate_dat(
   eta1 = -1
 )
 
+setup_mstate(dat) 
+dat$X
 
+coxph(Surv(t, eps == 1) ~ X_orig + Z, data = dat)
+
+# -0.4810937
+cor(dat$Z, dat$t)
 
 summary(
   survival::coxph(Surv(t, eps == 1) ~ X + Z, data = dat)
