@@ -25,18 +25,38 @@ setup_mstate <- function(dat) {
                                   data = dat,
                                   trans = tmat,
                                   keep = covs) 
-                          
-  # Expand covariates
-  dat_expanded <- mstate::expand.covs(dat_msprepped, covs,
-                                      append = TRUE, longnames = F)
   
-  # Fit long cox model (both transitions)
-  cox_long <- survival::coxph(Surv(time, status) ~ 
-                                X.1 + Z.1 + # Trans == 1
-                                X.2 + Z.2 + # Trans == 2
-                                strata(trans), # Separate baseline hazards
-                              data = dat_expanded)
-
+  # Use longnames if ordcat
+  if (length(levels(dat$X)) > 2) {
+    
+    # Expand covariates
+    dat_expanded <- mstate::expand.covs(
+      dat_msprepped, covs, append = TRUE, longnames = T
+    )
+    
+    # Fit long cox model (both transitions)
+    cox_long <- survival::coxph(Surv(time, status) ~ 
+                                  Xinterm.1 + Xhigh.1 + Z.1 + # Trans == 1
+                                  Xinterm.2 + Xhigh.2 + Z.2 + # Trans == 2
+                                  strata(trans), # Separate baseline hazards
+                                data = dat_expanded)
+    
+  } else {
+    
+    # Expand covariates
+    dat_expanded <- mstate::expand.covs(
+      dat_msprepped, covs, append = TRUE, longnames = F
+    )
+    
+    # Fit long cox model (both transitions)
+    cox_long <- survival::coxph(Surv(time, status) ~ 
+                                  X.1 + Z.1 + # Trans == 1
+                                  X.2 + Z.2 + # Trans == 2
+                                  strata(trans), # Separate baseline hazards
+                                data = dat_expanded)
+    
+  }
+                      
   return(cox_long)
 }
 

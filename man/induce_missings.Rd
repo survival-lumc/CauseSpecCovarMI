@@ -9,7 +9,7 @@ induce_missings(n, dat, p, mech, eta1)
 \arguments{
 \item{n}{Sample size.}
 
-\item{dat}{Data fram containing X and Z}
+\item{dat}{Data frame containing X and Z}
 
 \item{p}{Proportion of missing values in X.}
 

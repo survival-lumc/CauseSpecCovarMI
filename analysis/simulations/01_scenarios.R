@@ -15,7 +15,7 @@ n <- c(n = 500, "large" = 2000)
 prop_miss <- c("low" = .10, "high" = .50)
 beta1 <- c("null" = 0, "med" = 0.5, "large" = 1)
 mech <- c("MCAR", "MAR", "MNAR", "MAR_GEN")
-X_level <- c("continous", "binary")
+X_level <- c("continuous", "binary")
 rho <- c("weak" = 0.1, "strong" = 0.5)
 eta1 <- c("weaker" = -1, "strong" = -2) # To incorporate MAR_GEN
 haz_shape <- c("similar", "different")
@@ -111,7 +111,7 @@ scenarios_updated <- dplyr::bind_rows(
 # Add the n = 500 pilot scenarios
 n_sim_500 <- 400 # 0.2^2/0.01^2
   
-scens_final <- pilots_n500 %>% 
+scens_interm <- pilots_n500 %>% 
   dplyr::mutate(
     scen_num = 1:dplyr::n() + max(scenarios_updated$scen_num),
     seed = scen_num * n_sim_500 
@@ -120,19 +120,30 @@ scens_final <- pilots_n500 %>%
   dplyr::arrange(scen_num) 
 
 # Save as .RDS file to load in
-saveRDS(scens_final, file = "inst/testdata/scenarios.rds")
+saveRDS(scens_interm, file = "inst/testdata/scenarios.rds")
 
 # Need n = 500 scens last...
 
 
-# Other -------------------------------------------------------------------
+
+# Ordcat scenarios --------------------------------------------------------
 
 
+scens_ordcat <- scens_interm %>% 
+  dplyr::filter(
+    prop_miss == 0.5,
+    n == 2000, 
+    beta1 != 0,
+    X_level == "continuous"
+  ) %>% 
+  dplyr::arrange(
+    haz_shape, eta1, miss_mech, beta1
+  ) %>% 
+  dplyr::mutate(
+    X_level = "ordcat",
+    scen_num = 1:dplyr::n() + max(scens_interm$scen_num),
+    seed = scen_num * n_sim
+  )
 
-# This is for using summarise sims on subset
-# Replace 1 and 2 by some actual number
-list.files(
-  path = "./analysis/sim_results/summarised_reps/estimates/",
-  pattern = ".*(scen28_)|(scen57_).*.rds", 
-  full.names = T
-)
+
+saveRDS(scens_ordcat, file = "inst/testdata/scenarios_ordcat.rds")

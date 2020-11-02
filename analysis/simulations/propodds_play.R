@@ -5,7 +5,7 @@ library(MASS)
 library(tidyverse)
 
 set.seed(123)
-n <- 2000
+n <- 20000
 Z <- rnorm(n)
 beta_Z <- 1
 X <- beta_Z * Z + rlogis(n) # standard logistic error
@@ -22,6 +22,7 @@ dat <- data.frame(catX, Z)
 ?polr
 mod <- MASS::polr(catX ~ Z, data = dat)
 summary(mod)
+cor(X, Z)
 
 mod$zeta # log odds of being in that cat or lower when Z = 0
 mod$coefficients # Param as -beta, same across classes 

@@ -15,7 +15,7 @@
 
 #+ echo = FALSE, message = FALSE, warning = FALSE
 # SETUP -----------------------------------------------------------------------
-knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file()) # or here
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file()) # or here::here()
 
 knitr::opts_chunk$set(
   echo = FALSE, 
@@ -44,8 +44,8 @@ pacman::p_load(
   naniar,
   ggpubr, # will load ggplot with it
   gtsummary,
-  survminer,
-  ggforestplot
+  survminer#,
+  #ggforestplot
 )
 
 # Set contrasts for ordered factors
@@ -281,7 +281,7 @@ univ_mods_rel <- purrr::map(
 
 # Print any summary
 summary(univ_mods_rel$karnofsk_allo1)
-plot(cox.zph(univ_mods_rel$karnofsk_allo1))
+plot(cox.zph(mod_rel))
 
 # Or all
 purrr::map(univ_mods_rel, summary)
@@ -317,16 +317,6 @@ purrr::map(univ_mods_nrm, ~ plot(cox.zph(.x)))
 
 
 
-# Marginal cumulative incidences -------------------------------------------
-
-
-#...
-# - Missing category
-# - Marginal cumulative incidences?
-# - 
-
-
-
 # Multivariable cox models ------------------------------------------------
 
 
@@ -347,6 +337,9 @@ mod_rel <- coxph(formula = form_rel, data = dat_mds_reg)
 summary(mod_rel)
 cox.zph(mod_rel)
 
+#
+coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~
+        cytog_threecat + hctci_risk + karnofsk_allo1, data = dat_mds_reg)
 
 
 # For nrm
@@ -385,48 +378,6 @@ dat_mds_reg[, ':=' (
 
 # Which vars actually have some data missing? (no binary vars)
 var_names_miss <- naniar::miss_var_which(dat_mds_reg)
-
-set_mi_methods <- function(dat,
-                           var_names_miss,
-                           imp_type = "mice",
-                           cont_method = "norm") {
-  
-  # Set up methods vector
-  n_vars_miss <- length(var_names_miss)
-  meths_miss <- setNames(character(n_vars_miss), var_names_miss)
-  
-  # Get indicators:
-  ordered_ind <- sapply(dat_mds_reg[, ..var_names_miss], is.ordered)
-  contin_ind <- sapply(dat_mds_reg[, ..var_names_miss], is.numeric)
-  
-  unordered_ind <- sapply(
-    dat_mds_reg[, ..var_names_miss], 
-    function(col) length(levels(col)) > 2 & !is.ordered(col)
-  )
-  
-  binary_ind <- sapply(
-    dat_mds_reg[, ..var_names_miss], 
-    function(col) length(levels(col)) == 2 & !is.ordered(col)
-  )
-  
-  # Set up methods 
-  meths_miss[ordered_ind] <- "polr"
-  meths_miss[contin_ind] <- cont_method
-  meths_miss[unordered_ind] <- "polyreg"
-  meths_miss[binary_ind] <- "logreg"
-  
-  # Adjust if for smcfcs
-  if (imp_type == "smcfcs") {
-    meths_miss[which(meths_miss == "polyreg")] <- "mlogit"
-    meths_miss[which(meths_miss == "polr")] <- "podds"
-  }
-  
-  # Make global vec
-  meths <- setNames(character(ncol(dat)), names(dat))
-  meths[var_names_miss] <- meths_miss
-  
-  return(meths)
-}
 
 
 # Set methods accordingly
@@ -694,14 +645,15 @@ dat_forest <- rbind(dat_rel, dat_nrm, idcol = "comp_ev") %>%
   .[, ':=' (
     comp_ev = factor(comp_ev, levels = 1:2, labels = c("Relapse", "NRM")),
     estimate = exp(estimate),
-    CI_low = exp(estimate - pnorm(0.975) * std.error),
-    CI_upp = exp(estimate + pnorm(0.975) * std.error)
+    CI_low = exp(estimate - qnorm(0.975) * std.error),
+    CI_upp = exp(estimate + qnorm(0.975) * std.error) # not pnorm!
   )] %>% 
-  .[, colour_row := rep(c("white", "gray"), length.out = .N), by = comp_ev]
+  .[, colour_row := rep(c("white", "gray"), length.out = .N), by = comp_ev] %>% 
+  .[, method := factor(method, levels = c("missind", "smcfcs", "mice", "CCA"))]
 
 
 # Personal attempt forest plot - note CCA is based on 18% of all cases (see mod_rel)
-dat_forest %>% 
+p <- dat_forest %>% 
   ggplot(aes(x = term, y = estimate, group = method)) +
   scale_y_continuous(trans = "log", breaks = c(0.5, 1, 1.5, 2, 3)) + 
   geom_rect(
@@ -711,7 +663,8 @@ dat_forest %>%
     xmin = as.numeric(dat_forest$term) - 0.5,
     xmax = as.numeric(dat_forest$term) + 0.5
   ) +
-  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_hline(yintercept = c(1), linetype = "dashed") +
+  geom_hline(yintercept = c(2), linetype = "dotted", alpha = 0.5) +
   geom_linerange(
     aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term, col = method),
     position = position_dodge(width = 0.75), 
@@ -723,14 +676,86 @@ dat_forest %>%
     size = 1.5
   ) +
   theme_bw(base_size = 14) + 
-  coord_flip(ylim = c(0.5, 4), expand = 0) +
-  ylab("Log hazard ratio (95% CI)") + 
+  coord_flip(ylim = c(0.5, 4)) +  
+             #expand = 0) +
+  #ylab("Log hazard ratio (95% CI)") + 
+  ylab(NULL) +
   xlab(NULL) + 
   facet_grid(. ~ comp_ev) +
   scale_fill_manual(values = c("gray90", "white"), guide = "none") +
-  scale_color_brewer(palette = "Dark2") + 
-  theme(legend.position = "bottom") 
+  scale_color_brewer(palette = "Dark2", guide = guide_legend(reverse = T)) + 
+  theme(legend.position = "right",
+        axis.text.y = element_blank(), axis.ticks.y = element_blank()) 
+
+p
+
+varos <- paste(colnames(dat_mds_reg), collapse = "|")
+
+# Try making the table
+table_coefs <- data.table(
+  coefs = factor(levels(dat_forest$term), levels = levels(dat_forest$term))
+) %>% 
+  .[, ':=' (
+    var = stringr::str_extract(string = coefs, pattern = varos),
+    pos_x = as.numeric(coefs)
+  )] #%>% 
+  #.[var[1], var := "", by = var]
+
+  # https://stackoverflow.com/questions/62246541/forest-plot-with-table-ggplot-coding
+
+# Test here
+table_coefs[var != coefs, coefs := stringr::str_replace(
+  string = coefs, pattern = varos, replacement = ""
+)]
+
+table_coefs[var == coefs, coefs := ""]
   
+table_coefs[, ind := .N:1, by = var][, var := ifelse(ind == 1, var, "")]
+table_coefs[, colour_row := rep(c("white", "gray"), length.out = .N)]
+
+
+
+table_coefs[]
+
+tabo <- ggplot(table_coefs, aes(y = pos_x)) +
+  geom_rect(
+    aes(fill = colour_row),
+    xmin = -Inf,
+    xmax = Inf,
+    ymin = as.numeric(table_coefs$pos_x) - 0.5,
+    ymax = as.numeric(table_coefs$pos_x) + 0.5
+  ) + 
+  geom_text(aes(x = 0, label = var), hjust = 0,
+            fontface = "bold") + 
+  geom_text(aes(x = 0.25, label = coefs), hjust = 1) +
+  theme_bw(base_size = 14) + 
+  coord_cartesian(ylim = c(1.25, 18.75)) +
+  #ylim(c(0.5, 19.5)) +
+  xlab(NULL) +
+  ylab(NULL) +
+  #coord_cartesian(expand = 0) +
+  scale_fill_manual(values = c("white", "gray90"), guide = "none") +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    #plot.margin = margin(0, 0, 20, 0),
+    legend.position = "none"
+  )
+
+egg::ggarrange(tabo, p, nrow = 1)
+
+
+#gridExtra::grid.arrange(tabo, p, ncol = 2, widths = c(2.25, 3))
+
+
+cox.zph(mod_nrm)
+cox.zph(mod_rel)
+
+
+
 
 lapply(mice::complete(imps_mice, action = "all"), 
        function(imp_dat) table(imp_dat$mdsclass, imp_dat$ci_s_allo1))
@@ -757,5 +782,273 @@ ggforestplot::forestplot(
   ci = 0.95, 
 )
 
-forestmodel::forest_model(mod_rel)
+forestmodel::forest_model(mod_rel, 
+                          format_options = forestmodel::forest_model_format_options(
+  text_size = 1
+))
 survminer::ggforest(mod_rel, data = dat_mds_reg)
+
+
+
+# Marginal cumulative incidences ------------------------------------------
+
+
+# In complete cases
+dat_CCA <- dat_mds_reg[complete.cases(dat_mds_reg)]
+marg_cuminc_CCA <- cmprsk::cuminc(dat_CCA$ci_allo1, dat_CCA$ci_s_allo1)
+plot(marg_cuminc_CCA)
+
+
+marg_cuminc <- cmprsk::cuminc(dat_mds_reg$ci_allo1, dat_mds_reg$ci_s_allo1)
+plot(marg_cuminc)
+
+
+
+marg_cuminc_CCA <- mstate::Cuminc(time = as.numeric(dat_CCA$ci_allo1), 
+                                  status = as.numeric(dat_CCA$ci_s_allo1), 
+                                  group = dat_CCA$mdsclass)
+
+marg_cuminc <- mstate::Cuminc(time = as.numeric(dat_mds_reg$ci_allo1), 
+                              status = as.numeric(dat_mds_reg$ci_s_allo1), 
+                              group = dat_mds_reg$mdsclass)
+
+rbind(
+  data.table(marg_cuminc_CCA),
+  data.table(marg_cuminc),
+  idcol = "subset"
+) %>% 
+  .[, subset := factor(subset, labels = c("CCA", "Full data"))] %>% 
+  melt.data.table(
+    id.vars = c("subset", "group", "time"),
+    measure.vars = c("CI.1", "CI.2"), 
+    variable.name = "event", 
+    value.name = "cuminc"
+  ) %>% 
+  .[, event := factor(event, levels = c("CI.1", "CI.2"), labels = c("Relapse", "NRM"))] %>% 
+  ggplot(aes(time, cuminc, col = group, linetype = group)) +
+  geom_step(size = 1) +
+  facet_grid(subset ~ event) +
+  coord_cartesian(expand = 0, ylim = c(0, 0.5)) + 
+  theme_bw(base_size = 14) +
+  theme(legend.position = "top") +
+  scale_colour_brewer(palette = "Dark2") +
+  labs(y = "Cumulative incidence",
+       x = "Time since HSCT")
+
+
+
+# Investigate different selections ----------------------------------------
+
+#
+listo <- purrr::map(
+  .x = var_names_miss,
+  .f = ~ {
+    dato <- dat_mds_reg[!is.na(dat_mds_reg[[.x]]), ]
+      
+    marg_cuminc_select <- mstate::Cuminc(
+      time = as.numeric(dato$ci_allo1), 
+      status = as.numeric(dato$ci_s_allo1), 
+      group = dato$mdsclass
+    ) 
+    
+    ploto <- rbind(
+      data.table(marg_cuminc_select),
+      data.table(marg_cuminc),
+      idcol = "subset"
+    ) %>% 
+      .[, subset := factor(subset, labels = c("CCA", "Full data"))] %>% 
+      melt.data.table(
+        id.vars = c("subset", "group", "time"),
+        measure.vars = c("CI.1", "CI.2"), 
+        variable.name = "event", 
+        value.name = "cuminc"
+      ) %>% 
+      .[, event := factor(event, levels = c("CI.1", "CI.2"),
+                          labels = c("Relapse", "NRM"))] %>% 
+      ggplot(aes(time, cuminc, col = group, linetype = group)) +
+      geom_step(size = 1) +
+      facet_grid(subset ~ event) +
+      coord_cartesian(expand = 0, ylim = c(0, 0.5)) + 
+      theme_bw(base_size = 14) +
+      theme(legend.position = "top") +
+      scale_colour_brewer(palette = "Dark2") +
+      labs(y = "Cumulative incidence",
+           x = "Time since HSCT")
+    
+    return(ploto)
+  }
+)
+
+names(listo) <- var_names_miss
+
+miss_var_summary(dat_mds_reg)
+
+# From lowest to most missing
+
+# Nothing these three
+listo$match_allo1_1
+listo$crnocr
+listo$cmv_combi_allo1_1
+
+#
+listo$karnofsk_allo1
+listo$agedonor_allo1_decades
+listo$hctci_risk
+listo$cytog_threecat
+
+cbind(dat_mds_reg$agedonor_allo1_decades,  
+      cut(dat_mds_reg$agedonor_allo1_decades, breaks = 0:9, 
+          include.lowest = T))
+
+bind_shadow(dat_mds_reg) %>% 
+  ggplot(aes(x = mdsclass,
+             y = ..prop..,
+             group = cytog_threecat_NA,
+             fill = cytog_threecat_NA)) +
+  stat_count(position = "dodge")
+
+
+plotonos <- purrr::map(
+  .x = var_names_miss[-7],
+  .f = ~ {
+    
+    vario <- rlang::sym(paste0(.x, "_NA"))
+    
+    po <- bind_shadow(dat_mds_reg) %>% 
+      ggplot(aes(x = mdsclass,
+                 y = ..prop..,
+                 group = !!vario,
+                 fill = !!vario)) +
+      stat_count(position = "dodge") +
+      ggtitle(.x)
+    
+    return(po)
+  }
+)
+
+plotonos
+
+# Investigate MDS coefficient ---------------------------------------------
+
+
+# Effectively look at three datasets:
+# - CCA selection
+# - Full data
+
+# Univariable models:
+
+# In Relapse
+univ_mods_rel$mdsclass
+coxph(Surv(ci_allo1, ci_s_allo1 == 1) ~ mdsclass, data = dat_CCA)
+
+
+# In NRM
+univ_mods_nrm$mdsclass
+coxph(Surv(ci_allo1, ci_s_allo1 == 2) ~ mdsclass, data = dat_CCA)
+
+
+# Look at cross tables
+round(prop.table(table(dat_CCA$mdsclass)), 2)
+round(prop.table(table(dat_mds_reg$mdsclass)), 2)
+
+# These are joint probabilities
+round(prop.table(table(dat_CCA$mdsclass, dat_CCA$ci_s_allo1)), 2)
+round(prop.table(table(dat_mds_reg$mdsclass, dat_mds_reg$ci_s_allo1)), 2)
+
+# Lets instead check the marginals P(Rel|sAML)
+round(prop.table(table(dat_CCA$mdsclass, dat_CCA$ci_s_allo1), margin = 1), 2)
+round(prop.table(table(dat_mds_reg$mdsclass, dat_mds_reg$ci_s_allo1), margin = 1), 2)
+
+
+# Check event densities?
+rbind(
+  dat_mds_reg,
+  dat_CCA,
+  idcol = "compcase"
+) %>% 
+  .[, ':=' (
+    ci_s_allo1 = factor(ci_s_allo1, levels = 0:2),
+    compcase = factor(compcase, levels = 1:2)
+  )] %>% 
+  ggplot(aes(ci_allo1, group = ci_s_allo1,  fill = ci_s_allo1)) +
+  geom_density(alpha = 0.5) +
+  facet_grid(. ~ compcase)
+
+
+
+# Have a look at CR -------------------------------------------------------
+
+
+
+# Univariable models:
+
+# In Relapse
+univ_mods_rel$crnocr
+coxph(Surv(ci_allo1, ci_s_allo1 == 1) ~ crnocr, data = dat_CCA)
+
+
+# In NRM
+univ_mods_nrm$crnocr
+coxph(Surv(ci_allo1, ci_s_allo1 == 2) ~ crnocr, data = dat_CCA)
+
+
+# Look at cross tables
+round(prop.table(table(dat_CCA$crnocr)), 2)
+round(prop.table(table(dat_mds_reg$crnocr)), 2)
+
+# These are joint probabilities
+round(prop.table(table(dat_CCA$crnocr, dat_CCA$ci_s_allo1)), 2)
+round(prop.table(table(dat_mds_reg$crnocr, dat_mds_reg$ci_s_allo1)), 2)
+
+# Lets instead check the marginals P(Rel|sAML)
+round(prop.table(table(dat_CCA$crnocr, dat_CCA$ci_s_allo1), margin = 1), 2)
+round(prop.table(table(dat_mds_reg$crnocr, dat_mds_reg$ci_s_allo1), margin = 1), 2)
+
+
+
+cormat <- cov2cor(mod_rel$var)
+rownames(cormat) <- colnames(cormat) <- stringr::str_wrap(names(mod_rel$coefficients), width = 2)
+round(cormat, 2)
+View(round(cormat, 2))
+
+dev.new()
+corrplot::corrplot(cormat, method = "number", number.cex = 0.5)
+
+
+
+# Bartlett model ----------------------------------------------------------
+
+
+# Assumption 1
+coxph(Surv(ci_allo1, ci_s_allo1 == 0) ~ age_allo1_decades + mdsclass + 
+        donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+        crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk,
+      data = dat_CCA)
+
+
+dat_mds_assump <- data.table::copy(dat_mds_reg) %>% 
+  .[, ':=' (
+    R = factor(complete.cases(.)),
+    eps_allcause = ifelse(ci_s_allo1 > 0, 1, 0)
+  )]
+
+# 
+formup <- as.formula(
+  paste0(". ~ . -", paste(var_names_miss, collapse = " - "))
+)
+
+form_R <- update(form_rel, formup)
+
+coxph(Surv(ci_allo1, eps_allcause) ~ age_allo1_decades + mdsclass + 
+        donorrel + R,
+      data = dat_mds_assump)
+
+
+
+# Check possible MNAR -----------------------------------------------------
+
+
+# Check karnofsky
+dat_mds_reg %>% 
+  ggplot(aes(mdsclass, agedonor_allo1_decades)) +
+  geom_miss_point()

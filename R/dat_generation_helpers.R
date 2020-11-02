@@ -55,39 +55,26 @@ generate_dat <- function(n,
   #' 
   #' @export
 
-  # Compute true R needed if binary
-  if (X_type == "binary") {
-    r <- pbiserial_to_pearson(p = 0.5, r_pb = r)
-
-    covmat <- matrix(c(1, r$r,
-                       r$r, 1), nrow = 2)
-
-    dat_covars <- data.frame(
-      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
-    ) %>%
-      dplyr::rename_all(~ c("X", "Z")) %>%
-      dplyr::mutate(X = ifelse(X <= r$x_cut, 0, 1))
-  } else {
-    covmat <- matrix(c(1, r,
-                       r, 1), nrow = 2)
-
-    dat_covars <- data.frame(
-      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
-    ) %>%
-      dplyr::rename_all(~ c("X", "Z"))
-  }
+  # Generate covariates
+  dat_covars <- gen_covars(
+    n = n,
+    X_type = X_type,
+    r = r
+  )
   
   # Generate event times
-  event_times <- gen_cmprsk_times(n,
-                                  dat_covars, 
-                                  ev1_pars,
-                                  ev2_pars,
-                                  rate_cens, 
-                                  mod_type = mod_type)
+  event_times <- gen_cmprsk_times(
+    n,
+    dat_covars, 
+    ev1_pars,
+    ev2_pars,
+    rate_cens, 
+    mod_type = mod_type
+  )
+  
   # Add event times
   dat_times <- dat_covars %>% 
-    dplyr::mutate(t = event_times$t, 
-                  eps = as.factor(event_times$eps))
+    dplyr::mutate(t = event_times$t, eps = as.factor(event_times$eps))
   
   # Small check to provide if eta1 (when not MCAR)
   # This will also allow complete datasets with mech = NULL and eta1 = NULL
@@ -95,35 +82,97 @@ generate_dat <- function(n,
     stop("If mechanism is other than MCAR, you must provide an eta1 value.")
   
   # Induce missings and format
-  dat <- induce_missings(n, dat_times,
-                         p, mech, eta1) %>% 
+  dat <- induce_missings(n, dat_times, p, mech, eta1) %>% 
     
     # Append original (unimputed) covariate
-   dplyr::mutate(X_orig = X,
-                 X = X_miss) %>% 
+   dplyr::mutate(X_orig = X, X = X_miss) %>% 
     dplyr::select(-X_miss) %>% # remove redundant variable
     
     # Compute individual event indicators
-    dplyr::mutate(ev1 = as.numeric(eps == 1),
-                  ev2 = as.numeric(eps == 2)) %>% 
+    dplyr::mutate(
+      ev1 = as.numeric(eps == 1),
+      ev2 = as.numeric(eps == 2)
+    ) %>% 
     
     # Compute (marginal) cumulative hazards
-    dplyr::mutate(H1 = nelsaalen_timefixed(., t, ev1),
-                  H2 = nelsaalen_timefixed(., t, ev2)) %>% 
+    dplyr::mutate(
+      H1 = nelsaalen_timefixed(., t, ev1),
+      H2 = nelsaalen_timefixed(., t, ev2)
+    ) %>% 
     
     # Compute interaction terms
-    dplyr::mutate(H1_Z = H1 * Z,
-                  H2_Z = H2 * Z) %>%
+    dplyr::mutate(
+      H1_Z = H1 * Z,
+      H2_Z = H2 * Z
+    ) %>%
     dplyr::arrange(t) 
 
   # Convert to factors if binary
-  if (X_type == "binary") {
+  if (X_type == "ordcat") {
     dat <- dat %>% 
-      dplyr::mutate(X = as.factor(dat$X),
-                    X_orig = as.factor(dat$X_orig))
+      dplyr::mutate(
+        X = factor(dat$X, levels = 1:3, 
+                   labels = c("low", "interm", "high"),
+                   ordered = T), 
+        X_orig = factor(dat$X_orig, 
+                        labels = c("low", "interm", "high"),
+                        ordered = T)
+      )
+  } else if (X_type == "binary") {
+    dat <- dat %>% 
+      dplyr::mutate(
+        X = as.factor(X),
+        X_orig = as.factor(X_orig)
+      )
   }
   
   return(dat)
+}
+
+gen_covars <- function(n,
+                       X_type,
+                       r) {
+  
+  # Compute true R needed if binary
+  if (X_type == "binary") {
+    r <- pbiserial_to_pearson(p = 0.5, r_pb = r)
+    
+    covmat <- matrix(c(1, r$r,
+                       r$r, 1), nrow = 2)
+    
+    dat_covars <- data.frame(
+      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
+    ) %>%
+      dplyr::rename_all(~ c("X", "Z")) %>%
+      dplyr::mutate(X = ifelse(X <= r$x_cut, 0, 1))
+    
+  } else if (X_type == "continuous") {
+    
+    # MVN
+    covmat <- matrix(c(1, r,
+                       r, 1), nrow = 2)
+    
+    dat_covars <- data.frame(
+      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
+    ) %>%
+      dplyr::rename_all(~ c("X", "Z"))
+    
+  } else if (X_type == "ordcat") {
+    
+    # Ordered categorical
+    Z <- rnorm(n = n, mean = 0, sd = 1)
+    
+    # Baseline probabilities
+    base_probs <- c(0.5, 0.25, 0.25)
+    break_points <- c(-Inf, qlogis(cumsum(base_probs)))
+    
+    # Add shift, covar effect of 1
+    X_latent <- 1 * Z + rlogis(n = n, location = 0, scale = 1)
+    X <- cut(X_latent, breaks = break_points, ordered_result = T)
+    dat_covars <- cbind.data.frame(X, X_latent, Z)
+    
+  } else stop("X_type should be either 'binary', 'continuous' or 'ordcat'")
+  
 }
 
 
@@ -164,17 +213,16 @@ gen_cmprsk_times <- function(n,
   #' 
   #' @return Data-frame with missings induced
   
-  # Rates from cause specific hazards
-  lam1 <- with(
-    dat,
-    ev1_pars$h1_0 * exp((ev1_pars$b1 * X + ev1_pars$gamm1 * Z))
-  )
   
-  lam2 <- with(
-    dat,
-    ev2_pars$h2_0 * exp((ev2_pars$b2 * X + ev2_pars$gamm2 * Z))
-  )
   
+  # Get model matrix 
+  options(contrasts = rep("contr.treatment", 2)) 
+  mod_mat <- model.matrix(~ X + Z, dat = dat)
+  
+  # Compute rates
+  lam1 <- ev1_pars$h1_0 * exp(mod_mat %*% c(0, ev1_pars$b1, ev1_pars$gamm1))
+  lam2 <- ev2_pars$h2_0 * exp(mod_mat %*% c(0, ev2_pars$b2, ev2_pars$gamm2))
+
   if (mod_type == "latent") {
     
     t1 <- rweibull_KM(n = n, alph = ev1_pars$a1, lam = lam1)
@@ -186,9 +234,9 @@ gen_cmprsk_times <- function(n,
     
   } else if (mod_type == "total") {
     
-    # This is a mistake - change this
+    # This is a mistake - change this!
     t <- invtrans_weib(
-      n = 1, 
+      n = n, 
       alph1 = ev1_pars$a1, 
       lam1 = lam1, 
       alph2 = ev2_pars$a2, 
@@ -219,25 +267,38 @@ gen_cmprsk_times <- function(n,
 
 
 
-invtrans_weib <- Vectorize(function(n, alph1, lam1, alph2, lam2) {
+invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
   
   # Define cdf - U first
-  cdf_U <- function(t, U) {
+  cdf_U <- function(t, alph1, lam1, alph2, lam2, U) {
     F_min_U <- 1 - exp(-(lam1 * t^alph1 + lam2 * t^alph2)) - U
     return(F_min_U)
   }
   
+  # Generate u and store in df
+  u <- stats::runif(n)
+  dat_roots <- cbind.data.frame(u, alph1, lam1, alph2, lam2)
+  
   # Generate uniform values, and find roots
-  samps <- sapply(stats::runif(n), function(u) {
-    root <- stats::uniroot(
-      cdf_U, interval = c(.Machine$double.eps, 1000), 
-      extendInt = "yes", U = u
-    )$`root`
-    return(root)
-  })
+  samps <- dat_roots %>%
+    rowwise() %>%
+    mutate(
+      t_tilde = uniroot(
+        cdf_U,
+        interval = c(.Machine$double.eps,
+                     1000),
+        extendInt = "yes",
+        U = u,
+        alph1 = alph1,
+        lam1 = lam1,
+        alph2 = alph2,
+        lam2 = lam2
+      )$`root`
+    ) %>%
+    pull(t_tilde)
   
   return(samps)
-})
+}
 
 
 
@@ -262,7 +323,7 @@ induce_missings <- function(n, dat, p, mech, eta1) {
   #' @title Induce missingess.
   #' 
   #' @param n Sample size.
-  #' @param dat Data fram containing X and Z
+  #' @param dat Data frame containing X and Z
   #' @param mech Missingness mechanism, one of:
   #' "MAR_GEN", "MAR", "MNAR", "MCAR"
   #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
@@ -282,15 +343,23 @@ induce_missings <- function(n, dat, p, mech, eta1) {
     pr <- logreg_missings(p, eta1, covar = dat$Z)
 
   } else if (mech == "MNAR") {
-    pr <- logreg_missings(p, eta1, covar = dat$X)
+    
+    # Check if X ordered cat
+    if (length(levels(dat$X)) > 2) {
+      pr <- logreg_missings(p, eta1, covar = dat$X_latent)
+    } else {
+      pr <- logreg_missings(p, eta1, covar = dat$X)
+    }
     
   } else if (mech == "MAR_GEN") {
     pr <- logreg_missings(p, eta1, covar = scale(log(dat$t)))
   }
   
   dat <- dat %>%
-    dplyr::mutate(miss_ind = stats::rbinom(n, 1, pr),
-                  X_miss = ifelse(miss_ind == 1, NA, X))
+    dplyr::mutate(
+      miss_ind = stats::rbinom(n, 1, pr),
+      X_miss = ifelse(miss_ind == 1, NA, X)
+    )
   
   return(dat)
 }
