@@ -78,8 +78,8 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(2, 3, 4) #c(5, 10, 25, 50) # Number of imputations of interest
-  iters_MI <- 3 #20 # Iterations of multiple imputation procedure
+  m <- c(2, 3, 20) #c(5, 10, 25, 50) # Number of imputations of interest
+  iters_MI <- 15 #20 # Iterations of multiple imputation procedure
   
   # Set methods and predictor matrices
   mats <- SimsCauseSpecCovarMiss::get_predictor_mats(dat) 
