@@ -281,7 +281,7 @@ ggplot_nlp <- function(dat,
     geom_point(
       ggplot2::aes(shape = !!method_var,  col = as.factor(scenario)),
       position = ggplot2::position_dodge(point_dodge), 
-      size = pointsize, alpha = 0.8
+      size = pointsize#, alpha = 0.8
     ) +
     
     # Add dashed line for true
@@ -318,7 +318,7 @@ ggplot_nlp <- function(dat,
     ) +
     
     # Add proper gridlines
-    ggplot2::scale_x_continuous(name = NULL, breaks = gridline_seq, labels = NULL) 
+    ggplot2::scale_x_continuous(name = "Scenarios", breaks = gridline_seq, labels = NULL) 
   
   return(p)
 }
