@@ -229,29 +229,26 @@ dat_mds_reg <- data.table::copy(
 
 # Table 1 -----------------------------------------------------------------
 
-#' # Basic descriptives
+#' # Overall missingness
 
-dat_mds_reg %>% 
-  .[, !c(
-    "srv_s_allo1", 
-    "srv_allo1",
-    "aa_auto", 
-    "ci_allo1"
-  )] %>% 
+# dat_mds_reg %>% 
+#   .[, !c(
+#     "srv_s_allo1", 
+#     "srv_allo1",
+#     "aa_auto", 
+#     "ci_allo1"
+#   )] %>% 
 
   # Set label if desired
-  tbl_summary(by = "mdsclass")# %>%
+  #tbl_summary(by = "mdsclass")# %>%
   #add_n(statistic = "{p_miss}%", col_label = "% missing")
 
 # Visualise missingness
 naniar::gg_miss_var(x = dat_mds_reg, facet = mdsclass, show_pct = T)
-naniar::gg_miss_upset(dat_mds_reg, nsets = n_var_miss(dat_mds_reg))
+#naniar::gg_miss_upset(dat_mds_reg, nsets = n_var_miss(dat_mds_reg))
 
 
 # Univ cox models relapse -------------------------------------------------
-
-
-#' # Univariable cox models relapse
 
 
 #  Vector of predictors mod1 
@@ -268,6 +265,30 @@ predictors_mod1 <- c(
   "hctci_risk"
 )
 
+# Quickie table
+library(xtable)
+to <- purrr::map_dfr(
+  .x = rev(predictors_mod1),
+  .f = ~ {
+    vec <- dat_mds_reg[[.x]]
+    lab <- attr(vec, "label")
+    if(is.null(lab)) lab <- ""
+    
+    if (is.factor(vec)) {
+      levs <- paste0(levels(vec))
+      cls <- paste0(class(vec), levs, collapse = ", ")
+    } else cls <- class(vec)
+    
+    data.frame(
+     "Variable name" = .x,
+     "Description" = lab,
+     "Class" = cls,
+     "% Missing" = round(mean(is.na(vec)) * 100, 2)
+    )
+  }
+)
+
+xtable(to)
 names(predictors_mod1) <- predictors_mod1
 
 # Univariate cause-specific models (relapse)
@@ -280,20 +301,18 @@ univ_mods_rel <- purrr::map(
 )
 
 # Print any summary
-summary(univ_mods_rel$karnofsk_allo1)
-plot(cox.zph(mod_rel))
+#summary(univ_mods_rel$karnofsk_allo1)
+#plot(cox.zph(mod_rel))
 
 # Or all
-purrr::map(univ_mods_rel, summary)
+#purrr::map(univ_mods_rel, summary)
 
 # Plot all coxzphs
-purrr::map(univ_mods_rel, ~ plot(cox.zph(.x)))
+#purrr::map(univ_mods_rel, ~ plot(cox.zph(.x)))
 
 
 
 # Univ cox models nrm -----------------------------------------------------
-
-#' # Univariable cox models nrm
 
 
 # Univariate cause-specific models (nrm)
@@ -306,21 +325,18 @@ univ_mods_nrm <- purrr::map(
 )
 
 # Print any summary
-summary(univ_mods_nrm$karnofsk_allo1)
-plot(cox.zph(univ_mods_nrm$karnofsk_allo1))
+#summary(univ_mods_nrm$karnofsk_allo1)
+#plot(cox.zph(univ_mods_nrm$karnofsk_allo1))
 
 # Or all
-purrr::map(univ_mods_nrm, summary)
+#purrr::map(univ_mods_nrm, summary)
 
 # Plot all coxzphs
-purrr::map(univ_mods_nrm, ~ plot(cox.zph(.x)))
+#purrr::map(univ_mods_nrm, ~ plot(cox.zph(.x)))
 
 
 
 # Multivariable cox models ------------------------------------------------
-
-
-#' # Multivariable cox models (CCA)
 
 
 # RHS of formula
@@ -329,26 +345,27 @@ preds
 
 # For relapse
 form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", preds))
-form_rel
+#form_rel
 
 mod_rel <- coxph(formula = form_rel, data = dat_mds_reg)
 
 
-summary(mod_rel)
-cox.zph(mod_rel)
+#summary(mod_rel)
+#cox.zph(mod_rel)
+#plot(cox.zph(mod_rel, terms = F))
 
-#
-coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~
-        cytog_threecat + hctci_risk + karnofsk_allo1, data = dat_mds_reg)
+# TO check number in CCA
+#coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~
+#        cytog_threecat + hctci_risk + karnofsk_allo1, data = dat_mds_reg)
 
 
 # For nrm
 form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", preds))
-form_nrm
+#form_nrm
 mod_nrm <- coxph(formula = form_nrm, data = dat_mds_reg)
 
-summary(mod_nrm)
-cox.zph(mod_nrm)
+#summary(mod_nrm)
+#cox.zph(mod_nrm)
 
 #dev.new()
 #ggforest(mod_rel, data = dat_mds_reg, main = "Rel")
@@ -438,7 +455,7 @@ iters <- 15
 imps_mice <- readRDS("imps_mice.rds")
 
 # Diagnostic
-plot(imps_mice)
+#plot(imps_mice)
 
 
 # Combine results (will do this later in one go with mstate)
@@ -452,6 +469,16 @@ mice_rel <- with(
 ) %>% 
   pool() %>% 
   summary()
+
+
+mice_rel <- with(
+  imps_mice,
+  coxph(formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ age_allo1_decades + mdsclass + 
+          donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+          crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
+) %>% 
+  pool() %>% 
+  summary(conf.int = T)
 
 # For NRM
 mice_nrm <- with(
@@ -500,15 +527,17 @@ smform_smcfcs <- c(
 imps_smcfcs <- readRDS("imps_smcfcs.rds")
 
 # Check convergence
-ggplot_smcfcs_converg(
-  imps_obj = imps_smcfcs, 
-  smformula = smform_smcfcs, 
-  dat = dat_mds_reg
-)
+# ggplot_smcfcs_converg(
+#   imps_obj = imps_smcfcs, 
+#   smformula = smform_smcfcs, 
+#   dat = dat_mds_reg
+# )
 
 
 # Pool results
 implist_smcfcs <- mitools::imputationList(imps_smcfcs$impDatasets)
+
+#+ smcfcs, echo=FALSE,results='hide'
 
 # Relapse 
 smcfcs_rel <- with(
@@ -518,18 +547,18 @@ smcfcs_rel <- with(
           crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk)
 ) %>% 
   mitools::MIcombine() %>% 
-  summary()
+  summary() #confint = T
 
 
 # With original formula object!
-lapply(implist_smcfcs$imputations, 
-       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
-  mitools::MIcombine()
+#lapply(implist_smcfcs$imputations, 
+#       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
+#  mitools::MIcombine()
 
-lapply(mice::complete(imps_mice, action = "all"), 
-       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
-  pool() %>% 
-  summary()
+#lapply(mice::complete(imps_mice, action = "all"), 
+#       function(imp_dat) coxph(form_rel, data = imp_dat)) %>% 
+#  pool() %>% 
+#  summary()
 
 # NRM 
 smcfcs_nrm <- with(
@@ -646,16 +675,18 @@ dat_forest <- rbind(dat_rel, dat_nrm, idcol = "comp_ev") %>%
     comp_ev = factor(comp_ev, levels = 1:2, labels = c("Relapse", "NRM")),
     estimate = exp(estimate),
     CI_low = exp(estimate - qnorm(0.975) * std.error),
-    CI_upp = exp(estimate + qnorm(0.975) * std.error) # not pnorm!
+    CI_upp = exp(estimate + qnorm(0.975) * std.error) # only true for CCA!, rest should be with t dist: qt(0.975, df = 25)
   )] %>% 
   .[, colour_row := rep(c("white", "gray"), length.out = .N), by = comp_ev] %>% 
   .[, method := factor(method, levels = c("missind", "smcfcs", "mice", "CCA"))]
 
 
 # Personal attempt forest plot - note CCA is based on 18% of all cases (see mod_rel)
+# Add "Hazard ratios" to xlab!!
 p <- dat_forest %>% 
   ggplot(aes(x = term, y = estimate, group = method)) +
-  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 1.5, 2, 3)) + 
+  scale_y_continuous(trans = "log", breaks = c(0.5, 1, 1.5, 2, 3),
+                     guide = guide_axis(n.dodge = 2)) + 
   geom_rect(
     aes(fill = colour_row),
     ymin = -Inf,
@@ -664,16 +695,16 @@ p <- dat_forest %>%
     xmax = as.numeric(dat_forest$term) + 0.5
   ) +
   geom_hline(yintercept = c(1), linetype = "dashed") +
-  geom_hline(yintercept = c(2), linetype = "dotted", alpha = 0.5) +
+  geom_hline(yintercept = c(2), linetype = "dotted")+#, alpha = 0.5) +
   geom_linerange(
     aes(ymin = CI_low, ymax = CI_upp, xmin = term, xmax = term, col = method),
     position = position_dodge(width = 0.75), 
-    size = 1
+    size = 0.5
   ) +
   geom_point(
     aes(col = method), 
     position = position_dodge2(width = 0.75), 
-    size = 1.5
+    size = 1
   ) +
   theme_bw(base_size = 14) + 
   coord_flip(ylim = c(0.5, 4)) +  
@@ -684,8 +715,9 @@ p <- dat_forest %>%
   facet_grid(. ~ comp_ev) +
   scale_fill_manual(values = c("gray90", "white"), guide = "none") +
   scale_color_brewer(palette = "Dark2", guide = guide_legend(reverse = T)) + 
-  theme(legend.position = "right",
-        axis.text.y = element_blank(), axis.ticks.y = element_blank()) 
+  theme(legend.position = "bottom",
+        axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+  guides(colour=guide_legend("Method", nrow=2,byrow=TRUE, reverse = T))
 
 p
 
@@ -715,7 +747,7 @@ table_coefs[, colour_row := rep(c("white", "gray"), length.out = .N)]
 
 
 
-table_coefs[]
+#table_coefs[]
 
 tabo <- ggplot(table_coefs, aes(y = pos_x)) +
   geom_rect(
@@ -745,64 +777,143 @@ tabo <- ggplot(table_coefs, aes(y = pos_x)) +
     legend.position = "none"
   )
 
-egg::ggarrange(tabo, p, nrow = 1)
+#+ forest_plot, fig.height=6
+egg::ggarrange(tabo, p, nrow = 1, widths = c(0.55, 0.45))
+
+
+# For manuscript
+setEPS()
+postscript("forest-mds.eps")
+egg::ggarrange(tabo, p, nrow = 1, widths = c(0.55, 0.45))
+dev.off()
 
 
 #gridExtra::grid.arrange(tabo, p, ncol = 2, widths = c(2.25, 3))
 
 
-cox.zph(mod_nrm)
+#cox.zph(mod_nrm)
+#cox.zph(mod_rel)
+
+
+#' # Non proportionality (REL, in complete cases) {.tabset}
+
 cox.zph(mod_rel)
+#plot(cox.zph(mod_rel, terms = F))
 
+#' # Non proportionality (NRM, in complete cases)
 
-
-
-lapply(mice::complete(imps_mice, action = "all"), 
-       function(imp_dat) table(imp_dat$mdsclass, imp_dat$ci_s_allo1))
-
-round(table(dat_mds_reg$mdsclass, 
-                        dat_mds_reg$ci_s_allo1) / 
-         nrow(dat_mds_reg), 2)
-
-round(table(dat_mds_reg[complete.cases(dat_mds_reg),]$mdsclass, 
-            dat_mds_reg[complete.cases(dat_mds_reg),]$ci_s_allo1) / 
-  nrow(dat_mds_reg[complete.cases(dat_mds_reg),]), 2)
-
-# Other package options ---------------------------------------------------
-
-
-# Using ggforest
-ggforestplot::forestplot(
-  df = dat_forest,
-  estimate = estimate, 
-  name = term,
-  se = std.error, 
-  colour = method, 
-  logodds = F, 
-  ci = 0.95, 
-)
-
-forestmodel::forest_model(mod_rel, 
-                          format_options = forestmodel::forest_model_format_options(
-  text_size = 1
-))
-survminer::ggforest(mod_rel, data = dat_mds_reg)
-
-
-
-# Marginal cumulative incidences ------------------------------------------
+cox.zph(mod_nrm)
 
 
 # In complete cases
 dat_CCA <- dat_mds_reg[complete.cases(dat_mds_reg)]
-marg_cuminc_CCA <- cmprsk::cuminc(dat_CCA$ci_allo1, dat_CCA$ci_s_allo1)
-plot(marg_cuminc_CCA)
 
 
-marg_cuminc <- cmprsk::cuminc(dat_mds_reg$ci_allo1, dat_mds_reg$ci_s_allo1)
-plot(marg_cuminc)
+#' # Marginal OS {.tabset}
+
+vars_marg <- c("hctci_risk", "cytog_threecat", "cmv_combi_allo1_1",
+               "crnocr", "karnofsk_allo1", "match_allo1_1")
+names(vars_marg) <- vars_marg
+
+list_OS <- purrr::map(
+  .x = vars_marg,
+  .f = ~ {
+    
+    # Make formula
+    form <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 > 0) ~ ", .x))
+    
+    # Compute OS  
+    OS_CCA <- surv_fit(formula = form, data = dat_CCA)
+    OS_full <- surv_fit(formula = form, data = dat_mds_missind)
+    
+    # For cols
+    l <- length(levels(dat_CCA[[.x]]))
+    
+    # Plots
+    a <- survminer::ggsurvplot(OS_CCA, ggtheme = theme_bw(), censor = F, 
+                               palette = 1:l) +
+      ggtitle("Complete cases") 
+    b <- survminer::ggsurvplot(OS_full, ggtheme = theme_bw(), censor = F,
+                               palette = 1:(l+1)) +
+      ggtitle("Full data (with missing category)") 
+    
+    # Arrange
+    p <- ggpubr::ggarrange(a$plot, b$plot, common.legend = T, legend = "bottom")
+    return(p)
+  }
+)
 
 
+#+ prog, results='asis'
+for (h in vars_marg){
+  cat("## ", h, '<br>', '\n')
+
+  print(list_OS[[h]])
+  
+  cat('\n', '<br>', '\n\n')
+}
+
+
+
+
+
+
+#' # Marginal Rel and NRM {.tabset}
+
+list_marg <- purrr::map(
+  .x = vars_marg,
+  .f = ~ {
+    
+    
+    marg_cuminc_CCA <- mstate::Cuminc(time = as.numeric(dat_CCA$ci_allo1), 
+                                      status = as.numeric(dat_CCA$ci_s_allo1), 
+                                      group = dat_CCA[[.x]])
+    
+    marg_cuminc <- mstate::Cuminc(time = as.numeric(dat_mds_reg$ci_allo1), 
+                                  status = as.numeric(dat_mds_reg$ci_s_allo1), 
+                                  group = dat_mds_reg[[.x]])
+    
+    p <- rbind(
+      data.table(marg_cuminc_CCA),
+      data.table(marg_cuminc),
+      idcol = "subset"
+    ) %>% 
+      .[, subset := factor(subset, labels = c("CCA", "Full data"))] %>% 
+      melt.data.table(
+        id.vars = c("subset", "group", "time"),
+        measure.vars = c("CI.1", "CI.2"), 
+        variable.name = "event", 
+        value.name = "cuminc"
+      ) %>% 
+      .[, event := factor(event, levels = c("CI.1", "CI.2"), 
+                          labels = c("Relapse", "NRM"))] %>% 
+      ggplot(aes(time, cuminc, col = group, linetype = group)) +
+      geom_step(size = 0.5) +
+      facet_grid(subset ~ event) +
+      coord_cartesian(expand = 0, ylim = c(0, 0.5)) + 
+      theme_bw(base_size = 14) +
+      theme(legend.position = "bottom") +
+      scale_colour_brewer(palette = "Dark2") +
+      labs(y = "Cumulative incidence",
+           x = "Time since HSCT")
+    
+    return(p)
+  }
+)
+
+
+#+ prog_relnrm, results='asis'
+for (h in vars_marg){
+  cat("## ", h, '<br>', '\n')
+  
+  print(list_marg[[h]])
+  
+  cat('\n', '<br>', '\n\n')
+}
+
+
+ 
+#' # MDS class marginal REL and NRM
 
 marg_cuminc_CCA <- mstate::Cuminc(time = as.numeric(dat_CCA$ci_allo1), 
                                   status = as.numeric(dat_CCA$ci_s_allo1), 
@@ -826,7 +937,7 @@ rbind(
   ) %>% 
   .[, event := factor(event, levels = c("CI.1", "CI.2"), labels = c("Relapse", "NRM"))] %>% 
   ggplot(aes(time, cuminc, col = group, linetype = group)) +
-  geom_step(size = 1) +
+  geom_step(size = 0.5) +
   facet_grid(subset ~ event) +
   coord_cartesian(expand = 0, ylim = c(0, 0.5)) + 
   theme_bw(base_size = 14) +
@@ -836,194 +947,29 @@ rbind(
        x = "Time since HSCT")
 
 
+#' # Cytogenetics missing vs years
 
-# Investigate different selections ----------------------------------------
-
-#
-listo <- purrr::map(
-  .x = var_names_miss,
-  .f = ~ {
-    dato <- dat_mds_reg[!is.na(dat_mds_reg[[.x]]), ]
-      
-    marg_cuminc_select <- mstate::Cuminc(
-      time = as.numeric(dato$ci_allo1), 
-      status = as.numeric(dato$ci_s_allo1), 
-      group = dato$mdsclass
-    ) 
-    
-    ploto <- rbind(
-      data.table(marg_cuminc_select),
-      data.table(marg_cuminc),
-      idcol = "subset"
-    ) %>% 
-      .[, subset := factor(subset, labels = c("CCA", "Full data"))] %>% 
-      melt.data.table(
-        id.vars = c("subset", "group", "time"),
-        measure.vars = c("CI.1", "CI.2"), 
-        variable.name = "event", 
-        value.name = "cuminc"
-      ) %>% 
-      .[, event := factor(event, levels = c("CI.1", "CI.2"),
-                          labels = c("Relapse", "NRM"))] %>% 
-      ggplot(aes(time, cuminc, col = group, linetype = group)) +
-      geom_step(size = 1) +
-      facet_grid(subset ~ event) +
-      coord_cartesian(expand = 0, ylim = c(0, 0.5)) + 
-      theme_bw(base_size = 14) +
-      theme(legend.position = "top") +
-      scale_colour_brewer(palette = "Dark2") +
-      labs(y = "Cumulative incidence",
-           x = "Time since HSCT")
-    
-    return(ploto)
-  }
-)
-
-names(listo) <- var_names_miss
-
-miss_var_summary(dat_mds_reg)
-
-# From lowest to most missing
-
-# Nothing these three
-listo$match_allo1_1
-listo$crnocr
-listo$cmv_combi_allo1_1
-
-#
-listo$karnofsk_allo1
-listo$agedonor_allo1_decades
-listo$hctci_risk
-listo$cytog_threecat
-
-cbind(dat_mds_reg$agedonor_allo1_decades,  
-      cut(dat_mds_reg$agedonor_allo1_decades, breaks = 0:9, 
-          include.lowest = T))
-
-bind_shadow(dat_mds_reg) %>% 
-  ggplot(aes(x = mdsclass,
-             y = ..prop..,
-             group = cytog_threecat_NA,
-             fill = cytog_threecat_NA)) +
-  stat_count(position = "dodge")
+dat_combined %>% 
+  mutate(miss_cytog = ifelse(is.na(cytog_threecat), "missing", "observed")) %>% 
+  select(miss_cytog, year_allo1) %>% 
+  tbl_summary(by = year_allo1)
 
 
-plotonos <- purrr::map(
-  .x = var_names_miss[-7],
-  .f = ~ {
-    
-    vario <- rlang::sym(paste0(.x, "_NA"))
-    
-    po <- bind_shadow(dat_mds_reg) %>% 
-      ggplot(aes(x = mdsclass,
-                 y = ..prop..,
-                 group = !!vario,
-                 fill = !!vario)) +
-      stat_count(position = "dodge") +
-      ggtitle(.x)
-    
-    return(po)
-  }
-)
-
-plotonos
-
-# Investigate MDS coefficient ---------------------------------------------
-
-
-# Effectively look at three datasets:
-# - CCA selection
-# - Full data
-
-# Univariable models:
-
-# In Relapse
-univ_mods_rel$mdsclass
-coxph(Surv(ci_allo1, ci_s_allo1 == 1) ~ mdsclass, data = dat_CCA)
-
-
-# In NRM
-univ_mods_nrm$mdsclass
-coxph(Surv(ci_allo1, ci_s_allo1 == 2) ~ mdsclass, data = dat_CCA)
-
-
-# Look at cross tables
-round(prop.table(table(dat_CCA$mdsclass)), 2)
-round(prop.table(table(dat_mds_reg$mdsclass)), 2)
-
-# These are joint probabilities
-round(prop.table(table(dat_CCA$mdsclass, dat_CCA$ci_s_allo1)), 2)
-round(prop.table(table(dat_mds_reg$mdsclass, dat_mds_reg$ci_s_allo1)), 2)
-
-# Lets instead check the marginals P(Rel|sAML)
-round(prop.table(table(dat_CCA$mdsclass, dat_CCA$ci_s_allo1), margin = 1), 2)
-round(prop.table(table(dat_mds_reg$mdsclass, dat_mds_reg$ci_s_allo1), margin = 1), 2)
-
-
-# Check event densities?
-rbind(
-  dat_mds_reg,
-  dat_CCA,
-  idcol = "compcase"
-) %>% 
-  .[, ':=' (
-    ci_s_allo1 = factor(ci_s_allo1, levels = 0:2),
-    compcase = factor(compcase, levels = 1:2)
-  )] %>% 
-  ggplot(aes(ci_allo1, group = ci_s_allo1,  fill = ci_s_allo1)) +
-  geom_density(alpha = 0.5) +
-  facet_grid(. ~ compcase)
-
-
-
-# Have a look at CR -------------------------------------------------------
-
-
-
-# Univariable models:
-
-# In Relapse
-univ_mods_rel$crnocr
-coxph(Surv(ci_allo1, ci_s_allo1 == 1) ~ crnocr, data = dat_CCA)
-
-
-# In NRM
-univ_mods_nrm$crnocr
-coxph(Surv(ci_allo1, ci_s_allo1 == 2) ~ crnocr, data = dat_CCA)
-
-
-# Look at cross tables
-round(prop.table(table(dat_CCA$crnocr)), 2)
-round(prop.table(table(dat_mds_reg$crnocr)), 2)
-
-# These are joint probabilities
-round(prop.table(table(dat_CCA$crnocr, dat_CCA$ci_s_allo1)), 2)
-round(prop.table(table(dat_mds_reg$crnocr, dat_mds_reg$ci_s_allo1)), 2)
-
-# Lets instead check the marginals P(Rel|sAML)
-round(prop.table(table(dat_CCA$crnocr, dat_CCA$ci_s_allo1), margin = 1), 2)
-round(prop.table(table(dat_mds_reg$crnocr, dat_mds_reg$ci_s_allo1), margin = 1), 2)
-
-
-
-cormat <- cov2cor(mod_rel$var)
-rownames(cormat) <- colnames(cormat) <- stringr::str_wrap(names(mod_rel$coefficients), width = 2)
-round(cormat, 2)
-View(round(cormat, 2))
-
-dev.new()
-corrplot::corrplot(cormat, method = "number", number.cex = 0.5)
-
+#' # HCTCI missing vs years
+dat_combined %>% 
+  mutate(miss_hctci = ifelse(is.na(hctci_risk), "missing", "observed")) %>% 
+  select(miss_hctci, year_allo1) %>% 
+  tbl_summary(by = year_allo1)
 
 
 # Bartlett model ----------------------------------------------------------
 
 
 # Assumption 1
-coxph(Surv(ci_allo1, ci_s_allo1 == 0) ~ age_allo1_decades + mdsclass + 
-        donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
-        crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk,
-      data = dat_CCA)
+# coxph(Surv(ci_allo1, ci_s_allo1 == 0) ~ age_allo1_decades + mdsclass + 
+#         donorrel + agedonor_allo1_decades + karnofsk_allo1 + match_allo1_1 + 
+#         crnocr + cmv_combi_allo1_1 + cytog_threecat + hctci_risk,
+#       data = dat_CCA)
 
 
 dat_mds_assump <- data.table::copy(dat_mds_reg) %>% 
@@ -1039,16 +985,44 @@ formup <- as.formula(
 
 form_R <- update(form_rel, formup)
 
-coxph(Surv(ci_allo1, eps_allcause) ~ age_allo1_decades + mdsclass + 
-        donorrel + R,
-      data = dat_mds_assump)
+# coxph(Surv(ci_allo1, eps_allcause) ~ age_allo1_decades + mdsclass + 
+#         donorrel + R,
+#       data = dat_mds_assump)
+
+
+# Log regs ----------------------------------------------------------------
 
 
 
-# Check possible MNAR -----------------------------------------------------
+var_names_miss
 
 
-# Check karnofsky
-dat_mds_reg %>% 
-  ggplot(aes(mdsclass, agedonor_allo1_decades)) +
-  geom_miss_point()
+
+
+
+miss_varos <- var_names_miss
+names(miss_varos) <- var_names_miss
+
+miss_logregs <- purrr::map(
+  .x = miss_varos,
+  .f = ~ {
+    resp <- paste0("miss_", .x)
+    dat_mds_reg[[resp]] <- as.numeric(is.na(dat_mds_reg[[.x]]))
+    
+    form_update <- as.formula(paste0(resp, " ~ . - ", .x, " + ci_allo1 + ci_s_allo1"))
+    form <- update(form_rel, form_update)
+    
+    modo <- glm(form, data = dat_mds_reg, family = binomial())
+    summary(modo)
+  }
+)
+
+miss_logregs$agedonor_allo1_decades
+miss_logregs$karnofsk_allo1
+miss_logregs$cytog_threecat
+miss_logregs$hctci_risk
+
+
+
+
+# rmarkdown::render("analysis/notebooks/MI_mds-long-term_EBMT/mds_clean-up.R")
