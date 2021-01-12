@@ -3,7 +3,7 @@
 ##********************************************##
 
 # Load scenarios 
-scenarios <- readRDS("./inst/testdata/scenarios.rds") 
+scenarios <- readRDS("data/scenarios.rds") 
 
 # Load all functions in compendium
 devtools::load_all()
@@ -15,10 +15,9 @@ args <- commandArgs(TRUE)
 scen <- as.numeric(args[1])
 repl <- as.numeric(args[2])
 
-# Source in the one_simulation function
-source("analysis/simulations/executables/one_simulation.R")
-
 # Run one replication of one scenario
-one_simulation(scenario = scenarios[scenarios$scen_num == scen, ],
-               rep_num = repl)
+one_simulation(
+  scenario = scenarios[scenarios$scen_num == scen, ],
+  rep_num = repl
+)
 

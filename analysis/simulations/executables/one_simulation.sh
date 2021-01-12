@@ -1,14 +1,16 @@
 #!/bin/bash
 #SBATCH -J repl_array
 #SBATCH -n 1
-#SBATCH --time=01:15:00 
+#SBATCH --time=01:30:00 
 #SBATCH --mem=4G 
-#SBATCH -o ./analysis/other/out_err_messages/job%A_replicate%a.out
-#SBATCH --array=1-400:5  #1-160:8 # this is the array of replicates then 3 in ':3' is the batch size, works for continous, change 60 to 30; no %30 for now
+#SBATCH -o ~/job%A_replicate%a.out
+#SBATCH --array=1-400:5 
 
 # Read in args
 scenario=$1 # First argument, the scenario
 replicate=${SLURM_ARRAY_TASK_ID} # Second argument, the replicate
+
+# Stop if 160
 
 # Purge
 module purge
