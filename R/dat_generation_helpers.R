@@ -2,19 +2,7 @@
 ## Support functions for generating data ##
 ##***************************************##
 
-
-# Set-up ------------------------------------------------------------------
-
-
-options(readr.num_columns = 0) # suppress read.csv message
-
-# Add global variable (for package errors)
-globalVariables(c(names(
-  readr::read_csv(system.file("testdata",
-                              "test_data.csv",
-                              package = "SimsCauseSpecCovarMiss"))
-), "object", "res", "times", "variance", "warn", ".", "X_miss"))
-
+.datatable.aware = TRUE
 
 # Main --------------------------------------------------------------------
 

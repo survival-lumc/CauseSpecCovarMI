@@ -51,7 +51,7 @@ set_mi_methods <- function(dat,
                            cont_method = "norm") {
   
   # Convert to data.table if not
-  if (!("data.table" %in% class(dat))) dat <- data.table(dat)
+  if (!("data.table" %in% class(dat))) dat <- data.table::data.table(dat)
   
   # Set up methods vector
   n_vars_miss <- length(var_names_miss)
