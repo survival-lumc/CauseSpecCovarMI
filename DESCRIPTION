@@ -1,12 +1,12 @@
 Package: SimsCauseSpecCovarMiss
-Title: Missing data in competing risk, cause-specific models
+Title: Missing data in competing risks, cause-specific models
 Version: 1.0.0
 Authors@R:
     person(given = "Edouard F.",
            family = "Bonneville",
            role = c("aut", "cre"),
            email = "e.f.bonneville@lumc.nl")
-Description: Directory for R code of the missing data in competing risks, 
+Description: Directory for R code of the project missing data in competing risks, 
     focusing on cause-specific models.
 License: MIT + file LICENSE
 ByteCompile: true
@@ -36,4 +36,8 @@ Imports:
     mice,
     smcfcs,
     scales,
-    RColorBrewer
+    RColorBrewer,
+    sjlabelled,
+    janitor,
+    mitools,
+    fst
