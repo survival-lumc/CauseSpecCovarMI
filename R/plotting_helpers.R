@@ -161,8 +161,6 @@ prep_nlp_data <- function(dat,
                           step_factors,
                           bounds_obj) {
   
-  #' @import data.table
-  
   # Lex order true ensures steps biggest from large to small
   dat_nlp <- dat[, scenario := as.numeric(
     interaction(.SD, lex.order = T, drop = T)
