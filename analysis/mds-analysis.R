@@ -7,8 +7,8 @@
 
 
 # Read-in
-dat_mds <- fst::read_fst("analysis/data/dat-mds_admin-cens.fst") %>% 
-  setDT()
+dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% 
+  data.table::setDT()
 
 # Set contrasts for ordered factors
 options(contrasts = rep("contr.treatment", 2)) 
@@ -49,8 +49,8 @@ dat_mds[, ':=' (
 )]
 
 dat_mds[, ':=' (
-  H1 = mice::nelsonaalen(data = dat_mds, timevar = ci_allo1, statusvar = ev1),
-  H2 = mice::nelsonaalen(data = dat_mds, timevar = ci_allo1, statusvar = ev2)
+  H1 = nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev1),
+  H2 = nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev2)
 )]
 
 # Which vars actually have some data missing? (no binary vars)
@@ -95,6 +95,18 @@ imps_mice <- mice::mice(
   predictorMatrix = matpred
 )
 
+# Try in parallel
+imps_mice <- mice::parlmice(
+  data = dat_mds,
+  m = m,
+  maxit = iters,
+  cluster.seed = 1984, 
+  n.core = 3, 
+  n.imp.core = floor(m / 3),
+  method = meths,
+  predictorMatrix = matpred
+)
+
 # save imputations..
 
 
@@ -122,7 +134,7 @@ imps_smcfcs <- smcfcs::smcfcs(
   m = m,
   numit = iters,
   method = meths,
-  rjlimit = 5000 # 5x normal
+  rjlimit = 5000 # 5x normal, for donor age
 )
 
 # save imputations as .rds..
@@ -177,47 +189,47 @@ smcfcs_nrm <- lapply(
 
 
 # Pool predicted probabilites ---------------------------------------------
-
-tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
-
-dat_msprepped <- mstate::msprep(
-  time = c(NA, "ci_allo1", "ci_allo1"),
-  status = c(NA, "ev1", "ev2"), 
-  data = dat_mds,
-  trans = tmat,
-  keep = predictors
-) 
-
-dat_expanded <- mstate::expand.covs(
-  dat_msprepped, predictors, append = TRUE, longnames = F
-)
-
-# Function generating reference patient...
-# First supply single-row df, but will all factor levels intact
-refpat <- na.omit(dat_mds)[1, ..predictors]
-refpat
-model.matrix(~ ., data = refpat)
-# Remove intercept, order columns by.., 
-# colnames = 
-
-# Expand covariates - deal with variable names later with longnames
-dat_expanded <- mstate::expand.covs(
-  dat_msprepped, predictors, append = TRUE, longnames = F
-)
-
-# Keep trans-specific vars (i.e. with .1 or .2, .K at the end)
-cond <- grep(x = colnames(dat_expanded), pattern = "*(\\.[1-9+]$)")
-
-# Full mod
-rhs_mstate <- paste(
-  colnames(dat_expanded[cond]),
-  collapse = " + "
-)
-
-form_mstate <- as.formula(paste0("Surv(time, status) ~ strata(trans) + ", rhs_mstate))
-
-survival::coxph(form_mstate, dat_expanded)
-cca_rel
+# 
+# tmat <- mstate::trans.comprisk(2, c("Rel", "NRM"))
+# 
+# dat_msprepped <- mstate::msprep(
+#   time = c(NA, "ci_allo1", "ci_allo1"),
+#   status = c(NA, "ev1", "ev2"), 
+#   data = dat_mds,
+#   trans = tmat,
+#   keep = predictors
+# ) 
+# 
+# dat_expanded <- mstate::expand.covs(
+#   dat_msprepped, predictors, append = TRUE, longnames = F
+# )
+# 
+# # Function generating reference patient...
+# # First supply single-row df, but will all factor levels intact
+# refpat <- na.omit(dat_mds)[1, ..predictors]
+# refpat
+# model.matrix(~ ., data = refpat)
+# # Remove intercept, order columns by.., 
+# # colnames = 
+# 
+# # Expand covariates - deal with variable names later with longnames
+# dat_expanded <- mstate::expand.covs(
+#   dat_msprepped, predictors, append = TRUE, longnames = F
+# )
+# 
+# # Keep trans-specific vars (i.e. with .1 or .2, .K at the end)
+# cond <- grep(x = colnames(dat_expanded), pattern = "*(\\.[1-9+]$)")
+# 
+# # Full mod
+# rhs_mstate <- paste(
+#   colnames(dat_expanded[cond]),
+#   collapse = " + "
+# )
+# 
+# form_mstate <- as.formula(paste0("Surv(time, status) ~ strata(trans) + ", rhs_mstate))
+# 
+# survival::coxph(form_mstate, dat_expanded)
+# cca_rel
 
 
 # Presenting results ------------------------------------------------------
