@@ -8,7 +8,7 @@ options(contrasts = rep("contr.treatment", 2))
 
 # Read-in (without admin censoring)
 dat_mds <- fst::read_fst("data/dat-mds.fst") %>% 
-  setDT()
+  data.table::setDT()
 
 
 # Prepare synthpop --------------------------------------------------------
@@ -22,7 +22,10 @@ dat_mds[, ':=' (
 x <- dat_mds[, !c("ci_allo1", "ci_s_allo1")]
 test_syn <- synthpop::syn(x)
 xp <- test_syn$syn
+synthpop::compare(test_syn, dat_mds)
 
+naniar::gg_miss_upset(dat_mds)
+naniar::gg_miss_upset(xp)
 
 # Make comprisk syn function - based on riskreg? what about cases with missing covars?
 syn.cmprskCSC <- function(y, x, xp, delta = dat_mds$ci_s_allo1, ...) {
