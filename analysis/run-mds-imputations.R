@@ -2,6 +2,7 @@
 ## Analysis of mds data ##
 ##**********************##
 
+devtools::load_all()
 
 # Read-in
 dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% 
@@ -75,8 +76,8 @@ matpred[!(rownames(matpred) %in% var_names_miss), ] <- 0
 matpred
 
 # Set number of imputations and iterations globally
-m <- 5
-iters <- 2 # test with 25
+m <- 100
+iters <- 20 
 
 
 # Run MICE ----------------------------------------------------------------
@@ -88,8 +89,8 @@ imps_mice <- mice::parlmice(
   m = m,
   maxit = iters,
   cluster.seed = 1984, 
-  n.core = 4, 
-  n.imp.core = 1, #floor(m / 3),
+  n.core = 10, 
+  n.imp.core = 10, #floor(m / 3),
   method = meths,
   predictorMatrix = matpred
 )
@@ -97,6 +98,7 @@ imps_mice <- mice::parlmice(
 # save imputations..
 saveRDS(imps_mice, file = "data/imps-mds-mice.rds")
 
+rm(imps_mice)
 
 # Run smcfcs --------------------------------------------------------------
 
@@ -117,20 +119,24 @@ smform_smcfcs <- c(
 
 imps_smcfcs <- parlSMCFCS::parlsmcfcs(
   seed = 4891,
-  n_cores = 4,
+  n_cores = 10,
   outfile = "out_paralsmcfcs.txt",
   originaldata = dat_mds,
   smtype = "compet",
   smformula = smform_smcfcs,
   m = m,
   numit = iters,
-  method = meths
-  #rjlimit = 2000 # 2x normal, for donor age
+  method = meths,
+  rjlimit = 3000 # 3x normal, reduce num warnings
 )
 
 
 # save imputations as .rds..
 saveRDS(imps_smcfcs, file = "data/imps-mds-smcfcs.rds")
+
+break
+
+rm(imps_smcfcs)
 
 
 # Pool regression coefficients --------------------------------------------
