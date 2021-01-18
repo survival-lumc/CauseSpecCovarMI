@@ -40,4 +40,7 @@ Imports:
     sjlabelled,
     janitor,
     mitools,
-    fst
+    fst,
+    parlSMCFCS (>= 0.0.1)
+Remotes:  
+    edbonneville/parlSMCFCS
