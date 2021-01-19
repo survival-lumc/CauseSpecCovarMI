@@ -11,29 +11,268 @@ dat_mds <- fst::read_fst("data/dat-mds.fst") %>%
   data.table::setDT()
 
 
+# Prepare model formulas --------------------------------------------------
+
+
+outcomes <- c("ci_s_allo1", "ci_allo1", "srv_s_allo1", "srv_allo1")
+predictors <- sort(colnames(dat_mds)[!(colnames(dat_mds) %in% outcomes)]) # change order maybe later
+
+# Both REL and NRM have same rhs
+rhs <- paste(predictors, collapse = " + ")
+
+# Make both model formulas
+form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
+form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
+
+
+
+# Estimate Weibull parameters on original (imputed) data ------------------
+
+
+# We use the first imputed dataset from smcfcs
+imps_smcfcs <- readRDS("data/imps-mds-smcfcs.rds")
+
+# Estimate relapse parameters
+aft_rel_smcfcs <- lapply(
+  imps_smcfcs$impDatasets, 
+  function(imp) survival::survreg(
+    formula = form_rel, dist = "weibull", data = imp)
+) %>% 
+  mice::pool() %>% 
+  summary()
+
+
+scale_rel <- exp(aft_rel_smcfcs[aft_rel_smcfcs$term == "Log(scale)", "estimate"])
+intercept_rel <- aft_rel_smcfcs[aft_rel_smcfcs$term == "(Intercept)", "estimate"]
+shape_rel <- 1/ scale_rel
+baserate_rel <- exp(intercept_rel)^(-shape_rel)
+
+
+# Estimate NRM parameters
+aft_nrm_smcfcs <- lapply(
+  imps_smcfcs$impDatasets, 
+  function(imp) survival::survreg(
+    formula = form_nrm, dist = "weibull", data = imp)
+) %>% 
+  mice::pool() %>% 
+  summary()
+
+
+scale_nrm <- exp(aft_nrm_smcfcs[aft_nrm_smcfcs$term == "Log(scale)", "estimate"])
+intercept_nrm <- aft_nrm_smcfcs[aft_nrm_smcfcs$term == "(Intercept)", "estimate"]
+shape_nrm <- 1/ scale_nrm
+baserate_nrm <- exp(intercept_nrm)^(-shape_nrm)
+
+
+
+#  Censoring --------------------------------------------------------------
+
+
+
+
+# Estimate NRM parameters
+aft_efs_smcfcs <- lapply(
+  imps_smcfcs$impDatasets, 
+  function(imp) {
+    
+    # Deal first with admin censoring
+    imp[ci_allo1 == 10, ':=' (
+      ci_allo1 = 10.1,
+      ci_s_allo1 = 1 # Event just after
+    )]
+    
+    # Run survreg model
+    survival::survreg(
+      formula = Surv(ci_allo1, ci_s_allo1 == 0) ~ 1, dist = "weibull", data = imp
+    )
+  })  %>% 
+  mice::pool() %>% 
+  summary()
+
+
+scale_efs <- exp(aft_efs_smcfcs[aft_efs_smcfcs$term == "Log(scale)", "estimate"])
+intercept_efs <- aft_efs_smcfcs[aft_efs_smcfcs$term == "(Intercept)", "estimate"]
+shape_efs <- 1/ scale_efs
+baserate_efs <- exp(intercept_efs)^(-shape_efs)
+
+
+# Get pooled Cox coefficients for smcfcs and NRM  -------------------------
+
+
+# These are the ones reported in the manuscript...
+smcfcs_rel <- lapply(
+  imps_smcfcs$impDatasets, 
+  function(imp) survival::coxph(form_rel, data = imp)
+) %>% 
+  mice::pool() %>% 
+  summary()
+
+smcfcs_nrm <- lapply(
+  imps_smcfcs$impDatasets, 
+  function(imp) survival::coxph(form_nrm, data = imp)
+) %>% 
+  mice::pool() %>% 
+  summary()
+
+
 # Prepare synthpop --------------------------------------------------------
 
 
-dat_mds[, ':=' (
-  srv_s_allo1 = NULL,
-  srv_allo1 = NULL
-)]
+outcomes <- c("ci_allo1", "ci_s_allo1", "srv_allo1", "srv_s_allo1")#
 
-x <- dat_mds[, !c("ci_allo1", "ci_s_allo1")]
-test_syn <- synthpop::syn(x)
-xp <- test_syn$syn
-synthpop::compare(test_syn, dat_mds)
+# Define methods - outcomes are not synthesised
+meths <- rep("cart", ncol(dat_mds))
+names(meths) <- colnames(dat_mds)
+meths[outcomes] <- ""
 
+# Sort visiting sequence
+miss_pct <- sapply(dat_mds, function(x) mean(is.na(x)))
+visit_seq <- order(miss_pct)[which(!(names(meths) %in% outcomes))]
+meths[visit_seq[1]] <- "sample"
+meths
+
+synth_covar <- synthpop::syn(
+  data = dat_mds,
+  method = meths, 
+  visit.sequence = visit_seq,
+  proper = TRUE, 
+  seed = 2021
+)
+
+
+# Compare
+synthpop::compare(synth_covar, dat_mds)
 naniar::gg_miss_upset(dat_mds)
-naniar::gg_miss_upset(xp)
+naniar::gg_miss_upset(synth_covar$syn)
 
-# Make comprisk syn function - based on riskreg? what about cases with missing covars?
-syn.cmprskCSC <- function(y, x, xp, delta = dat_mds$ci_s_allo1, ...) {
+
+
+# Impute syn covar once ---------------------------------------------------
+
+
+meths <- set_mi_methods(
+  dat = synth_covar$syn,
+  var_names_miss = naniar::miss_var_which(synth_covar$syn), 
+  imp_type = "smcfcs",
+  cont_method = "norm"
+)
+
+# Make formula
+smform_smcfcs <- c(
+  Reduce(paste, deparse(form_rel)),
+  Reduce(paste, deparse(form_nrm))
+)
+
+# Impute 
+imps_synth <- smcfcs::smcfcs(
+  originaldata = synth_covar$syn,
+  smtype = "compet",
+  smformula = smform_smcfcs,
+  m = 1,
+  numit = 5, # make 25
+  method = meths
+)
+
+# Remove outcomes
+impdat_synth <- imps_synth$impDatasets[[1]] %>% 
+  data.table::data.table() %>% 
+  .[, !..outcomes]
+
+# Make model matrix and compute linear predictors
+mod_mat <- model.matrix(
+  as.formula(paste0("~ ", rhs)), 
+  data = impdat_synth
+)[, -1]
+
+rate_rel <- baserate_rel * exp(drop(mod_mat %*% smcfcs_rel$estimate))
+rate_nrm <- baserate_nrm * exp(drop(mod_mat %*% smcfcs_nrm$estimate))
+
+# Draw!
+impdat_synth %>% 
+  .[, ':=' (
+    rate_rel = rate_rel,
+    rate_nrm = rate_nrm
+  )] %>% 
   
-  mod <- riskRegression::CSC(Hist(y, delta) ~ ., data = cbind.data.frame(y, delta, x))
+  # Gen new event times
+  .[, ':=' (
+    t_rel = mapply(rweibull_KM, rate_rel, MoreArgs = list(n = 1, alph = shape_rel)),
+    t_nrm = mapply(rweibull_KM, rate_nrm, MoreArgs = list(n = 1, alph = shape_nrm)),
+    t_cens = rweibull_KM(.N, shape_efs, baserate_efs) #
+  )] %>% 
   
-  # Return
-}
+  # Make latent cmprsk time 
+  .[, ':=' (
+    t_tilde = pmin(t_rel, t_nrm),
+    eps_tilde = ifelse(t_rel < t_nrm, 1, 2)
+  )]  %>% 
+  
+  # Make final outcome
+  .[, ':=' (
+    ci_allo1 = pmin(t_tilde, t_cens),
+    ci_s_allo1 = ifelse(t_cens < t_tilde, 0, eps_tilde)
+  )] %>%
+
+  # Admin censoring
+  .[, ':=' (
+    ci_allo1 = ifelse(ci_allo1 > 10, 10, ci_allo1),
+    ci_s_allo1 = ifelse(ci_allo1 > 10, 0, ci_s_allo1)
+  )]
+
+
+# Bind these outcome to the synthesised one with missing 
+dat_mds_syn <- synth_covar$syn %>% 
+  data.table::data.table() %>% 
+  .[, ':=' (
+    ci_s_allo1 = impdat_synth$ci_s_allo1,
+    ci_allo1 = impdat_synth$ci_allo1
+  )]
+
+# Try imputing
+meths <- set_mi_methods(
+  dat = dat_mds_syn,
+  var_names_miss = naniar::miss_var_which(dat_mds_syn), 
+  imp_type = "smcfcs",
+  cont_method = "norm"
+)
+
+# Make formula
+smform_smcfcs <- c(
+  Reduce(paste, deparse(form_rel)),
+  Reduce(paste, deparse(form_nrm))
+)
+
+# Impute 
+imps_syn_full <- parlSMCFCS::parlsmcfcs(
+  originaldata = dat_mds_syn,
+  smtype = "compet",
+  smformula = smform_smcfcs,
+  m = 5,
+  n_cores = 3,
+  method = meths
+)
+
+
+syn_rel <- lapply(
+  imps_syn_full$impDatasets, 
+  function(imp) survival::coxph(form_rel, data = imp)
+) %>% 
+  mice::pool() %>% 
+  summary()
+
+syn_rel$estimate
+smcfcs_rel$estimate
+
+# Compare cca -------------------------------------------------------------
+
+
+table(impdat_synth$ci_s_allo1)
+dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst")
+table(dat_mds$ci_s_allo1)
+
+survival::coxph(form_rel, data = dat_mds)
+survival::coxph(form_rel, data = dat_mds_syn)
+
 
 # Ideas: 
 # 1. synthetise covars without outcome, keep missings
@@ -46,154 +285,7 @@ syn.cmprskCSC <- function(y, x, xp, delta = dat_mds$ci_s_allo1, ...) {
 # 7. Add censoring also form weibull survreg
 
 
-# Test new synth idea -----------------------------------------------------
-
-outcome <- c("ci_allo1", "ci_s_allo1")
-
-meths <- rep("cart", ncol(dat_mds))
-names(meths) <- colnames(dat_mds)
-meths[outcome] <- ""
-meths[!(names(meths) %in% outcome)][1] <- "sample" 
-meths
-
-
-synth_covar <- synthpop::syn(
-  data = dat_mds,
-  method = meths, 
-  #visit.sequence = c(order(miss_props), which(meths == "")), 
-  proper = TRUE, 
-  models = TRUE,
-  seed = 2021
-)
-
-# Use smfcs
-predictors <- sort(
-  colnames(synth_covar$syn)[!(colnames(synth_covar$syn) %in% outcome)]
-) 
-
-# Both REL and NRM have same rhs
-rhs <- paste(predictors, collapse = " + ")
-
-# Make both model formulas
-form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
-form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
-
-var_names_miss <- colnames(synth_covar$syn)[sapply(synth_covar$syn, anyNA)]
-
-meths <- set_mi_methods(
-  dat = synth_covar$syn,
-  var_names_miss = var_names_miss, 
-  imp_type = "smcfcs",
-  cont_method = "norm"
-)
-
-# Make formula
-smform_smcfcs <- c(
-  Reduce(paste, deparse(form_rel)),
-  Reduce(paste, deparse(form_nrm))
-)
-
-imps_smcfcs <- smcfcs::smcfcs(
-  originaldata = synth_covar$syn,
-  smtype = "compet",
-  smformula = smform_smcfcs,
-  m = 1,
-  numit = 5, # make 25
-  method = meths#,
-  #rjlimit = 5000 # 5x normal
-)
-impo <- imps_smcfcs$impDatasets[[1]]
-
-#plot(imps_smcfcs)
-mod_rel <- survival::survreg(
-  formula = Surv(ci_allo1, ci_s_allo1 == 1) ~ .,
-  data = impo
-)
-coefs_rel <- coefficients(mod_rel)
-shape_rel <- 1/ mod_rel$scale
-baserate_rel <- exp(coefs_rel[1])^(-shape_rel)
-#instead use coefs from smcfcs
-ph_coefs <- -coefs_rel[-1] * shape_rel 
-mod_mat <- model.matrix(~., data = impo)[,-(1:3)]
-lp_rel <- drop(mod_mat %*% ph_coefs) # here is the lp
-
-
-# nrm ---------------------------------------------------------------------
-
-
-
-mod_nrm <- survival::survreg(
-  formula = Surv(ci_allo1, ci_s_allo1 == 2) ~ .,
-  data = impo
-)
-coefs_nrm <- coefficients(mod_nrm)
-shape_nrm <- 1/ mod_nrm$scale
-baserate_nrm <- exp(coefs_nrm[1])^(-shape_nrm)
-#instead use coefs from smcfcs
-ph_coefs_nrm <- -coefs_nrm[-1] * shape_nrm 
-mod_mat <- model.matrix(~., data = impo)[,-(1:3)]
-lp_nrm <- drop(mod_mat %*% ph_coefs_nrm) # here is the lp
-
-# Need also censoring..
-
-# Bind to syndata
-newdato <- synth_covar$syn %>% 
-  data.table() %>% 
-  .[, ':=' (
-    lp_rel = exp(lp_rel),
-    lp_nrm = exp(lp_nrm),
-    ci_allo1 = NULL,
-    ci_s_allo1 = NULL
-  )] %>% 
-  
-  # Gen new event times
-  .[, ':=' (
-    t_rel = rweibull_KM(.N, shape_rel, baserate_rel * lp_rel),
-    t_nrm = rweibull_KM(.N, shape_nrm, baserate_nrm * lp_nrm)
-  )] %>% 
-  
-  # 
-
-
-# Rest --------------------------------------------------------------------
-
-
-
-
-
-# How to factorise? Less to more missing
-outcome <- c("ci_allo1", "ci_s_allo1")
-miss_props <- unlist(lapply(dat_mds[, !..outcome], function(col) mean(is.na(col))))
-sort(miss_props)
-
-# Set methods
-meths <- rep("cart", ncol(dat_mds))
-names(meths) <- colnames(dat_mds)
-meths[names(sort(miss_props)[1])] <- "sample" 
-
-# Edit outcomes, event indicators synthesised with survtree
-meths[c("ci_allo1")] <- "survctree" 
-meths[c("ev1", "ev2")] <- "" 
-
-
-# Create synthetic data ---------------------------------------------------
-
-
-# Browser() will unfortunately open, just press continue
-dat_mds_synth <- synthpop::syn(
-  data = dat_mds,
-  method = meths, 
-  visit.sequence = c(order(miss_props), which(meths == "survctree")), 
-  proper = TRUE, 
-  models = TRUE,
-  event = list("t_ev1" = "ev1", "t_ev2" = "ev2"),
-  seed = 2021
-)
-
-# Compare
-synthpop::compare(dat_mds_synth, dat_mds)
-
-# Can compare model results later..
+ 
 
 
 # Save synthetic data -----------------------------------------------------

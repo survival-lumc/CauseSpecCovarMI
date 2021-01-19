@@ -41,6 +41,8 @@ Imports:
     janitor,
     mitools,
     fst,
-    parlSMCFCS (>= 0.0.1)
+    parlSMCFCS (>= 0.0.1),
+    howManyImputations (>= 0.1.0)
 Remotes:  
-    edbonneville/parlSMCFCS
+    edbonneville/parlSMCFCS,
+    josherrickson/howManyImputations
