@@ -10,7 +10,7 @@
 
 # Simples/grouped lolly plots ---------------------------------------------
 
-
+#' @export
 ggplot_lolly <- function(dat,
                          estim,
                          method_var,
@@ -216,7 +216,7 @@ prep_nlp_data <- function(dat,
 }
 
 
-# Parameters for a function
+#' @export
 ggplot_nlp <- function(dat,
                        estim,
                        method_var,

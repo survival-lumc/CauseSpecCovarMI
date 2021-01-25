@@ -10,3 +10,6 @@ LICENSE.md
 .git
 vignettes/one_simulation_demo.Rmd
 vignettes/predicted_probabilities.Rmd
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
