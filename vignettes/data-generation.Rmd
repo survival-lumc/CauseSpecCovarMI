@@ -1,0 +1,334 @@
+---
+title: "Simulated data generation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simulated data generation}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  dev = "svg",
+  fig.retina = 2, # change to 3 
+  fig.align = "center",
+  fig.width = 7,
+  fig.height = 4,
+  dev.args = list(bg = "transparent"),
+  fig.ext = "svg"
+)
+```
+
+```{r setup}
+library(SimsCauseSpecCovarMiss)
+library(ggplot2)
+library(ggpubr)
+
+theme_set(
+  theme_bw(base_size = 11)
+)
+
+set.seed(1984)
+```
+
+# Event times
+
+```{r baseline_coefs, echo=FALSE}
+baseline_evs <- readRDS(
+  "data/mds-shape-rates.rds" #  edit path later
+)
+
+baseline_evs
+
+# Set event-generating parameters for REL
+ev1_pars <- list(
+  "a1" = baseline_evs[baseline_evs$state == "REL", "shape"], 
+  "h1_0" = baseline_evs[baseline_evs$state == "REL", "rate"],
+  "b1" = 0, 
+  "gamm1" = 0
+)    
+
+# For different hazards condition
+ev1_pars_diff <- list(
+  "a1" = 1.5, 
+  "h1_0" = 0.04,
+  "b1" = 0, 
+  "gamm1" = 0
+)  
+
+# NRM
+ev2_pars <- list(
+  "a2" = baseline_evs[baseline_evs$state == "NRM", "shape"], 
+  "h2_0" = baseline_evs[baseline_evs$state == "NRM", "rate"], 
+  "b2" = 0, 
+  "gamm2" = 0
+)
+```
+
+What do the hazards look like?
+
+```{r baseline_hazards, echo=FALSE}
+# Over first 10 years
+baseline_hazards <- data.table::data.table("times" = seq(0.01, 10, by = 0.1))
+
+baseline_hazards[, ':=' (
+  haz_rel_similar = haz_weib(alph = ev1_pars$a1, lam = ev1_pars$h1_0, t = times),
+  haz_rel_different = haz_weib(alph = ev1_pars_diff$a1, lam = ev1_pars_diff$h1_0, t = times),
+  haz_cens = baseline_evs[baseline_evs$state == "EFS", "rate"],
+  haz_nrm = haz_weib(alph = ev2_pars$a2, lam = ev2_pars$h2_0, t = times)
+)]
+
+# Plot of similar
+p_similar_hazards <- data.table::melt.data.table(
+  data = baseline_hazards,
+  id.vars = "times",
+  value.name = "hazard",
+  measure.vars = c("haz_cens", "haz_rel_similar", "haz_nrm"), 
+  variable.name = "event"
+) %>% 
+  ggplot(aes(times, hazard, col = event)) +
+  geom_line(size = 1.5) +
+  scale_colour_manual(
+    labels = c("Cens", "REL", "NRM"),
+    values = 1:3
+  ) +
+  labs(
+    x = "Time (years)",
+    y = "Hazard",
+    col = "Event",
+    title = "Similar hazard shapes"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Different ones
+p_different_hazards <- data.table::melt.data.table(
+  data = baseline_hazards,
+  id.vars = "times",
+  value.name = "hazard",
+  measure.vars = c("haz_cens", "haz_rel_different", "haz_nrm"), 
+  variable.name = "event"
+) %>% 
+  ggplot(aes(times, hazard, col = event)) +
+  geom_line(size = 1.5) +
+  scale_colour_manual(
+    labels = c("Cens", "REL", "NRM"),
+    values = 1:3
+  ) +
+  labs(
+    x = "Time (years)",
+    y = "Hazard",
+    col = "Event",
+    title = "Different hazard shapes"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot it
+ggpubr::ggarrange(
+  p_similar_hazards, 
+  p_different_hazards,
+  ncol = 2, 
+  common.legend = TRUE,
+  legend = "bottom"
+)
+```
+
+Cumulative incidence
+
+```{r baseline_cuminc, echo=FALSE}
+# Get true cuminc - similar and different
+baseline_cuminc_similar <- get_true_cuminc(
+  ev1_pars = ev1_pars,
+  ev2_pars = ev2_pars,
+  combo = data.frame("val_X" = 0, "val_Z" = 0),
+  times = baseline_hazards$times
+)
+
+p_similar_cumincs <- data.table::melt.data.table(
+  data = data.table::data.table(baseline_cuminc_similar),
+  id.vars = "times",
+  value.name = "cuminc",
+  measure.vars = paste0("true_pstate", 1:3),
+  variable.name = "state"
+) %>% 
+  ggplot(aes(times, cuminc, col = state)) +
+  geom_line(size = 1.5, alpha = 0.5) +
+  scale_colour_manual(
+    labels = c("Cens", "REL", "NRM"),
+    values = 1:3
+  ) +
+  labs(
+    x = "Time (years)",
+    y = "Cumulative incidence",
+    col = "Event",
+    title = "Similar hazard shapes"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+baseline_cuminc_different <- get_true_cuminc(
+  ev1_pars = ev1_pars_diff,
+  ev2_pars = ev2_pars,
+  combo = data.frame("val_X" = 0, "val_Z" = 0),
+  times = baseline_hazards$times
+)
+
+p_different_cumincs <- data.table::melt.data.table(
+  data = data.table::data.table(baseline_cuminc_different),
+  id.vars = "times",
+  value.name = "cuminc",
+  measure.vars = paste0("true_pstate", 1:3),
+  variable.name = "state"
+) %>% 
+  ggplot(aes(times, cuminc, col = state)) +
+  geom_line(size = 1.5, alpha = 0.5) +
+  scale_colour_manual(
+    labels = c("EFS", "REL", "NRM"),
+    values = 1:3
+  ) +
+  labs(
+    x = "Time (years)",
+    y = "Cumulative incidence",
+    col = "State",
+    title = "Similar hazard shapes"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot it
+ggpubr::ggarrange(
+  p_similar_cumincs, 
+  p_different_cumincs,
+  ncol = 2, 
+  common.legend = TRUE,
+  legend = "bottom"
+)
+```
+
+So event proportion
+
+# Missingness mechanisms
+
+```{r miss_mechs, echo=FALSE}
+miss_mechs <- c("MCAR", "MAR", "MAR_GEN", "MNAR")
+
+miss_plotlist <- lapply(miss_mechs, function(miss_mech) {
+  
+  # Check if MCAR
+  eta1 <- ifelse(miss_mech == "MCAR", NA, -2)
+  x_axis <- ifelse(miss_mech == "MAR_GEN", "t", "Z")
+  
+  # Generate data
+  dat <- generate_dat(
+    n = 500,
+    X_type = "continuous",
+    r = 0.5,
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars,
+    rate_cens = baseline_evs[baseline_evs$state == "EFS", "rate"], 
+    mech = miss_mech,
+    p = 0.5,
+    eta1 = eta1
+  )
+  
+  # Make plot
+  p_title <- ifelse(miss_mech == "MAR_GEN", "MAR-T", miss_mech)
+  p <- ggplot(data = dat, aes_string(x_axis, "X_orig")) +
+    geom_point(alpha = .75, aes(col = factor(miss_ind))) +
+    labs(
+      y = "X",
+      x = ifelse(miss_mech == "MAR_GEN", "T (observed)", x_axis),
+      title = p_title
+    ) +
+    scale_colour_manual(
+      "Missing indicator",
+      labels = c("Observed", "Missing"),
+      values = c(9, 6)
+    ) +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  return(p)
+})
+
+ggpubr::ggarrange(
+  plotlist = miss_plotlist,
+  ncol = 2,
+  nrow = 2,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+```
+
+
+## Zoom-in on stength
+
+Illustrated with MAR
+
+```{r eta1_illust_MAR, echo=FALSE}
+etas <- c(0, -0.25, -0.5, -0.75, -1, -2)
+names(etas) <- etas
+Z <- rnorm(500)
+
+etas_MAR <- lapply(etas, function(eta) {
+  
+  cbind.data.frame(
+    "times" = baseline_hazards$times, 
+    "Z" = Z,
+    #"prob" = plogis(eta * scale(log(dat$t))),
+    "prob" = plogis(eta * Z),
+    "eta1" = eta
+  )
+})
+
+data.table::rbindlist(etas_MAR) %>% 
+  ggplot(aes(Z, prob, col = factor(eta1), group = factor(eta1))) +
+  geom_line(size = 1.5) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    y = "Probability of X missing",
+    colour = expression(eta[1])
+  )
+```
+
+With the data
+
+```{r eta1_illust_MAR2, echo=FALSE}
+etas_MAR_dats <- lapply(etas, function(eta) {
+  
+  dat <- generate_dat(
+    n = 500,
+    X_type = "continuous",
+    r = 0.5,
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars,
+    rate_cens = baseline_evs[baseline_evs$state == "EFS", "rate"], 
+    mech = "MAR",
+    p = 0.5,
+    eta1 = eta
+  )
+})
+
+ploto <- data.table::rbindlist(etas_MAR_dats, idcol = "eta1") 
+
+ploto[, ':=' (
+  miss_ind = factor(miss_ind),
+  eta1 = factor(
+    eta1, levels = as.character(etas), labels = paste0("eta1 = ", as.character(etas))
+  )
+)]
+
+ploto %>% 
+  ggplot(aes(Z, X_orig, col = miss_ind)) +
+  geom_point(alpha = 0.75, size = 2) +
+  scale_colour_manual(
+    "Missing indicator",
+    labels = c("Observed", "Missing"),
+    values = c(9, 6)
+  ) +
+  xlab("Z") +
+  ylab("X") +
+  facet_wrap(. ~ eta1) +
+  theme(legend.position = "top")
+```

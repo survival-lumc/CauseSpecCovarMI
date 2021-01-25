@@ -6,43 +6,38 @@ Authors@R:
            family = "Bonneville",
            role = c("aut", "cre"),
            email = "e.f.bonneville@lumc.nl")
-Description: Directory for R code of the project missing data in competing risks, 
-    focusing on cause-specific models.
+Description: Directory for R code of the project missing data in
+    competing risks, focusing on cause-specific models.
 License: MIT + file LICENSE
+Imports:
+    data.table,
+    dplyr,
+    ggplot2,
+    magrittr,
+    MASS,
+    mice,
+    mstate,
+    naniar,
+    purrr,
+    rlang,
+    scales,
+    smcfcs,
+    stats,
+    stringr,
+    survival,
+    tibble,
+    tidyr
+Suggests:
+    devtools,
+    ggpubr,
+    knitr,
+    rmarkdown
+VignetteBuilder: 
+    knitr
+Remotes: 
+    edbonneville/parlSMCFCS,
+    josherrickson/howManyImputations
 ByteCompile: true
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
-Suggests:
-    ggpubr,
-    tidyverse
-VignetteBuilder: knitr
-Imports:
-    dplyr,
-    magrittr,
-    data.table,
-    tidyr,
-    readr,
-    purrr,
-    tibble,
-    stringr,
-    ggplot2,
-    rlang,
-    knitr,
-    rmarkdown,
-    MASS,
-    survival,
-    mstate,
-    mice,
-    smcfcs,
-    scales,
-    RColorBrewer,
-    sjlabelled,
-    janitor,
-    mitools,
-    fst,
-    parlSMCFCS (>= 0.0.1),
-    howManyImputations (>= 0.1.0)
-Remotes:  
-    edbonneville/parlSMCFCS,
-    josherrickson/howManyImputations
