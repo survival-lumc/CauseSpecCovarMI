@@ -67,15 +67,22 @@ refos <- list(
   #"sAML" = 
 )
 
+refos
 
-
-
-impos <- impdats_smcfcs[1:10]
 
 
 
 # Make preds lists, in parallel?
-preds_list <- pbapply::pblapply(impos, function(impdat) {
+# cl <- parallel::makeCluster(3, type = "PSOCK")
+# parallel::clusterExport(cl, varlist = c("run_mds_model", "predict_mds_model",
+#                                     "tmat", "refos", "form_mds_mstate"),
+#                         envir = environment())
+# parallel::clusterEvalQ(cl, expr = {
+#   library(mstate)
+#   library(data.table)
+# })
+
+preds_list <- pbapply::pblapply(impdats_smcfcs, function(impdat) {
   
   # Run model
   mod <- run_mds_model(
@@ -93,7 +100,9 @@ preds_list <- pbapply::pblapply(impos, function(impdat) {
   )
   
   return(preds)
-})
+}, cl = cl)
+
+parallel::stopCluster(cl)
 
 preds_list %>% 
   pool_morisot(by_vars = c("state", "ref_pat"))

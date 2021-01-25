@@ -15,3 +15,4 @@ data/*full.fst
 # Remove processed MDS data
 data/dat-mds.fst
 data/dat-mds_admin-cens.fst
+docs

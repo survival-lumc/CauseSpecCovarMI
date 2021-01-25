@@ -11,7 +11,6 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  dev = "svg",
   fig.retina = 2, # change to 3 
   fig.align = "center",
   fig.width = 7,
@@ -39,8 +38,8 @@ set.seed(1984)
 
 ```{r read}
 # Read-in summarised results and scenarios
-regr_results <- fst::read_fst("data/sims_regr_summary.fst") %>% data.table::setDT()
-scenarios <- readRDS("data/scenarios.rds")
+regr_results <- fst::read_fst("../data/sims_regr_summary.fst") %>% data.table::setDT()
+scenarios <- readRDS("../data/scenarios.rds")
 ```
 
 # Scenarios
@@ -49,22 +48,33 @@ scenarios <- readRDS("data/scenarios.rds")
 scenarios[, !"seed"] %>% knitr::kable()
 ```
 
-# NLPs
+
+# Continuous $X$
 
 
-```{r nlps, echo=FALSE, fig.height=6}
-dat_nlp <- regr_results[
+## MAR
+
+
+```{r mar_contin, echo=FALSE, fig.height=12, fig.width=11,fig.align='left'}
+dat_nlpo <- regr_results[
   m %in% c(0, 50) & 
     n == 2000 &
-    var == "X.1" &
+    #var == "X.1" &
     beta1 != "0" &
     miss_mech == "MAR" & 
     X_level == "continuous" &
     !(analy %in% c("ref", "ch1")) 
 ]
 
-p <- ggplot_nlp(
-  dat = dat_nlp,
+ggplot_nlp(
+  dat = dat_nlpo[, var := factor(
+    var,
+    levels = c("X.1", "X.2", "Z.1", "Z.2"),
+    labels = c(expression(hat(beta)[1]),
+               expression(hat(beta)[2]),
+               expression(hat(gamma)[1]),
+               expression(hat(gamma)[2]))
+  )],
   estim = "bias", 
   method_var = "analy", 
   true = 0, 
@@ -84,10 +94,186 @@ p <- ggplot_nlp(
   ) +
   ggplot2::guides(shape = guide_legend("Method"),
                   linetype = guide_legend("Method")) +
-  ylab("Bias") +
-  theme_minimal(base_size = 14) +
+  theme_minimal(base_size = 12) +
   scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
-  theme(legend.position = "bottom")
-
-p
+  facet_wrap(. ~ var, nrow = 2, ncol = 2, labeller = label_parsed) +
+  ylab("Bias") +
+  theme(legend.position = "bottom", 
+        #axis.title.x = element_blank(),
+        #axis.title.y = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size=15)) 
 ```
+
+
+## MAR-T
+
+```{r mart_contin, echo=FALSE, fig.height=12, fig.width=11,fig.align='left'}
+dat_nlpo <- regr_results[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    #var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" & 
+    X_level == "continuous" &
+    !(analy %in% c("ref", "ch1")) 
+]
+
+ggplot_nlp(
+  dat = dat_nlpo[, var := factor(
+    var,
+    levels = c("X.1", "X.2", "Z.1", "Z.2"),
+    labels = c(expression(hat(beta)[1]),
+               expression(hat(beta)[2]),
+               expression(hat(gamma)[1]),
+               expression(hat(gamma)[2]))
+  )],
+  estim = "bias", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.01,
+  height_betw_steps = 0.015,
+  top_step = -0.225,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
+  facet_wrap(. ~ var, nrow = 2, ncol = 2, labeller = label_parsed) +
+  ylab("Bias") +
+  theme(legend.position = "bottom", 
+        #axis.title.x = element_blank(),
+        #axis.title.y = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size=15)) 
+```
+
+## MNAR
+
+```{r mnar_contin, echo=FALSE, fig.height=12, fig.width=11,fig.align='left'}
+dat_nlpo <- regr_results[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    #var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MNAR" & 
+    X_level == "continuous" &
+    !(analy %in% c("ref", "ch1")) 
+]
+
+ggplot_nlp(
+  dat = dat_nlpo[, var := factor(
+    var,
+    levels = c("X.1", "X.2", "Z.1", "Z.2"),
+    labels = c(expression(hat(beta)[1]),
+               expression(hat(beta)[2]),
+               expression(hat(gamma)[1]),
+               expression(hat(gamma)[2]))
+  )],
+  estim = "bias", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.01,
+  height_betw_steps = 0.015,
+  top_step = -0.175,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
+  facet_wrap(. ~ var, nrow = 2, ncol = 2, labeller = label_parsed) +
+  ylab("Bias") +
+  theme(legend.position = "bottom", 
+        #axis.title.x = element_blank(),
+        #axis.title.y = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size=15)) 
+```
+
+## MCAR
+
+```{r mcar_contin, echo=FALSE, fig.height=12, fig.width=11,fig.align='left'}
+dat_nlpo <- regr_results[
+  m %in% c(0, 50) & 
+    n == 2000 &
+    #var == "X.1" &
+    beta1 != "0" &
+    miss_mech == "MCAR" & 
+    X_level == "continuous" &
+    !(analy %in% c("ref", "ch1")) 
+]
+
+ggplot_nlp(
+  dat = dat_nlpo[, var := factor(
+    var,
+    levels = c("X.1", "X.2", "Z.1", "Z.2"),
+    labels = c(expression(hat(beta)[1]),
+               expression(hat(beta)[2]),
+               expression(hat(gamma)[1]),
+               expression(hat(gamma)[2]))
+  )],
+  estim = "bias", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape"),#, "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.01,
+  height_betw_steps = 0.015,
+  top_step = -0.25,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}"#,
+    #"eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
+  facet_wrap(. ~ var, nrow = 2, ncol = 2, labeller = label_parsed) +
+  ylab("Bias") +
+  theme(legend.position = "bottom", 
+        #axis.title.x = element_blank(),
+        #axis.title.y = element_blank(), 
+        plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size=15)) 
+```
+
+# Binary $X$
+
+
+## MAR
+
+
+## MAR-T
+
+
+## MNAR
+
+
+## MCAR
+
+

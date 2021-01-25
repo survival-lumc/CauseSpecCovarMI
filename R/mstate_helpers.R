@@ -112,7 +112,7 @@ make_covar_grid <- function(dat) {
   return(grid_obj)
 }
 
-
+#' @export
 haz_weib <- Vectorize(function(alph, lam, t) {
   return(alph * lam * t^(alph - 1))
 })
@@ -148,21 +148,22 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 }
 
 
+#' @title Compute true cumulative incidence
+#' 
+#' @param ev1_pars List arameters for weibull event 1
+#' @param ev2_pars List arameters for weibull event 2
+#' @param combo Covariate combo, e.g. list("val_X" = 1, "val_Z" = 1)
+#' @param times Vector of timepoints to evaluate cuminc at
+#' 
+#' @return True cumulative incidence at times.
+#' 
+#' @export
 get_true_cuminc <- function(ev1_pars, 
                             ev2_pars,
                             combo,
                             times) {
   
-  #' @title Compute true cumulative incidence
-  #' 
-  #' @param ev1_pars List arameters for weibull event 1
-  #' @param ev2_pars List arameters for weibull event 2
-  #' @param combo Covariate combo, e.g. list("val_X" = 1, "val_Z" = 1)
-  #' @param times Vector of timepoints to evaluate cuminc at
-  #' 
-  #' @return True cumulative incidence at times.
-  #' 
-  #' @export
+  
   
   lam1 <- ev1_pars$h1_0 * exp((ev1_pars$b1 * combo$val_X + 
                                  ev1_pars$gamm1 * combo$val_Z))
