@@ -92,7 +92,7 @@ get_preds_grid <- function(cox_long,
     combo <- grid_obj[row, ]
     
     # Get state probabilities at all time points, for this combo
-    preds_test <-  SimsCauseSpecCovarMiss::get_state_probs(
+    preds_test <- get_state_probs(
       msfit_baseline, 
       combo = combo, 
       cox_long = cox_long
@@ -110,7 +110,7 @@ get_preds_grid <- function(cox_long,
     )
     
     # Compute true cumulative incidence at those horizons
-    true_CI <- SimsCauseSpecCovarMiss::get_true_cuminc(
+    true_CI <- get_true_cuminc(
       ev1_pars = ev1_pars, 
       ev2_pars = ev2_pars,
       combo = combo, 
