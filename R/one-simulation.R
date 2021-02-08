@@ -279,13 +279,11 @@ one_simulation <- function(scenario, # scenario
   # Save as RDS in analysis/simulation results/predictions
   saveRDS(
     estimates, 
-    file = paste0("data/sim-reps_indiv/regr/regr_scen",
-                  scenario$scen_num, "_seed", seed, ".rds")
+    file = paste0("data/sim-reps_indiv/regr/regr_scen", scenario$scen_num, "_seed", seed, ".rds")
   )
   saveRDS(
     pooled_preds, 
-    file = paste0("data/sim-reps_indiv/preds/preds_scen",
-                  scenario$scen_num, "_seed", seed, ".rds")
+    file = paste0("data/sim-reps_indiv/preds/preds_scen", scenario$scen_num, "_seed", seed, ".rds")
   )
 }
 

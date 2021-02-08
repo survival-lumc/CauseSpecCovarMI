@@ -13,4 +13,4 @@ module purge
 module load statistical/R/4.0.2
 
 # Run imps
-Rscript ./analysis/run-mds-imputations.R
+Rscript ./analysis/illustrative-analysis.R
