@@ -266,7 +266,7 @@ ggplot_nlp <- function(dat,
   
   # Begin plot
   p <- dat_obj$df_main %>% 
-    ggplot2::ggplot(aes(x = scenario + 0.5, y = !!estim)) +
+    ggplot2::ggplot(ggplot2::aes(x = scenario + 0.5, y = !!estim)) +
     
     # Add step labels
     ggplot2::geom_text(
@@ -277,7 +277,7 @@ ggplot_nlp <- function(dat,
     ) +
     
     # Add points
-    geom_point(
+    ggplot2::geom_point(
       ggplot2::aes(shape = !!method_var,  col = as.factor(scenario)),
       position = ggplot2::position_dodge(point_dodge), 
       size = pointsize#, alpha = 0.8
@@ -307,7 +307,8 @@ ggplot_nlp <- function(dat,
       ggplot2::aes(x = scenario, y = scaled_vals, group = step_ID)
     ) +
     ggplot2::guides(colour = F) +
-    ggplot2::theme(legend.position = "bottom", axis.ticks.x = element_blank()) +
+    ggplot2::theme(legend.position = "bottom", 
+                   axis.ticks.x = ggplot2::element_blank()) +
     
     # Zoom in on plot
     ggplot2::coord_cartesian(

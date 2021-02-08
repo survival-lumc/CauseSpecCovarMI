@@ -3,6 +3,9 @@
 ##******************************************##
 
 
+library(CauseSpecCovarMI)
+
+
 # Parameters varied -------------------------------------------------------
 
 
@@ -95,6 +98,7 @@ scenarios_full <- rbind(
   .[n == 500, seed := scen_num * n_sim_500] %>% 
   .[order(scen_num)]
 
+# Note we do not report results of n = 500
 
 # Save as .RDS file to load in
 saveRDS(scenarios_full, file = "data/scenarios.rds")

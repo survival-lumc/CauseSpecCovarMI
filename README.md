@@ -1,53 +1,38 @@
-# Missing data for cause-specific models
+# Multiple imputation for cause-specific Cox models: assessing methods for estimation and prediction
 
-The is the GitLab directory for the 'Missing data for cause-specific models' project, in collaboration with EBMT staff and Paris Diderot University.
+(To be submitted to Statistical Methods in Medical Research, SMMR)
 
-## Set-up
+- Abstract here with link to paper/pre-print
 
-The code directory for this project is set-up as an R-package 'compendium'. Current stucture:
 
-```
+## Usage 
+
+### General
+
+```markdown
 .
-├── analysis
-│   ├── data
-│   │   ├── derived_data
-│   │   └── raw_data
-│   ├── notebooks
-│   │   └── MI_mds-long-term_EBMT
-│   ├── other
-│   │   └── out_err_messages
-│   ├── simulations
-│   │   ├── executables
-│   │   ├── sim-reps_all
-│   │   │   ├── estimates
-│   │   │   └── predictions
-│   │   ├── sim-reps_individual
-│   │   └── sim-reps_summarised
-│   │       ├── estimates
-│   │       └── predictions
-│   └── visualisation
-│       ├── shiny_sims_visuals
-│       └── shiny_weibull_params
-├── inst
-│   └── testdata
-├── man
-├── R
-└── vignettes
+├── R					# User-made functions
+├── analysis			# Scripts for illustrative analysis
+│   ├── figures			# Manuscript figures
+│   └── simulations		# Scripts to run simulation study
+├── data				# Full and processed simulation data
+│   └── sim-reps_indiv	# Individual simulation replications
+│       ├── preds
+│       └── regr
+├── data-raw			# Scripts for processing raw data-raw
+├── man					# Documentation user-made functions
+└── vignettes			# Supplementary manuscript results
 ```
 
 
 
-You need to install the `devtools` upon cloning the directory to run all code. To do so, call `devtools::load_all()`.
+## Authors
 
-## Future
+| Name                                                         | Affiliation                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [Edouard F. Bonneville](https://www.lumc.nl/org/bds/medewerkers/1968807?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
+| [Matthieu Resche-Rigon](https://www.researchgate.net/scientific-contributions/Matthieu-Resche-Rigon-56101026) | Paris Diderot University / Saint Louis Hospital (Paris, FR)  |
+| [Johannes Schetelig](https://www.researchgate.net/scientific-contributions/Johannes-Schetelig-38769437) | Universitätsklinikum Dresden / DKMS Clinical Trials Unit (Dresden, DE) |
+| [Hein Putter](https://www.lumc.nl/org/bds/medewerkers/hputter?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
+| [Liesbeth C. de Wreede](https://www.lumc.nl/org/bds/medewerkers/lcdewreede?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
 
-The current repository will eventually be available of github, ideally also with a docker container.
-
-## Contributors
-
-| Name                  | Institute     | Role         |
-| --------------------- | ------------- | ------------ |
-| Edouard Bonneville    | LUMC          | Maintainer   |
-| Hein Putter           | LUMC          | Supervisor   |
-| Liesbeth de Wreede    | LUMC          | Supervisor   |
-| Matthieu Resche-Rigon | Paris Diderot | Collaborator |

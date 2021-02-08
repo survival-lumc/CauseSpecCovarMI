@@ -1,12 +1,12 @@
-##********************************************##
-## This is the file that gets called by Shark ##
-##********************************************##
+##************************************##
+## File called to run one replication ##
+##************************************##
 
 # Load scenarios 
 scenarios <- readRDS("data/scenarios.rds") 
 
 # Load all functions in compendium
-devtools::load_all()
+library(CauseSpecCovarMI)
 
 # Read-in those command line args
 args <- commandArgs(TRUE)
