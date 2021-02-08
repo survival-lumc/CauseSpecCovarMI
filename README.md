@@ -11,16 +11,16 @@
 
 ```markdown
 .
-├── R					# User-made functions
+├── R				# User-made functions
 ├── analysis			# Scripts for illustrative analysis
 │   ├── figures			# Manuscript figures
 │   └── simulations		# Scripts to run simulation study
-├── data				# Full and processed simulation data
-│   └── sim-reps_indiv	# Individual simulation replications
+├── data			# Full and processed simulation data
+│   └── sim-reps_indiv		# Individual simulation replications
 │       ├── preds
 │       └── regr
 ├── data-raw			# Scripts for processing raw data-raw
-├── man					# Documentation user-made functions
+├── man				# Documentation user-made functions
 └── vignettes			# Supplementary manuscript results
 ```
 
