@@ -15,7 +15,7 @@ dat_hctci <- sjlabelled::read_spss(
   janitor::clean_names() %>% 
   
   # Make into data.table
-  setDT() %>% 
+  data.table::setDT() %>% 
   
   # Subset aa_auto for matching and new vars
   .[, .(
@@ -29,7 +29,7 @@ dat_hctci <- sjlabelled::read_spss(
 # Load-in cytogenetics data
 load("data-raw/cytodata.RData")
 data.table::setDT(cytodata) 
-setnames(cytodata, new = c("aa_auto", "cyto_score", "vchromos"))
+data.table::setnames(cytodata, new = c("aa_auto", "cyto_score", "vchromos"))
 
 # Recat into three ordered levels
 cytodata[, ':=' (
@@ -50,12 +50,12 @@ dat_orig <- sjlabelled::read_spss(
   
   # Clean variable names
   janitor::clean_names() %>%
-  setDT() 
+  data.table::setDT() 
 
 
 # Combine all three files via Reduce + merge 
 dat_combined <- Reduce(
-  f = function(x, y) merge.data.table(x, y, all.x = T, by = "aa_auto"),
+  f = function(x, y) data.table::merge.data.table(x, y, all.x = T, by = "aa_auto"),
   x = list(dat_orig, dat_hctci, cytodata)
 )
 
@@ -177,4 +177,170 @@ dat_mds[, ':=' (
 )]
 
 fst::write_fst(x = dat_mds, path = "analysis/data/dat-mds_admin-cens.fst")
+
+
+
+# Create data dictionary --------------------------------------------------
+
+
+# Keep original names
+vars <- setNames(rep(list(""), ncol(dat_mds)), names(dat_mds))
+
+# Add the descriptions
+vars[["ci_s_allo1"]] <- cbind.data.frame(
+  "var_label" = "Competing event indicator",
+  "var_description" = "Competing event indicator"
+)
+
+vars[["ci_allo1"]] <- cbind.data.frame(
+  "var_label" = "Time to competing event",
+  "var_description" = "Time from alloHCT to competing event (months)"
+)
+
+vars[["srv_s_allo1"]] <- cbind.data.frame(
+  "var_label" = "Death/censoring indicator",
+  "var_description" = "Time from alloHCT to competing event (years)"
+)
+
+vars[["srv_allo1"]] <- cbind.data.frame(
+  "var_label" = "Time to death/censoring",
+  "var_description" = "Time from alloHCT to death or censoring (years)"
+)
+
+vars[["srv_allo1"]] <- cbind.data.frame(
+  "var_label" = "Time to death/censoring",
+  "var_description" = "Time from alloHCT to death or censoring (years)"
+)
+
+vars[["match_allo1_1"]] <- cbind.data.frame(
+  "var_label" = "Pat/Don sex match",
+  "var_description" = "Sex match patient and donor"
+)
+
+vars[["mdsclass"]] <- cbind.data.frame(
+  "var_label" = "MDS class",
+  "var_description" = "MDS groups based on subclassification (WHO and FAB) at alloHCT"
+)
+
+vars[["donorrel"]] <- cbind.data.frame(
+  "var_label" = "Don relation",
+  "var_description" = "Relation with donor"
+)
+
+vars[["karnofsk_allo1"]] <- cbind.data.frame(
+  "var_label" = "Karnofsky",
+  "var_description" = "Karnofsky or Lansky status"
+)
+
+vars[["crnocr"]] <- cbind.data.frame(
+  "var_label" = "CR stage",
+  "var_description" = "Stage at alloHCT"
+)
+
+vars[["cmv_combi_allo1_1"]] <- cbind.data.frame(
+  "var_label" = "CMV Pat/Don",
+  "var_description" = "Cytomegalovirus in patient and donor"
+)
+
+vars[["cytog_threecat"]] <- cbind.data.frame(
+  "var_label" = "Cytogenetics",
+  "var_description" = "Cytogenetics score"
+)
+
+vars[["hctci_risk"]] <- cbind.data.frame(
+  "var_label" = "Comorbidity score",
+  "var_description" = "HCTCI comorbidity index score"
+)
+
+vars[["agedonor_allo1_decades"]] <- cbind.data.frame(
+  "var_label" = "Age (Don)",
+  "var_description" = "Donor age at alloHCT (decades)"
+)
+
+vars[["age_allo1_decades"]] <- cbind.data.frame(
+  "var_label" = "Age (Pat)",
+  "var_description" = "Patient age at alloHCT (decades)"
+)
+
+missing_dat <- data.table::transpose(
+  dat_mds[, lapply(.SD, function(col) mean(is.na(col)))], 
+  keep.names = "var_name"
+)
+data.table::setnames(missing_dat, setdiff(names(missing_dat), "var_name"), "prop_miss")
+vars_meta <- merge(data.table::rbindlist(vars, idcol = "var_name"), missing_dat)
+vars_meta[, prop_miss := paste0(round(prop_miss, 4) * 100)]
+
+
+# Do the same for factor levels 
+factors <- sapply(dat_mds, is.factor)
+levs <- lapply(names(dat_mds)[factors], function(col) {
+  var <- dat_mds[[col]]
+  cbind.data.frame("levels" = levels(var), "level_num" = 1:length(levels(var)))
+})
+names(levs) <- names(dat_mds)[factors]
+
+levs[["match_allo1_1"]] <- transform(
+  levs[["match_allo1_1"]],
+  "levels_lab" = c("M/M", "M/F", "F/M", "F/F")
+)
+
+levs[["mdsclass"]] <- transform(
+  levs[["mdsclass"]],
+  "levels_lab" = c("MDS w/o excess blasts", "MDS w/ excess blasts", "sAML")
+)
+
+levs[["donorrel"]] <- transform(
+  levs[["donorrel"]],
+  "levels_lab" = c("Identical sibling", "Other")
+)
+
+levs[["karnofsk_allo1"]] <- transform(
+  levs[["karnofsk_allo1"]],
+  "levels_lab" = c(">=90", "80", "<=70")
+)
+
+levs[["crnocr"]] <- transform(
+  levs[["crnocr"]],
+  "levels_lab" = c("CR", "no CR", "Untreated")
+)
+
+levs[["cmv_combi_allo1_1"]] <- transform(
+  levs[["cmv_combi_allo1_1"]],
+  "levels_lab" = c("-/-", "-/+", "+/-", "+/+")
+)
+
+levs[["cytog_threecat"]] <- transform(
+  levs[["cytog_threecat"]],
+  "levels_lab" = c("Good (<=3)", "Poor (4)", "Very poor (5)")
+)
+
+levs[["hctci_risk"]] <- transform(
+  levs[["hctci_risk"]],
+  "levels_lab" = c("Low risk (0)", "Interm. risk (1-2)", "High risk (>=3)")
+)
+
+levels_dat <- data.table::rbindlist(levs, idcol = "var_name")
+
+
+vlapply(names(dato), function(col) {
+  
+  if (is.numeric(dato[[col]])) {
+    
+    summ <- data.table::data.table(
+      level = NA,
+      count
+    )
+    #summ[, pct := count / sum(count)]
+    #data.table::setnames(summ, old = nam, "levs")
+  } else {
+    
+    summ <- dato[, .(count = .N), keyby = col]
+    summ[, pct := round(count / sum(count), 2)]
+    levs <- levels(dato[[col]])
+    data.table::set(summ, j = "level_num", value = match(summ[[col]], levs))
+    data.table::setnames(summ, col, "level")
+  }
+  
+  return(summ)
+})
 

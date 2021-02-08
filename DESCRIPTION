@@ -1,13 +1,34 @@
-Package: SimsCauseSpecCovarMiss
-Title: Missing data in competing risks, cause-specific models
+Package: CauseSpecCovarMI
+Title: Multiple imputation for cause-specific Cox models
 Version: 1.0.0
-Authors@R:
-    person(given = "Edouard F.",
-           family = "Bonneville",
-           role = c("aut", "cre"),
-           email = "e.f.bonneville@lumc.nl")
-Description: Directory for R code of the project missing data in
-    competing risks, focusing on cause-specific models.
+Authors@R: c(
+    person(
+        given = "Edouard F.",
+        family = "Bonneville",
+        role = c("aut", "cre"),
+        email = "e.f.bonneville@lumc.nl"
+    ),
+    person(
+        given = "Matthieu",
+        family = "Resche-Rigon",
+        role = c("aut"),
+        email = "matthieu.resche-rigon@u-paris.fr"
+    ),
+    person(
+        given = "Hein",
+        family = "Putter",
+        role = c("aut"),
+        email = "H.Putter@lumc.nl"
+    ),
+    person(
+        given = "Liesbeth C.",
+        family = "de Wreede",
+        role = c("aut"),
+        email = "L.C.de_Wreede@lumc.nl"
+    )
+  )
+Description: Directory for R code of the multiple imputation for 
+  cause-specific Cox proportional hazards models project.
 License: MIT + file LICENSE
 Imports:
     data.table,

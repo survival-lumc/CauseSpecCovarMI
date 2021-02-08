@@ -7,6 +7,30 @@
 # Main --------------------------------------------------------------------
 
 
+#' @title Generates data.
+#'
+#' @param n Sample size.
+#' @param X_type Either "binary", or "contin"
+#' @param r Desired correlation between X and Z.
+#' @param ev1_pars Named list of ("a1" =, "h1_0", "b1", "gamm1")
+#' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
+#' @param rate_cens Rate of exponential distributiion for censoring.
+#' If 0 means no censoring is applied.
+#' @param mech Missingness mechanism, one of:
+#' "MAR_GEN", "MAR", "MNAR", "MCAR"
+#' @param eta1 Only necessary for mech != "MCAR" - degree/direction
+#' of assocation between variable responsible for missingness
+#' and probability of missingness
+#' @param p Proportion of missing values in X.
+#' 
+#' @inheritParams gen_cmprsk_times
+#' 
+#' @importFrom magrittr `%>%` 
+#' @importFrom rlang .data
+#' 
+#' @return Data-frame with missings induced
+#' 
+#' @export
 generate_dat <- function(n,
                          X_type,
                          r,
@@ -17,31 +41,6 @@ generate_dat <- function(n,
                          eta1 = NULL,
                          p = NULL,
                          mod_type = "latent") {
-
-  #' @title Generates data.
-  #'
-  #' @param n Sample size.
-  #' @param X_type Either "binary", or "contin"
-  #' @param r Desired correlation between X and Z.
-  #' @param ev1_pars Named list of ("a1" =, "h1_0", "b1", "gamm1")
-  #' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
-  #' @param rate_cens Rate of exponential distributiion for censoring.
-  #' If 0 means no censoring is applied.
-  #' @param mech Missingness mechanism, one of:
-  #' "MAR_GEN", "MAR", "MNAR", "MCAR"
-  #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
-  #' of assocation between variable responsible for missingness
-  #' and probability of missingness
-  #' @param p Proportion of missing values in X.
-  #' 
-  #' @inheritParams gen_cmprsk_times
-  #' 
-  #' @importFrom magrittr `%>%` 
-  #' @importFrom rlang .data
-  #' 
-  #' @return Data-frame with missings induced
-  #' 
-  #' @export
 
   # Generate covariates
   dat_covars <- gen_covars(
@@ -164,14 +163,15 @@ gen_covars <- function(n,
 }
 
 
+#' @title Obtain necessary pearson to generate binary variable.
+#' 
+#' @param p Proportion of 1s in binary variable
+#' @param r_pb Desired point-biserial correlation
+#' 
+#' @return Pearson r to use when generating MVN data.
+#' 
+#' @noRd
 pbiserial_to_pearson <- function(p, r_pb) {
-  
-  #' @title Obtain necessary pearson to generate binary variable.
-  #' 
-  #' @param p Proportion of 1s in binary variable
-  #' @param r_pb Desired point-biserial correlation
-  #' 
-  #' @return Pearson r to use when generating MVN data.
   
   x0 <- stats::qnorm(p, lower.tail = F) # cutoff
   h <- stats::dnorm(x0) # 'ordinate' = density/height of curve
@@ -180,28 +180,27 @@ pbiserial_to_pearson <- function(p, r_pb) {
 }
 
 
+#' @title Generate competing risks times + event indictor (2 events)
+#'
+#' @param n Sample size.
+#' @param dat Data frame containing n rows with X and Z as columns
+#' @param ev1_pars Named list of ("a1", "h1_0", "b1", "gamm1")
+#' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
+#' @param rate_cens Rate of exponential distributiion for censoring.
+#' If 0 means no censoring is applied.
+#' @param mod_type Either "latent", weibull times generated from 
+#' separate weibull distribution, or "total", times generated from 
+#' sum of cause-specific hazards (using inverse transform method)
+#' 
+#' @return Data-frame with missings induced
+#' 
+#' @export
 gen_cmprsk_times <- function(n,
                              dat,
                              ev1_pars,
                              ev2_pars,
                              rate_cens,
                              mod_type = "latent") { 
-  
-  #' @title Generate competing risks times + event indictor (2 events)
-  #'
-  #' @param n Sample size.
-  #' @param dat Data frame containing n rows with X and Z as columns
-  #' @param ev1_pars Named list of ("a1", "h1_0", "b1", "gamm1")
-  #' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
-  #' @param rate_cens Rate of exponential distributiion for censoring.
-  #' If 0 means no censoring is applied.
-  #' @param mod_type Either "latent", weibull times generated from 
-  #' separate weibull distribution, or "total", times generated from 
-  #' sum of cause-specific hazards (using inverse transform method)
-  #' 
-  #' @return Data-frame with missings induced
-  
-  
   
   # Get model matrix 
   options(contrasts = rep("contr.treatment", 2)) 
@@ -289,37 +288,35 @@ invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
 }
 
 
-
-
+#' @title Sample from Weibull distirbution in K&M parametrisation.
+#' 
+#' @param alph Shape parameter of weibull distribution.
+#' @param lam Rate parameter of lambda distirbution.
+#' @param n sample size
+#' 
+#' @return n samples from weibull distribution.
 rweibull_KM <- function(n, alph, lam) {
-  
-  #' @title Sample from weibull in K&M parametrisation.
-  #' 
-  #' @param alph Shape parameter of weibull distribution.
-  #' @param lam Rate parameter of lambda distirbution.
-  #' @param n sample size
-  #' 
-  #' @return n samples from weibull distribution.
   
   samp <- (-log(1 - stats::runif(n)) / lam)^(1 / alph)
   return(samp)
 }
 
 
+#' @title Induce missingess.
+#' 
+#' @param n Sample size.
+#' @param dat Data frame containing X and Z
+#' @param mech Missingness mechanism, one of:
+#' "MAR_GEN", "MAR", "MNAR", "MCAR"
+#' @param eta1 Only necessary for mech != "MCAR" - degree/direction
+#' of assocation between variable responsible for missingness
+#' and probability of missingness
+#' @param p Proportion of missing values in X.
+#' 
+#' @return Dataset with missingness induced.
+#' 
+#' @noRd
 induce_missings <- function(n, dat, p, mech, eta1) {
-  
-  #' @title Induce missingess.
-  #' 
-  #' @param n Sample size.
-  #' @param dat Data frame containing X and Z
-  #' @param mech Missingness mechanism, one of:
-  #' "MAR_GEN", "MAR", "MNAR", "MCAR"
-  #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
-  #' of assocation between variable responsible for missingness
-  #' and probability of missingness
-  #' @param p Proportion of missing values in X.
-  #' 
-  #' @return Dataset with missingness induced.
 
   if (is.null(mech) | is.null(p)) {
     pr <- 0
@@ -353,18 +350,19 @@ induce_missings <- function(n, dat, p, mech, eta1) {
 }
 
 
+#' @title Calculate probability of missingness using 
+#' logistic regression.
+#' 
+#' @param p Proportion of missing values in X.
+#' @param eta1 Only necessary for mech != "MCAR" - degree/direction
+#' of assocation between variable responsible for missingness
+#' and probability of missingness
+#' @param covar Variable responsible for missingness, e.g. "Z"
+#' 
+#' @return Probability vector to generate missings.
+#' 
+#' @noRd
 logreg_missings <- function(p, eta1, covar) {
-  
-  #' @title Calculate probability of missingness using 
-  #' logistic regression.
-  #' 
-  #' @param p Proportion of missing values in X.
-  #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
-  #' of assocation between variable responsible for missingness
-  #' and probability of missingness
-  #' @param covar Variable responsible for missingness, e.g. "Z"
-  #' 
-  #' @return Probability vector to generate missings.
   
   intercept_solve <- function(eta0, eta1, p) {
     pr <- stats::plogis(eta0 + eta1 * covar) 
@@ -383,12 +381,12 @@ logreg_missings <- function(p, eta1, covar) {
 }
 
 
+#' @importFrom survival Surv strata
+#' @noRd
 nelsaalen_timefixed <- function(dat,
                                 timevar,
                                 statusvar,
                                 timefix = FALSE) {
-  
-  #' @importFrom survival Surv strata
   
   timevar <- as.character(substitute(timevar))
   statusvar <- as.character(substitute(statusvar))

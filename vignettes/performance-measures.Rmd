@@ -3,8 +3,10 @@ title: "Performance measures"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Performance measures}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -17,3 +19,4 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(SimsCauseSpecCovarMiss)
 ```
+
