@@ -25,8 +25,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(SimsCauseSpecCovarMiss)
-#devtools::load_all()
+library(CauseSpecCovarMI)
 library(ggplot2)
 library(ggpubr)
 
