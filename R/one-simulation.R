@@ -3,6 +3,7 @@
 ##*************************************##
 
 
+#' @export
 one_simulation <- function(scenario, # scenario
                            rep_num) { # repetition number
   
@@ -95,32 +96,41 @@ one_simulation <- function(scenario, # scenario
   cat("Running imp_ch1... \n\n")
   
   # Ch1 model
-  imp_ch1 <- mice::mice(dat, m = m[length(m)],
-                        method = methods, 
-                        predictorMatrix = mats$CH1,
-                        maxit = iters_MI, 
-                        print = FALSE)
+  imp_ch1 <- mice::mice(
+    dat, 
+    m = m[length(m)],
+    method = methods, 
+    predictorMatrix = mats$CH1,
+    maxit = iters_MI, 
+    print = FALSE
+  )
   
   cat("\n Running imp_ch12... \n\n")
   
   
   # Ch12 model
-  imp_ch12 <- mice::mice(dat, m = m[length(m)],
-                         method = methods, 
-                         predictorMatrix = mats$CH12,
-                         maxit = iters_MI, 
-                         print = FALSE, 
-                         threshold = 1) # Avoid removing H2 
+  imp_ch12 <- mice::mice(
+    dat, 
+    m = m[length(m)],
+    method = methods, 
+    predictorMatrix = mats$CH12,
+    maxit = iters_MI, 
+    print = FALSE, 
+    threshold = 1
+  ) # Avoid removing H2 
                    
   cat("\n Running imp_ch12_int... \n\n")
   
   # Ch12_int model
-  imp_ch12_int <- mice::mice(dat, m = m[length(m)],
-                             method = methods, 
-                             predictorMatrix = mats$CH12_int,
-                             maxit = iters_MI, 
-                             print = FALSE, 
-                             threshold = 1) # Avoid removing H2, and H2_Z 
+  imp_ch12_int <- mice::mice(
+    dat, 
+    m = m[length(m)],
+    method = methods, 
+    predictorMatrix = mats$CH12_int,
+    maxit = iters_MI, 
+    print = FALSE, 
+    threshold = 1
+  ) # Avoid removing H2, and H2_Z 
   
   cat("\n Running smcfcs... \n\n")
   
@@ -221,17 +231,21 @@ one_simulation <- function(scenario, # scenario
   )
   
   # Make predictions also for ref and CCA
-  preds_CCA <- get_preds_grid(cox_long = mod_CCA,
-                              grid_obj = covar_grid, 
-                              times = horiz, 
-                              ev1_pars = ev1_pars,
-                              ev2_pars = ev2_pars)
+  preds_CCA <- get_preds_grid(
+    cox_long = mod_CCA,
+    grid_obj = covar_grid, 
+    times = horiz, 
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars
+  )
   
-  preds_ref <- get_preds_grid(cox_long = mod_ref,
-                              grid_obj = covar_grid, 
-                              times = horiz, 
-                              ev1_pars = ev1_pars,
-                              ev2_pars = ev2_pars)
+  preds_ref <- get_preds_grid(
+    cox_long = mod_ref,
+    grid_obj = covar_grid, 
+    times = horiz, 
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars
+  )
     
   
   
@@ -243,15 +257,19 @@ one_simulation <- function(scenario, # scenario
   ) %>% 
     
     # Bind preds for CCA and ref
-    dplyr::bind_rows(preds_CCA_ref(preds_CCA, "CCA"),
-                     preds_CCA_ref(preds_ref, "ref")) %>% 
+    dplyr::bind_rows(
+      preds_CCA_ref(preds_CCA, "CCA"),
+      preds_CCA_ref(preds_ref, "ref")
+    ) %>% 
     
     # Add scenario summary label
-    cbind.data.frame(scen_summary = add_scen_details(
-      scenario, 
-      seed = seed, 
-      rep_num = rep_num
-    ), row.names = NULL, stringsAsFactors = FALSE)
+    cbind.data.frame(
+      scen_summary = add_scen_details(
+        scenario, 
+        seed = seed, 
+        rep_num = rep_num
+      ), row.names = NULL, stringsAsFactors = FALSE
+    )
   
 
   cat("\n Replication done!")

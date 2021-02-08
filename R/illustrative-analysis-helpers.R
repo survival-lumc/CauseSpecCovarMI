@@ -1,7 +1,11 @@
+##****************************************##
+## Helper functions illustrative analysis ##
+##****************************************##
 
 
-extract_rhs_varnames <- function(form,
-                                 dat) {
+
+
+extract_rhs_varnames <- function(form, dat) {
   
   # Extract rhs terms
   coef_names <- attr(x = terms(form), which = "term.labels")
@@ -16,6 +20,7 @@ extract_rhs_varnames <- function(form,
   
   return(rhs_varnames)
 }
+
 
 choose_standard_refpat <- function(col,
                                    contin_action = c("median", "mean"),
@@ -43,6 +48,7 @@ choose_standard_refpat <- function(col,
   return(val)
 }
 
+
 make_mstate_refpat <- function(refpat, tmat, covs) {
   
   # Get number of transitioins
@@ -63,6 +69,26 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
 }
 
 
+reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
+  
+  # Get predictors
+  preds <- attr(terms(form), "term.labels")
+  
+  # Identify factors
+  ref_levels <- dat[, lapply(.SD, function(col) levels(col)[1]), .SDcols = is.factor] %>% 
+    data.table::transpose(keep.names = "variable") %>% 
+    data.table::setnames(old = "V1", new = "coef")
+  
+  ref_levels[, term := paste0(variable, coef)]
+  ref_levels[, setdiff(names(ref_levels), "term") := NULL]
+  
+  return(rbind(data.table::data.table(summ), ref_levels, fill = TRUE))
+}
+
+
+# Pooling predictions -----------------------------------------------------
+
+
 run_mds_model <- function(form,
                           tmat,
                           dat) {
@@ -72,6 +98,7 @@ run_mds_model <- function(form,
   predictors <- extract_rhs_varnames(form, dat)
   
   # Prepare impdat for mstate model
+  if (!(any(class(dat) %in% "data.table"))) dat <- data.table::data.table(dat)
   dat[, ':=' (ev1 = ci_s_allo1 == 1, ev2 = ci_s_allo1 == 2)]
   dat <- as.data.frame(dat)
   
@@ -93,6 +120,10 @@ run_mds_model <- function(form,
   return(mod)
 }
 
+
+#' Predictions from mstate Cox model
+#' 
+#' @noRd
 predict_mds_model <- function(mod,
                               ref_pats,
                               tmat, 
@@ -132,8 +163,6 @@ cloglog <- Vectorize(function(x) log(-log(1 - x)))
 
 inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 
-
-# Implement for MI more generally with survival?
 
 # Function for clean pooling here..
 pool_morisot <- function(preds_list, # add p_var and se_var, also confint
