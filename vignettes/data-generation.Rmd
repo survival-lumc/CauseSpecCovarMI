@@ -18,7 +18,8 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 4,
   dev.args = list(bg = "transparent"),
-  fig.ext = "svg"
+  fig.ext = "svg",
+  echo = FALSE
 )
 ```
 
@@ -36,12 +37,24 @@ set.seed(1984)
 
 # Event times
 
+Given standard normal $Z$ and a standard normal or binary $X$, event times were generated using the following latent parametrisation:
+
+\begin{align*}
+	T_1 &\sim \text{Weibull}(\alpha_1, \lambda_1 = \lambda_{10}e^{\beta_1 X + \gamma_1 Z}), \\
+	T_2 &\sim \text{Weibull}(\alpha_2, \lambda_2 = \lambda_{20}e^{\beta_2 X + \gamma_2 Z}), \\
+	C &\sim \text{Exp}(\lambda_C),
+\end{align*}
+
+where we varied $\beta_1 = \{0, 0.5, 1\}$, and fixed $\gamma_1 = 1$, $\beta_2 = 0.5$ and $\gamma_2 = 0.5$. 
+
+Concerning the baseline hazard shapes, there were two parametrisations: 'similar' and 'different'. For the former, the values were defined as 
+
 ```{r baseline_coefs, echo=FALSE}
 baseline_evs <- readRDS(
   "../data/mds-shape-rates.rds" #  edit path later
 )
 
-baseline_evs
+baseline_evs %>% kableExtra::kable(digits = 2)
 
 # Set event-generating parameters for REL
 ev1_pars <- list(
@@ -68,7 +81,9 @@ ev2_pars <- list(
 )
 ```
 
-What do the hazards look like?
+In the 'different' case, we set $\{\alpha_1,\lambda_{10}\} = \{1.5,0.04\}$.
+
+What do these baseline hazards look like, and what are the baseline cumulative incidences?
 
 ```{r baseline_hazards, echo=FALSE}
 # Over first 10 years
@@ -135,7 +150,6 @@ ggpubr::ggarrange(
 )
 ```
 
-Cumulative incidence
 
 ```{r baseline_cuminc, echo=FALSE}
 # Get true cuminc - similar and different
@@ -192,7 +206,7 @@ p_different_cumincs <- data.table::melt.data.table(
     x = "Time (years)",
     y = "Cumulative incidence",
     col = "State",
-    title = "Similar hazard shapes"
+    title = "Difference hazard shapes"
   ) +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -206,9 +220,16 @@ ggpubr::ggarrange(
 )
 ```
 
-So event proportion
-
 # Missingness mechanisms
+
+Recall that there were four difference missingness mechanisms for $X$:
+
+- Missing completely at random (MCAR), defined as $P(R_X = 0) = 0.5$ or $P(R_X = 0) = 0.1$
+- Missing at random conditional on $Z$ (MAR), which was defined as $\text{logit} P(R_X = 0 \vert Z) = \eta_0 + \eta_1 Z$.
+- Outcome-dependent missing at random (MAR-T), which was defined as $\text{logit} P(R_X = 0 \vert \tilde{T}_{\text{stand}}) = \eta_0 + \eta_1 \tilde{T}_{\text{stand}}$. $\tilde{T}_{\text{stand}}$ is $\log \tilde{T}$, standardised to have zero mean and unit variance. Note that $\tilde{T}$ was the observed (event or censoring) time; if missingness depended on the true event time, this would lead to a missing not at random mechanism. 
+- Missing not at random conditional on $X$ (MNAR), which was defined as $\text{logit} P(R_X = 0 \vert X) = \eta_0 + \eta_1 X$
+
+Setting $\eta_1 = -2$, we can visualise each of them as follows:
 
 ```{r miss_mechs, echo=FALSE}
 miss_mechs <- c("MCAR", "MAR", "MAR_GEN", "MNAR")
@@ -261,9 +282,11 @@ ggpubr::ggarrange(
 ```
 
 
-## Zoom-in on stength
+## Mechanism strength
 
-Illustrated with MAR
+The $\eta_1$ values represents the strength of the mechanism. Using the MAR mechanism as an example, we can visualise the effect of changing $\eta_1$ while fixing the proportion of missing values at 50\% as follows.
+
+In term of probability of $X$ missing as a function of $Z$:
 
 ```{r eta1_illust_MAR, echo=FALSE}
 etas <- c(0, -0.25, -0.5, -0.75, -1, -2)
@@ -291,7 +314,7 @@ data.table::rbindlist(etas_MAR) %>%
   )
 ```
 
-With the data
+With the data itself:
 
 ```{r eta1_illust_MAR2, echo=FALSE}
 etas_MAR_dats <- lapply(etas, function(eta) {

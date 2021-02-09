@@ -7,12 +7,14 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
   chunk_output_type: console
+bibliography: biblio-cause-specific.bib
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  echo = FALSE
 )
 ```
 
@@ -20,3 +22,59 @@ knitr::opts_chunk$set(
 library(CauseSpecCovarMI)
 ```
 
+
+Recall that the analysis models of interest were the cause-specific Cox proportional hazards models for relapse (REL) and non-relapse mortality (NRM), $h_k(t \vert X, Z) = h_{k0}(t)\exp(\beta_k X + \gamma_k Z)$ for $k = \{1,2\}$. We then had two main sets of estimands of interest:
+
+- $\theta_{\text{regr}} = \{\beta_1,\gamma_1,\beta_2,\gamma_2\}$, which are the data-generating regression coefficients from both cause-specific Cox models.
+- $\theta_{\text{pred}}$, which is a vector containing the REL and NRM probabilities (cumulative incidences) for a set of reference patients at 6 months, 5 years and 10 years after baseline.
+
+Define $i = 1,2,...,n_{\text{sim}}$ simulation replications, which begin by simulating an independent dataset for each $i$ according to some parametrisation, defined by a scenario. In our notation, we suppress $l = 1,2,...,L$ corresponding to the simulation scenarios.
+
+# Regression coefficients
+
+Let $\theta$ represent an element of $\theta_{\text{est}}$. At each simulation replication, $m$ imputed datasets are created for each of the four imputation-based methods. In each of these $m$ datasets, both cause-specific Cox models are fit. The regression coefficients and their standard errors are then pooled according to Rubin's rules - yielding a vector $\boldsymbol{\hat{\theta}_{i}} = [\hat{\theta}_{i}, \ \widehat{\text{SE}}(\hat{\theta}_{i})]$. For the complete case analysis, $\boldsymbol{\hat{\theta}_{i}}$ simply contains the estimated coefficient and standard error from the models fit on the complete-cases (no pooling involved). We then define the performance measures as follows:
+
+
+*Mean*:
+$$
+\hat{\theta} = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \hat{\theta_i}
+$$
+
+	
+*Standard error*: 
+$$
+\widehat{\text{SE}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \widehat{\text{SE}}(\hat{\theta}_i)
+$$
+	
+*Empirical error*:  
+$$
+\widehat{\text{EmpSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{i = 1}^{n_{\text{sim}}} (\hat{\theta_i} - \hat{\theta})^2}
+$$
+	
+
+*Bias*: 
+$$
+\widehat{\text{Bias}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \hat{\theta_i} - \theta
+$$
+	
+*Coverage*: 
+$$
+\widehat{\text{Cov}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \mathbf{1}\{ \hat{\theta}_{\text{low},i} < \theta < \hat{\theta}_{\text{upp},i} \}
+$$
+where the bounds of the 95\% confidence interval $\hat{\theta}_{\text{low},i}$ and $\hat{\theta}_{\text{upp},i}$ are computed as $\hat{\theta}_{i} \pm z_{\alpha/2} \times \widehat{\text{SE}}(\hat{\theta}_{i})$ for the complete-case analysis, whereas for the imputation methods they are based on the $t$ distribution - see [confint.mipo](https://github.com/amices/mice/blob/cece48ab1580d23f9435dcaee7aee79abec58c0d/R/mipo.R#L153).
+	
+*Root mean square error*:
+$$
+\widehat{\text{RMSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{i = 1}^{n_{\text{sim}}} (\hat{\theta_i} - \theta)^2}
+$$
+
+
+Monte-carlo standard errors for all measures except RMSE were computed as per the formulas in the tutorial by @morrisUsingSimulationStudies2019. The monte-carlo standard error for RMSE was computed by using the approximate jacknife estimator implement in the simhelpers package - see the relevant [vignette](https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html). [I think there is an error in their implementation, will use bootstrap instead..]
+
+# Predictions
+
+To obtain the predicted probabilities when using the imputation methods, the cause-specific models fitted in each imputed dataset are used to create \textit{imputation-specific} predictions, which then pooled using Rubin's rules. For computational reasons, standard errors were not recorded, and so the pooling simply involved averaging the probabilities across imputed datasets.
+
+The performance measures for the predicted probabilities are thus the same as above, with the exceptions of *Standard error* and *Coverage*.
+
+# References

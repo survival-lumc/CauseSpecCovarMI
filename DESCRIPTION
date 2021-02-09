@@ -15,6 +15,12 @@ Authors@R: c(
         email = "matthieu.resche-rigon@u-paris.fr"
     ),
     person(
+        given = "Johannes",
+        family = "Schetelig",
+        role = c("aut"),
+        email = "Johannes.Schetelig@uniklinikum-dresden.de"
+    ),
+    person(
         given = "Hein",
         family = "Putter",
         role = c("aut"),

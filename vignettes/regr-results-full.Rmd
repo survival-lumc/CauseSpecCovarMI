@@ -36,12 +36,14 @@ theme_set(
 set.seed(1984)
 ```
 
-# General set-up
-
+In this section, we present the full results for the regression coefficients part of the simulation study. Included are also the results for $CH_{1}$ (multiple imputation using only the cumulative hazard for REL) and $Ref$ (model fitted on full dataset prior to any missigness being induced). Results from the imputation methods are those with $m = 50$.
 
 ```{r read}
 # Read-in summarised results and scenarios
-regr_results <- fst::read_fst("../data/sims_regr_summary.fst") %>% data.table::setDT()
+regr_results <- fst::read_fst("../data/sims_regr_summary.fst") %>% 
+  data.table::setDT()
+
+regr_results <- regr_results[n != 500]
 
 regr_results[, var_label := factor(
   x = var,
@@ -59,17 +61,33 @@ scenarios <- readRDS("../data/scenarios.rds")
 
 # Scenarios
 
+These were the scenarios that were run:
+
 ```{r scenarios}
-scenarios[, !"seed"] %>% knitr::kable()
+scenarios[n != 500, !c("seed", "pilot")] %>% knitr::kable()
 ```
 
 
 # Continuous $X$
 
+[This avoids in my opinion the need for lolly plots, which would make document much longer]
+
+```{r mcse_contin}
+mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "continuous"][["bias_mcse"]]
+
+mssg <- paste0("Range of Bias MCSE: [", 
+               round(min(mcse_bias), 3), "; ",
+               round(max(mcse_bias), 3), "]")
+
+cat(mssg)
+```
 
 ## MAR
 
+[What do you think of this format? Bias + rmse plots in same subsection]
 
+**Bias**:
 ```{r mar_contin, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
 ggplot_nlp(
   dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
@@ -104,6 +122,41 @@ ggplot_nlp(
   ) 
 ```
 
+
+**RMSE**:
+```{r mar_contin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MAR" & X_level == "continuous"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  #scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
 
 ## MAR-T
 
@@ -213,6 +266,16 @@ ggplot_nlp(
 
 # Binary $X$
 
+```{r mcse_bin}
+mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "binary"][["bias_mcse"]]
+
+mssg <- paste0("Range of Bias MCSE: [", 
+               round(min(mcse_bias), 3), "; ",
+               round(max(mcse_bias), 3), "]")
+
+cat(mssg)
+```
 
 ## MAR
 
@@ -358,35 +421,4 @@ ggplot_nlp(
         strip.text = element_text(size=15)) 
 ```
 
-
-# Further testing
-
-
-```{r heatmap_test}
-##
-ggplot_lolly(
-  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 == "0.5" & 
-                       miss_mech != "MCAR" & eta1 == "Weak" &
-                       prop_miss  == "50%"],
-  estim = "rmse",
-  method_var = "analy",
-  true = 0, 
-  #mcarlo_se = "bias_mcse",
-  group = "haz_shape"#, conf.int = 0.95
-) +
-  facet_grid(var_label ~ X_level * miss_mech, labeller = label_parsed)
-  
-
-
-# Simple estimates
-# p <- regr_results[m %in% c(0, 50) & n == 2000 
-#                   & beta1 == "0.5" & eta1 != "Strong"] %>%  #prop_miss  == "50%"] %>% 
-#   ggplot(aes(miss_mech, analy, fill = rmse)) +
-#   geom_tile() +
-#   facet_grid(var_label * X_level ~  prop_miss * haz_shape) + #labeller = label_parsed) +
-#   coord_cartesian(expand = 0) + 
-#   viridis::scale_fill_viridis()
-# 
-# p
-```
 
