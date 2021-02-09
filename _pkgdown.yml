@@ -1,3 +1,35 @@
 navbar:
   type: inverse
+  structure:
+    left:
+    - home
+    - reference
+    - articles
+    right:
+    - github
+  components:
+    home:
+      icon: fas fa-home fa-lg
+      href: index.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Supplement
+      menu:
+      - text: Generating data
+        href: articles/data-generation.html
+      - text: Performance measures
+        href: articles/performance-measures.html
+      - text: Regression coefficients
+        href: articles/regr-results-full.html
+      - text: Predictions
+        href: articles/preds-results-full.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/survival-lumc
+    
   
+
+# See JointAI yaml
+

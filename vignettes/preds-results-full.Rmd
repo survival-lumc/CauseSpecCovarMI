@@ -10,10 +10,221 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.retina = 2, # change to 3 
+  fig.align = "center",
+  fig.width = 7,
+  fig.height = 4,
+  dev.args = list(bg = "transparent"),
+  fig.ext = "svg",
+  echo = FALSE
 )
 ```
 
 ```{r setup}
 library(CauseSpecCovarMI)
+library(ggplot2)
+library(ggpubr)
+
+theme_set(
+  theme_bw(base_size = 11)
+)
+
+set.seed(1984)
 ```
+
+
+```{r read}
+# Read-in summarised results and scenarios
+preds_results <- fst::read_fst("../data/sims_preds_summary.fst") %>% 
+  data.table::setDT()
+
+preds_results <- preds_results[n != 500 & state != "EFS" &  
+                                 m %in% c(0, 50)]
+
+# Prep labeller
+```
+
+In this section, we present the results for the predicted probabilities part of the simulation study. Included are also the results for $CH_{1}$ (multiple imputation using only the cumulative hazard for REL) and $Ref$ (model fitted on full dataset prior to any missigness being induced). Results from the imputation methods are those with $m = 50$.
+
+We show results at horizon of 5 years after baseline, restricting to high amount of missing (50\%). 
+
+[Suggestions on how to structure this document are welcome.. + facet names will be more informative]
+
+
+# Continuous $X$
+
+## MAR
+
+```{r mar_contin, fig.height=14, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous"& 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "rmse", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape", "eta1"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.001,
+    height_betw_steps = 0.003,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}", 
+      "eta1" = "Mech. strength = {weak, strong}"
+    ),
+    top_step = -0.004
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Root mean square error (RMSE)") +
+  ggplot2::scale_y_continuous(breaks = c(0, 0.01, 0.02)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+
+## MAR-T
+
+```{r mart_contin, fig.height=14, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MAR_GEN" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous"& 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "rmse", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape", "eta1"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.01,
+    height_betw_steps = 0.03,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}", 
+      "eta1" = "Mech. strength = {weak, strong}"
+    ),
+    top_step = -0.05
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Root mean square error (RMSE)") +
+  #ggplot2::scale_y_continuous(breaks = c(0, 0.01, 0.02)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+## MNAR
+
+```{r mnar_contin, fig.height=14, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MNAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous"& 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "rmse", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape", "eta1"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.01,
+    height_betw_steps = 0.03,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}", 
+      "eta1" = "Mech. strength = {weak, strong}"
+    ),
+    top_step = -0.05
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Root mean square error (RMSE)") +
+  #ggplot2::scale_y_continuous(breaks = c(0, 0.01, 0.02)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+## MCAR
+
+```{r mcar_contin, fig.height=14, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous"& 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "rmse", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape", "eta1"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.01,
+    height_betw_steps = 0.03,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}", 
+      "eta1" = "Mech. strength = {weak, strong}"
+    ),
+    top_step = -0.05
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Root mean square error (RMSE)") +
+  #ggplot2::scale_y_continuous(breaks = c(0, 0.01, 0.02)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+# Binary $X$
+
+## MAR
+
+## MAR-T
+
+## MNAR
+
+## MCAR
