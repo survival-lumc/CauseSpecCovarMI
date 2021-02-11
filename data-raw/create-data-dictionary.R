@@ -36,7 +36,7 @@ vars[["srv_allo1"]] <- cbind.data.frame(
 )
 
 vars[["match_allo1_1"]] <- cbind.data.frame(
-  "var_label" = "Pat/Don sex match",
+  "var_label" = "Patient/Donor sex match",
   "var_description" = "Sex match patient and donor"
 )
 
@@ -46,42 +46,42 @@ vars[["mdsclass"]] <- cbind.data.frame(
 )
 
 vars[["donorrel"]] <- cbind.data.frame(
-  "var_label" = "Don relation",
-  "var_description" = "Relation with donor"
+  "var_label" = "HLA match patient/donor",
+  "var_description" = "Human leukocyte antigen (HLA) match between patient and donor"
 )
 
 vars[["karnofsk_allo1"]] <- cbind.data.frame(
   "var_label" = "Karnofsky",
-  "var_description" = "Karnofsky or Lansky status"
+  "var_description" = "Karnofsky performance status"
 )
 
 vars[["crnocr"]] <- cbind.data.frame(
-  "var_label" = "CR stage",
+  "var_label" = "Stage",
   "var_description" = "Stage at alloHCT"
 )
 
 vars[["cmv_combi_allo1_1"]] <- cbind.data.frame(
-  "var_label" = "CMV Pat/Don",
-  "var_description" = "Cytomegalovirus in patient and donor"
+  "var_label" = "CMV Patient/Donor",
+  "var_description" = "Cytomegalovirus (CMV) in patient and donor"
 )
 
 vars[["cytog_threecat"]] <- cbind.data.frame(
   "var_label" = "Cytogenetics",
-  "var_description" = "Cytogenetics score"
+  "var_description" = "Cytogenetics categories within International Prognostic Scoring System (IPSS-R)"
 )
 
 vars[["hctci_risk"]] <- cbind.data.frame(
   "var_label" = "Comorbidity score",
-  "var_description" = "HCTCI comorbidity index score"
+  "var_description" = "Hematopoietic stemcell transplantation-comorbidity index (HCT-CI) score"
 )
 
 vars[["agedonor_allo1_decades"]] <- cbind.data.frame(
-  "var_label" = "Age (Don)",
+  "var_label" = "Age (Donor)",
   "var_description" = "Donor age at alloHCT (decades)"
 )
 
 vars[["age_allo1_decades"]] <- cbind.data.frame(
-  "var_label" = "Age (Pat)",
+  "var_label" = "Age (Patient)",
   "var_description" = "Patient age at alloHCT (decades)"
 )
 
@@ -116,7 +116,7 @@ levs[["mdsclass"]] <- transform(
 
 levs[["donorrel"]] <- transform(
   levs[["donorrel"]],
-  "levels_lab" = c("Identical sibling", "Other")
+  "levels_lab" = c("HLA-identical sibling", "Other")
 )
 
 levs[["karnofsk_allo1"]] <- transform(
@@ -136,7 +136,7 @@ levs[["cmv_combi_allo1_1"]] <- transform(
 
 levs[["cytog_threecat"]] <- transform(
   levs[["cytog_threecat"]],
-  "levels_lab" = c("Good (<=3)", "Poor (4)", "Very poor (5)")
+  "levels_lab" = c("Interm./good (<=3)", "Poor (4)", "Very poor (5)")
 )
 
 levs[["hctci_risk"]] <- transform(
@@ -151,17 +151,24 @@ levels_dat <- data.table::rbindlist(levs, idcol = "var_name")
 
 tot <- merge(levels_dat, vars_meta, by = "var_name", all.y = TRUE)
 
-# Add counts per factor
+# Add counts per factor - and REL / NRM counts too
 counters <- lapply(names(dat_mds), function(col) {
   
   if (is.numeric(dat_mds[[col]])) {
     counts <- dat_mds[, .(
       levels = NA_character_,
-      count = sum(!is.na(get(col)))
-    )]
-    return(counts)
+      count = .N,
+      count_REL = sum(ci_s_allo1 == 1),
+      count_NRM = sum(ci_s_allo1 == 2)
+    ), by = is.na(get(col))]
+    data.table::setnames(counts, "is.na", "miss_ind")
+    return(counts[miss_ind == FALSE])
   } else {
-    counts <- na.omit(dat_mds[, .(count = .N), by = col])
+    counts <- na.omit(dat_mds[, .(
+      count = .N,
+      count_REL = sum(ci_s_allo1 == 1),
+      count_NRM = sum(ci_s_allo1 == 2)
+    ), by = col])
     data.table::setnames(counts, col, "levels")
     
     return(counts[, levels := as.character(levels)])
@@ -170,89 +177,54 @@ counters <- lapply(names(dat_mds), function(col) {
 
 names(counters) <- names(dat_mds)
 
-final <- data.table::rbindlist(counters, idcol = "var_name") %>% 
+final <- data.table::rbindlist(counters, idcol = "var_name",fill = TRUE) %>% 
   merge(tot, by = c("levels", "var_name"), all.y = TRUE)
+final[, "miss_ind" := NULL]
 
-saveRDS(final, file = "data-dictionary.rds")
+saveRDS(final, file = "data/data-dictionary.rds")
 
 
-# Try table ---------------------------------------------------------------
+# Descriptives table ------------------------------------------------------
+
 
 final <- readRDS("data/data-dictionary.rds")
 data.table::setorder(final, "var_name", "level_num")
+final[is.na(levels_lab), levels_lab := ""]
+
+# Make columns for LaTex
+final[, levels_lab_tex := data.table::fcase(
+  var_name == "cmv_combi_allo1_1", paste0("$", levels_lab, "$"),
+  grepl(pattern = ">=", x = levels_lab), gsub(">=", x = levels_lab, replacement = "$\\\\geq$"),
+  grepl(pattern = "<=", x = levels_lab), gsub("<=", x = levels_lab, replacement = "$\\\\leq$")
+)]
+
+final[is.na(levels_lab_tex), levels_lab_tex := levels_lab]
+
+# Set column names
+data.table::setnames(
+  final,
+  c("var_label", "var_description", "levels_lab_tex", "prop_miss"),
+  c("Variable", "Description", "Levels", "\\% Missing")
+)
+
 
 library(kableExtra)
-final[is.na(levels_lab), levels_lab := var_label]
-final[, .N, keyby = var_label]
+caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: interm. = intermediate, MDS = myodysplastic syndromes, sAML = secondary acute myeloid leukemia, M = male, F = female, CR = complete remission, w/ = with, w/o = without."
 
-options(knitr.table.format = "latex")
-
-data.table::setnames(
-  final,
-  c("levels_lab", "count", "var_description"),
-  c("Variable", "Count", "Description")
-)
-
-
-
-# One option
-kbl(
-  x = final[!(var_name  %in% c("srv_s_allo1", "srv_allo1")), 
-            c("Variable", "Count", "Description")],
-  #format = "latex",
-  booktabs = "T", 
-  linesep = ""
-) %>% 
-  kable_styling(full_width = T) %>% 
-  column_spec(3, width = "22em") %>% 
-  column_spec(2, width = "5em") %>% 
-  collapse_rows(3, latex_hline = "none", valign = "top") %>% 
-  # More programmatically here
-  pack_rows(
-    bold = F,
-    index = c(
-      " " = 4,
-      "CMV Pat/Don" = 4,
-      "CR stage" = 3,
-      "Cytogenetics" = 3,
-      "Don relation" = 2,
-      "Comorbidity score" = 3,
-      "Karnofsky" = 3,
-      "Pat/Don sex match" = 4,
-      "MDS class" = 3,
-      " " = 2
-    )
-  ) 
-   #%>%
-  #column_spec(2, width = "5em")
-
-
-
-# Other option, no counts
-
-data.table::setnames(
-  final,
-  c("Variable", "var_label", "prop_miss"),
-  c("Levels", "Variable", "% Missing")
-)
-
-final[Variable == Levels, Levels := ""]
-
-
-kbl(
-  x = final[!(var_name  %in% c("srv_s_allo1", "srv_allo1")), 
-            c("Variable", "Description", "Levels", "% Missing")],
-  format = "latex",
-  booktabs = "T", 
-  linesep = ""#,
-  #escape = F
-) %>% 
+# Make table
+final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
+  "Variable", "Description", "Levels", "\\% Missing"
+)] %>% 
+  kbl(
+    format = "latex",
+    booktabs = "T", 
+    position = "h",
+    caption = caption,
+    linesep = "",
+    escape = F
+  ) %>% 
   kable_styling(font_size = 7) %>% #full_width = T) %>% 
-  #kable_styling(latex_options = "scale_down") %>% 
   column_spec(2, width = "20em") %>% 
   collapse_rows(2, latex_hline = "none", valign = "top") %>%
   collapse_rows(1, latex_hline = "none", valign = "top") %>% 
   collapse_rows(4, latex_hline = "none", valign = "top")
-  
-# Maybe with type columns?
-

@@ -3,8 +3,6 @@
 ##***********************##
 
 
-devtools::load_all()
-
 # Read-in
 dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% 
   data.table::setDT()
@@ -329,4 +327,107 @@ ggsave(filename = "test.png", plot = forests, width = 10, height = 11)
 
 
 
-# Attempt 2 ---------------------------------------------------------------
+
+# New plot just REL -------------------------------------------------------
+
+
+test_forest2 <- data.table::copy(test_forest)
+# Make the table for the left side
+dat_table <- test_forest2[, c("levels_lab", "count", "count_REL", "colour_row",
+                             "graph_x")] %>% unique()
+
+plot_table <- dat_table %>% 
+  ggplot(aes(y = levels_lab)) + 
+  geom_rect(
+    aes(fill = colour_row), 
+    ymin = dat_table$graph_x - 0.5, 
+    ymax = dat_table$graph_x + 0.5,
+    xmin = -Inf, 
+    xmax = Inf
+  ) +
+  geom_text(aes(label = levels_lab), x= 0, hjust = 0) +
+  geom_text(aes(label = count), x= 0.9, hjust = 1) +
+  geom_text(aes(label = count_REL), x= 1.2, hjust = 1) +
+  annotate("text", x = 0, y = 37, label = "Variable", hjust = 0, fontface = "bold") +
+  annotate("text", x = 0.9, y = 37, label = "n", hjust = 1, fontface = "bold") +
+  annotate("text", x = 1.2, y = 37, label = "# Events", hjust = 1, fontface = "bold") +
+  coord_cartesian(xlim = c(0, 1.5), ylim = c(0, 40)) +
+  scale_fill_manual(values = c("gray90", "white"), guide = "none") +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) +
+  scale_y_discrete(limits = rev(levels(dat_table$levels_lab)))
+
+plot_table
+
+# Plot for relapse
+plot_dat_rel <- test_forest[state == "REL"]
+
+plot_rel <- plot_dat_rel %>%
+  ggplot(aes(x = levels_lab, y = estimate, group = method)) +
+  scale_y_continuous("Hazard ratio (95% CI)",
+                     trans = "log", breaks = c(0.5, 1, 1.5, 2, 3)) + 
+  geom_rect(
+    aes(fill = colour_row), 
+    xmin = plot_dat_rel$graph_x - 0.5, 
+    xmax = plot_dat_rel$graph_x + 0.5,
+    ymin = -Inf, 
+    ymax = +Inf
+  ) +
+  geom_linerange(
+    aes(ymin = `2.5 %`, 
+        ymax = `97.5 %`, 
+        xmin = levels_lab, 
+        xmax = levels_lab, 
+        col = method),
+    position = position_dodge(width = 0.75), 
+    size = 0.5,
+    na.rm = TRUE
+  ) +
+  geom_point(
+    aes(col = method, shape = method), 
+    position = position_dodge(width = 0.75), 
+    size = 1.25,
+    na.rm = TRUE
+  ) +
+  coord_flip(ylim = c(0.65, 4), xlim = c(0, 40)) +
+  geom_segment(x = 0, y = log(1), xend = 36, yend = log(1), linetype = "dashed") +
+  geom_segment(x = 0, y = log(2), xend = 36, yend = log(2), linetype = "dotted") +
+  annotate("text", x = 37, y = 1, label = "Relapse", hjust = 0.5, fontface = "bold") +
+  theme(
+    legend.position = "bottom",
+    #axis.text.y = element_blank(), 
+    #axis.ticks.y = element_blank(),
+    axis.title.x = element_text(colour = "black", size = 12),
+    axis.ticks.x = element_line(colour = "grey10"),
+    axis.ticks.length.x = unit(.15, "cm"),
+    axis.line.x = element_line(colour = "grey10"),
+    axis.text.x = element_text(colour = "black", size = 10),
+  ) +
+  scale_x_discrete(limits = rev(levels(test_forest$levels_lab))) +
+  scale_color_brewer(palette = "Dark2", na.translate = FALSE) +
+  scale_shape_discrete(na.translate = FALSE) +
+  scale_fill_manual(values = c("gray90", "white"), guide = "none") +
+  guides(
+    colour=guide_legend("Method", byrow=TRUE, reverse = T), # nrow=2
+    shape=guide_legend("Method",byrow=TRUE, reverse = T)
+  )
+
+
+plot_rel
+
+
+
+library(patchwork)
+forests <- plot_table + 
+  plot_rel + 
+  plot_layout(guides = "collect", widths = c(1, 1.5)) & 
+  theme(legend.position = "top", plot.margin = margin(0, 0, 0, 2))#,
+#panel.grid = element_blank()) 
+
+forests
+
+ggsave(filename = "test.png", plot = forests, width = 10, height = 11)
+
