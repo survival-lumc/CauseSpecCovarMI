@@ -5,6 +5,7 @@
 ^doc$
 ^Meta$
 analysis
+data-raw
 LICENSE.md
 .Rhistory
 .git
