@@ -4,6 +4,12 @@
 
 - Abstract here with link to paper/pre-print
 
+## Supplementary material
+
+- [Generating simulated data](articles/data-generation.html)
+- [Performance measures](articles/performance-measures.html)
+- [Full results: regression coefficients](articles/regr-results-full.html)
+- [Full results: predictions](articles/preds-results-full.html)
 
 ## Usage 
 

@@ -42,12 +42,12 @@ vars[["match_allo1_1"]] <- cbind.data.frame(
 
 vars[["mdsclass"]] <- cbind.data.frame(
   "var_label" = "MDS class",
-  "var_description" = "MDS groups based on subclassification (WHO and FAB) at alloHCT"
+  "var_description" = "MDS groups based on subclassification at alloHCT"
 )
 
 vars[["donorrel"]] <- cbind.data.frame(
   "var_label" = "HLA match patient/donor",
-  "var_description" = "Human leukocyte antigen (HLA) match between patient and donor"
+  "var_description" = "HLA match between patient and donor"
 )
 
 vars[["karnofsk_allo1"]] <- cbind.data.frame(
@@ -62,17 +62,17 @@ vars[["crnocr"]] <- cbind.data.frame(
 
 vars[["cmv_combi_allo1_1"]] <- cbind.data.frame(
   "var_label" = "CMV Patient/Donor",
-  "var_description" = "Cytomegalovirus (CMV) in patient and donor"
+  "var_description" = "CMV status in patient and donor"
 )
 
 vars[["cytog_threecat"]] <- cbind.data.frame(
   "var_label" = "Cytogenetics",
-  "var_description" = "Cytogenetics categories within International Prognostic Scoring System (IPSS-R)"
+  "var_description" = "Cytogenetics categories within IPSS-R"
 )
 
 vars[["hctci_risk"]] <- cbind.data.frame(
   "var_label" = "Comorbidity score",
-  "var_description" = "Hematopoietic stemcell transplantation-comorbidity index (HCT-CI) score"
+  "var_description" = "HCT-CI score"
 )
 
 vars[["agedonor_allo1_decades"]] <- cbind.data.frame(
@@ -209,7 +209,7 @@ data.table::setnames(
 
 
 library(kableExtra)
-caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: interm. = intermediate, MDS = myodysplastic syndromes, sAML = secondary acute myeloid leukemia, M = male, F = female, CR = complete remission, w/ = with, w/o = without."
+caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
 
 # Make table
 final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
@@ -221,7 +221,8 @@ final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")),
     position = "h",
     caption = caption,
     linesep = "",
-    escape = F
+    escape = F, 
+    digits = 2
   ) %>% 
   kable_styling(font_size = 7) %>% #full_width = T) %>% 
   column_spec(2, width = "20em") %>% 

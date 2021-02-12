@@ -105,7 +105,7 @@ p_similar_hazards <- data.table::melt.data.table(
   variable.name = "event"
 ) %>% 
   ggplot(aes(times, hazard, col = event)) +
-  geom_line(size = 1.5, alpha = 0.8) +
+  geom_line(size = 1, alpha = 0.8) +
   scale_colour_manual(
     labels = c("Cens", "REL", "NRM"),
     values = 1:3
@@ -127,7 +127,7 @@ p_different_hazards <- data.table::melt.data.table(
   variable.name = "event"
 ) %>% 
   ggplot(aes(times, hazard, col = event)) +
-  geom_line(size = 1.5, alpha = 0.8) +
+  geom_line(size = 1, alpha = 0.8) +
   scale_colour_manual(
     labels = c("Cens", "REL", "NRM"),
     values = 1:3
@@ -168,7 +168,7 @@ p_similar_cumincs <- data.table::melt.data.table(
   variable.name = "state"
 ) %>% 
   ggplot(aes(times, cuminc, col = state)) +
-  geom_line(size = 1.5, alpha = 0.8) +
+  geom_line(size = 1, alpha = 0.8) +
   scale_colour_manual(
     labels = c("Cens", "REL", "NRM"),
     values = 1:3
@@ -197,7 +197,7 @@ p_different_cumincs <- data.table::melt.data.table(
   variable.name = "state"
 ) %>% 
   ggplot(aes(times, cuminc, col = state)) +
-  geom_line(size = 1.5, alpha = 0.8) +
+  geom_line(size = 1, alpha = 0.8) +
   scale_colour_manual(
     labels = c("EFS", "REL", "NRM"),
     values = 1:3
@@ -231,7 +231,7 @@ Recall that there were four difference missingness mechanisms for $X$:
 
 Setting $\eta_1 = -2$, we can visualise each of them as follows:
 
-```{r miss_mechs, echo=FALSE}
+```{r miss_mechs, echo=FALSE, fig.height=8}
 miss_mechs <- c("MCAR", "MAR", "MAR_GEN", "MNAR")
 
 miss_plotlist <- lapply(miss_mechs, function(miss_mech) {
@@ -316,7 +316,7 @@ data.table::rbindlist(etas_MAR) %>%
 
 With the data itself:
 
-```{r eta1_illust_MAR2, echo=FALSE}
+```{r eta1_illust_MAR2, echo=FALSE, fig.height=6}
 etas_MAR_dats <- lapply(etas, function(eta) {
   
   dat <- generate_dat(
@@ -343,7 +343,7 @@ ploto[, ':=' (
 
 ploto %>% 
   ggplot(aes(Z, X_orig, col = miss_ind)) +
-  geom_point(alpha = 0.75, size = 2) +
+  geom_point(alpha = 0.75, size = 1) +
   scale_colour_manual(
     "Missing indicator",
     labels = c("Observed", "Missing"),
