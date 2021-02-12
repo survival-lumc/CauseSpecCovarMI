@@ -56,6 +56,10 @@ regr_results[, var_label := factor(
   )
 )]
 
+regr_results[, coverage := round(100 * cover, 0)]
+regr_results[, se_round := round(se, 2)]
+
+
 scenarios <- readRDS("../data/scenarios.rds")
 ```
 
@@ -64,28 +68,26 @@ scenarios <- readRDS("../data/scenarios.rds")
 These were the scenarios that were run:
 
 ```{r scenarios}
-scenarios[n != 500, !c("seed", "pilot")] %>% knitr::kable()
+scenarios[, !c("seed", "pilot")] %>% knitr::kable()
 ```
 
 
 # Continuous $X$
 
-[This avoids in my opinion the need for lolly plots, which would make document much longer]
-
 ```{r mcse_contin}
 mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "continuous"][["bias_mcse"]]
 
-mssg <- paste0("Range of Bias MCSE: [", 
-               round(min(mcse_bias), 3), "; ",
-               round(max(mcse_bias), 3), "]")
-
-cat(mssg)
+mcse_covarage <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "continuous"][["cover_mcse"]]
 ```
 
-## MAR
+- Range of Bias MCSE: [`r round(min(mcse_bias), 3)`; `r round(max(mcse_bias), 3)`]
+- Range of RMSE MCSE: (to come)
+- Range of Coverage MCSE: [`r round(min(mcse_covarage), 3)`; `r round(max(mcse_covarage), 3)`]
+- Range of estimate standard error MCSE: (to come)
 
-[What do you think of this format? Bias + rmse plots in same subsection]
+## MAR
 
 **Bias**:
 ```{r mar_contin, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
@@ -148,7 +150,7 @@ ggplot_nlp(
   ggplot2::guides(shape = guide_legend("Method"),
                   linetype = guide_legend("Method")) +
   theme_minimal(base_size = 12) +
-  #scale_y_continuous(breaks = c(0, -0.05, -0.1, - 0.15)) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
   facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
   ylab("RMSE") +
   theme(
@@ -157,6 +159,70 @@ ggplot_nlp(
     strip.text = element_text(size=15)
   ) 
 ```
+
+**Coverage**:
+```{r mar_contin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+# Make labellers
+beta1_labs <- ggplot2::as_labeller(c("0.5" = "Beta 1 = 0.5", "1" = "Beta 1 = 1"))
+eta1_labs <- ggplot2::as_labeller(c("Weak" = "Weak miss mech.", "Strong" = "Strong miss mech."))
+haz_labs <- ggplot2::as_labeller(c("similar" = "Similar hazards", "different" = "Different hazards"))
+propmiss_labs <- ggplot2::as_labeller(c("10%" = "Prop. miss = 10%", "50%" = "Prop. miss = 50%"))
+
+
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mar_contin_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
 
 ## MAR-T
 
@@ -190,6 +256,99 @@ ggplot_nlp(
   theme(legend.position = "bottom", 
         plot.title = element_text(hjust = 0.5),
         strip.text = element_text(size=15)) 
+```
+
+
+**RMSE**:
+```{r mart_contin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MAR_GEN" & X_level == "continuous"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+
+**Coverage**:
+```{r mart_contin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR_GEN" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mart_contin_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR_GEN" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
 ```
 
 ## MNAR
@@ -228,6 +387,99 @@ ggplot_nlp(
         strip.text = element_text(size=15)) 
 ```
 
+
+**RMSE**:
+```{r mnar_contin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MNAR" & X_level == "continuous"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+
+**Coverage**:
+```{r mnar_contin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MNAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mnar_contin_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MNAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
 ## MCAR
 
 ```{r mcar_contin, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
@@ -264,18 +516,113 @@ ggplot_nlp(
         strip.text = element_text(size=15)) 
 ```
 
+
+**RMSE**:
+```{r mcar_contin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MCAR" & X_level == "continuous"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+
+**Coverage**:
+```{r mcar_contin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MCAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mcar_contin_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MCAR" & X_level == "continuous"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~  prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
 # Binary $X$
 
 ```{r mcse_bin}
-mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+mcse_bias_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "binary"][["bias_mcse"]]
 
-mssg <- paste0("Range of Bias MCSE: [", 
-               round(min(mcse_bias), 3), "; ",
-               round(max(mcse_bias), 3), "]")
-
-cat(mssg)
+mcse_covarage_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "binary"][["cover_mcse"]]
 ```
+
+- Range of Bias MCSE: [`r round(min(mcse_bias_bin), 3)`; `r round(max(mcse_bias_bin), 3)`]
+- Range of RMSE MCSE: (to come)
+- Range of Coverage MCSE: [`r round(min(mcse_covarage_bin), 3)`; `r round(max(mcse_covarage_bin), 3)`]
+- Range of estimate standard error MCSE: (to come)
+
 
 ## MAR
 
@@ -315,6 +662,99 @@ ggplot_nlp(
 ```
 
 
+**RMSE**:
+```{r mar_bin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MAR" & X_level == "binary"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+
+**Coverage**:
+```{r mar_bin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mar_binary_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
 ## MAR-T
 
 ```{r mart_contin_bin, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
@@ -347,6 +787,98 @@ ggplot_nlp(
   theme(legend.position = "bottom", 
         plot.title = element_text(hjust = 0.5),
         strip.text = element_text(size=15)) 
+```
+
+
+**RMSE**:
+```{r mart_bin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MAR_GEN" & X_level == "binary"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+**Coverage**:
+```{r mart_bin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR_GEN" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mart_binary_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MAR_GEN" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
 ```
 
 ## MNAR
@@ -385,6 +917,99 @@ ggplot_nlp(
         strip.text = element_text(size=15)) 
 ```
 
+
+**RMSE**:
+```{r mnar_bin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MNAR" & X_level == "binary"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+**Coverage**:
+```{r mnar_bin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MNAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mnar_binary_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MNAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ eta1 * prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        eta1 = eta1_labs,
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
 ## MCAR
 
 ```{r mcar_contin_bin, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
@@ -422,3 +1047,92 @@ ggplot_nlp(
 ```
 
 
+**RMSE**:
+```{r mcar_bin_rmse, echo=FALSE, fig.height=14, fig.width=11,fig.align='left'}
+ggplot_nlp(
+  dat = regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                       miss_mech == "MCAR" & X_level == "binary"],
+  estim = "rmse", 
+  method_var = "analy", 
+  true = 0, 
+  step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
+  point_dodge = 0.7,
+  text_size = 4, 
+  pointsize = 1.5, 
+  height_steps = 0.03,
+  height_betw_steps = 0.05,
+  top_step = -0.1,
+  step_labels = c(
+    "beta1" = "Beta1 = {0.5, 1}",
+    "prop_miss" = "Missing % = {10, 50}", 
+    "haz_shape" = "Hazard shapes = {similar, different}",
+    "eta1" = "Mech. strength = {weak, strong}"
+  )
+  ) +
+  ggplot2::guides(shape = guide_legend("Method"),
+                  linetype = guide_legend("Method")) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(breaks = c(0, 0.1, 0.2)) +
+  facet_wrap(. ~ var_label, nrow = 4, ncol = 1, labeller = label_parsed) +
+  ylab("RMSE") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size=15)
+  ) 
+```
+
+
+**Coverage**:
+```{r mcar_bin_cover, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MCAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = cover, label = coverage)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient2(midpoint = 0.95, limits = c(0, 1), 
+                       low = "darkblue", 
+                       high = "red",
+                       mid = "yellow", breaks = c(0, .5, 1)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+
+**Estimated standard error**:
+```{r mcar_binary_se, echo=FALSE, fig.height=11, fig.width=11,fig.align='left'}
+regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+               miss_mech == "MCAR" & X_level == "binary"] %>% 
+  ggplot(aes(x = analy, y = var, fill = se, label = se_round)) +
+  geom_tile() +
+  geom_text(col = "black") +
+  scale_fill_gradient(limits = c(0, 0.2), 
+                       low = "yellow", 
+                       high = "darkblue", breaks = c(0, .1, .2)) +
+  #ggplot2::scale_fill_brewer() +
+  facet_grid(
+    beta1 * haz_shape ~ prop_miss, 
+    labeller = labeller(beta1 = beta1_labs, 
+                        haz_shape = haz_labs, 
+                        prop_miss = propmiss_labs)
+  ) +
+  coord_cartesian(expand = 0) +
+  scale_y_discrete(labels = parse(text = levels(regr_results$var_label))) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  ylab("Coefficient") +
+  xlab("Method") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+```

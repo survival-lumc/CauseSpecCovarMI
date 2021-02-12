@@ -346,11 +346,11 @@ plot_table <- dat_table %>%
     xmax = Inf
   ) +
   geom_text(aes(label = levels_lab), x= 0, hjust = 0) +
-  geom_text(aes(label = count), x= 0.9, hjust = 1) +
-  geom_text(aes(label = count_REL), x= 1.2, hjust = 1) +
+  geom_text(aes(label = count), x= 1, hjust = 1) +
+  geom_text(aes(label = count_REL), x= 1.3, hjust = 1) +
   annotate("text", x = 0, y = 37, label = "Variable", hjust = 0, fontface = "bold") +
-  annotate("text", x = 0.9, y = 37, label = "n", hjust = 1, fontface = "bold") +
-  annotate("text", x = 1.2, y = 37, label = "# Events", hjust = 1, fontface = "bold") +
+  annotate("text", x = 1, y = 37, label = "n", hjust = 1, fontface = "bold") +
+  annotate("text", x = 1.3, y = 37, label = "# Events", hjust = 1, fontface = "bold") +
   coord_cartesian(xlim = c(0, 1.5), ylim = c(0, 40)) +
   scale_fill_manual(values = c("gray90", "white"), guide = "none") +
   theme(
@@ -392,7 +392,7 @@ plot_rel <- plot_dat_rel %>%
     size = 1.25,
     na.rm = TRUE
   ) +
-  coord_flip(ylim = c(0.65, 4), xlim = c(0, 40)) +
+  coord_flip(ylim = c(0.65, 4.5), xlim = c(0, 40)) +
   geom_segment(x = 0, y = log(1), xend = 36, yend = log(1), linetype = "dashed") +
   geom_segment(x = 0, y = log(2), xend = 36, yend = log(2), linetype = "dotted") +
   annotate("text", x = 37, y = 1, label = "Relapse", hjust = 0.5, fontface = "bold") +
@@ -423,11 +423,11 @@ plot_rel
 library(patchwork)
 forests <- plot_table + 
   plot_rel + 
-  plot_layout(guides = "collect", widths = c(1, 1.5)) & 
+  plot_layout(guides = "collect", widths = c(1, 1)) & 
   theme(legend.position = "top", plot.margin = margin(0, 0, 0, 2))#,
 #panel.grid = element_blank()) 
 
 forests
 
-ggsave(filename = "test.png", plot = forests, width = 10, height = 11)
+ggsave(filename = "forest_new.png", plot = forests, width = 10, height = 11)
 
