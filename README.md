@@ -17,13 +17,13 @@
 
 This project is set-up as an [R-package compendium](https://github.com/ropensci/rrrpkg), with the following structure:
 
-```yaml
+```
 .
 ├── R                   # User-made functions
 ├── analysis			      # Scripts for illustrative analysis
 │   ├── figures			    # Manuscript figures
 │   └── simulations		  # Scripts to run simulation study
-├── data			          # Full and processed simulation data
+├── data			          # Full and processed simulation data/synthetic MDS data
 │   └── sim-reps_indiv	# Individual simulation replications
 │       ├── preds
 │       └── regr
