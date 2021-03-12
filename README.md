@@ -27,7 +27,7 @@ This project is set-up as an [R-package compendium](https://github.com/ropensci/
 │   └── sim-reps_indiv    # Individual simulation replications
 │       ├── preds
 │       └── regr
-├── data-raw              # Scripts for processing raw 
+├── data-raw              # Scripts for processing raw data
 ├── man                   # Documentation user-made functions
 └── vignettes             # Supplementary manuscript results
 ```
@@ -63,7 +63,7 @@ This will produce four files, which represent the full and summarised results fo
 - `data/sims_preds_full.fst` 
 - `data/sims_preds_summary.fst` 
 
-These are included in the package/on Zenodo, such that one does not need to run the entire simulation study again (which would take on the order of days).
+These are included in the package/on Zenodo, such that one does not need to run the entire simulation study again (which would take in the order of days).
 
 Should you want to replicate one replication of one scenario locally (for example the 10th replication of scenario 3), you can run
 
