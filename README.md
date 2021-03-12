@@ -17,17 +17,17 @@
 
 This project is set-up as an [R-package compendium](https://github.com/ropensci/rrrpkg), with the following structure:
 
-```markdown
+```yaml
 .
-├── R                         # User-made functions
+├── R                   # User-made functions
 ├── analysis			      # Scripts for illustrative analysis
-│   ├── figures			      # Manuscript figures
-│   └── simulations		      # Scripts to run simulation study
+│   ├── figures			    # Manuscript figures
+│   └── simulations		  # Scripts to run simulation study
 ├── data			          # Full and processed simulation data
-│   └── sim-reps_indiv	      # Individual simulation replications
+│   └── sim-reps_indiv	# Individual simulation replications
 │       ├── preds
 │       └── regr
-├── data-raw			      # Scripts for processing raw data-raw
+├── data-raw			      # Scripts for processing raw 
 ├── man				          # Documentation user-made functions
 └── vignettes			      # Supplementary manuscript results
 ```
@@ -91,7 +91,7 @@ sbatch analysis/run-illustrative-analysis.sh
 
 This will make use of 10 cores to run the 100 imputations (with 25 iterations) from both `mice()` and `smcfcs()` in parallel.
 
-It can also be run locally by first change the number of cores in `analysis/illustrative-analysis.R` , and then
+It can also be run locally by first changing the number of cores in `analysis/illustrative-analysis.R` , and then
 
 ```R
 Rscript analysis/illustrative-analysis.R
@@ -103,9 +103,9 @@ Rscript analysis/illustrative-analysis.R
 
 | Name                                                         | Affiliation                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [Edouard F. Bonneville](https://www.lumc.nl/org/bds/medewerkers/1968807?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
+| [Edouard F. Bonneville](https://www.lumc.nl/org/bds/medewerkers/1968807?setlanguage=English&setcountry=en) | Leiden University Medical Center (Leiden, NL)                |
 | [Matthieu Resche-Rigon](https://www.researchgate.net/scientific-contributions/Matthieu-Resche-Rigon-56101026) | Paris Diderot University / Saint Louis Hospital (Paris, FR)  |
 | [Johannes Schetelig](https://www.researchgate.net/scientific-contributions/Johannes-Schetelig-38769437) | Universitätsklinikum Dresden / DKMS Clinical Trials Unit (Dresden, DE) |
-| [Hein Putter](https://www.lumc.nl/org/bds/medewerkers/hputter?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
-| [Liesbeth C. de Wreede](https://www.lumc.nl/org/bds/medewerkers/lcdewreede?setlanguage=English&setcountry=en) | Leiden University Medical Centre (Leiden, NL)                |
+| [Hein Putter](https://www.lumc.nl/org/bds/medewerkers/hputter?setlanguage=English&setcountry=en) | Leiden University Medical Center (Leiden, NL)                |
+| [Liesbeth C. de Wreede](https://www.lumc.nl/org/bds/medewerkers/lcdewreede?setlanguage=English&setcountry=en) | Leiden University Medical Center (Leiden, NL)                |
 
