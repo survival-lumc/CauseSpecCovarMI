@@ -58,11 +58,98 @@ In this section, we present the results for the predicted probabilities part of 
 
 We show results at horizon of 5 years after baseline, restricting to high amount of missing (50\%). 
 
-# Continuous $X$
+# 1 Continuous $X$
 
-## MAR
+## 1.1 MCAR
 
-**Bias**
+Add mcse predictions
+
+### 1.1.1 Bias
+
+```{r mcar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous" & 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "bias", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.01,
+    height_betw_steps = 0.02,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}" 
+    ),
+    top_step = -0.05
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    labeller = labeller(`combo-X_Z` = patient_labs)
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Bias") +
+  ggplot2::scale_y_continuous(breaks = c(-0.05, 0, 0.05)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+### 1.1.2 RMSE
+
+```{r mcar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+preds_results[
+    beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous"& 
+    prop_miss == "50%"
+] %>% 
+  ggplot_nlp(
+    estim = "rmse", 
+    method_var = "analy", 
+    true = 0, 
+    step_factors = c("state", "beta1", "haz_shape"),
+    text_size = 4, 
+    pointsize = 1.5,
+    point_dodge = 0.7,
+    height_steps = 0.01,
+    height_betw_steps = 0.02,
+    step_labels = c(
+      "beta1" = "Beta1 = {0.5, 1}", 
+      "state" = "State = {REL, NRM}", 
+      "haz_shape" = "Hazard shapes = {similar, different}" 
+    ),
+    top_step = -0.04
+  ) +
+  facet_wrap(
+    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    labeller = labeller(`combo-X_Z` = patient_labs)
+  ) +
+  ggplot2::guides(
+    shape = ggplot2::guide_legend("Method"),
+    linetype = ggplot2::guide_legend("Method")
+  ) +
+  ggplot2::ylab("Root mean square error (RMSE)") +
+  ggplot2::scale_y_continuous(breaks = c(0, 0.05)) +
+  ggplot2::theme(legend.position = "bottom")
+```
+
+## 1.2 MAR
+
+### 1.2.1 Bias
+
 ```{r mar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -103,7 +190,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 1.2.2 RMSE
+
 ```{r mar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -145,9 +233,10 @@ preds_results[
 ```
 
 
-## MAR-T
+## 1.3 MAR-T
 
-**Bias**
+### 1.3.1 Bias
+
 ```{r mart_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -188,7 +277,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 1.3.2 RMSE
+
 ```{r mart_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -230,9 +320,10 @@ preds_results[
 ```
 
 
-## MNAR
+## 1.4 MNAR
 
-**Bias**
+### 1.4.1 Bias
+
 ```{r mnar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -273,7 +364,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 1.4.2 RMSE
+
 ```{r mnar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -314,16 +406,19 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-## MCAR
+# 2 Binary $X$
 
-**Bias**
-```{r mcar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+## 2.1 MCAR
+
+### 2.1.1 Bias
+
+```{r mcar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
-    X_level == "continuous" & 
+    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    X_level == "binary" & 
     prop_miss == "50%"
 ] %>% 
   ggplot_nlp(
@@ -356,14 +451,15 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
-```{r mcar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+### 2.1.2 RMSE
+
+```{r mcar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
-    X_level == "continuous"& 
+    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    X_level == "binary"& 
     prop_miss == "50%"
 ] %>% 
   ggplot_nlp(
@@ -397,11 +493,10 @@ preds_results[
 ```
 
 
-# Binary $X$
+## 2.2 MAR
 
-## MAR
+### 2.2.1 Bias
 
-**Bias**
 ```{r mar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -442,7 +537,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 2.2.2 RMSE
+
 ```{r mar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -484,9 +580,10 @@ preds_results[
 ```
 
 
-## MAR-T
+## 2.3 MAR-T
 
-**Bias**
+### 2.3.1 Bias
+
 ```{r mart_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -527,7 +624,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 2.3.2 RMSE
+
 ```{r mart_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -569,9 +667,10 @@ preds_results[
 ```
 
 
-## MNAR
+## 2.4 MNAR
 
-**Bias**
+### 2.4.1 Bias
+
 ```{r mnar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -612,7 +711,8 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-**RMSE**
+### 2.4.2 RMSE
+
 ```{r mnar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
@@ -653,84 +753,3 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-## MCAR
-
-**Bias**
-```{r mcar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
-preds_results[
-    beta1 != "0" &
-    miss_mech == "MCAR" & 
-    times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
-    X_level == "binary" & 
-    prop_miss == "50%"
-] %>% 
-  ggplot_nlp(
-    estim = "bias", 
-    method_var = "analy", 
-    true = 0, 
-    step_factors = c("state", "beta1", "haz_shape"),
-    text_size = 4, 
-    pointsize = 1.5,
-    point_dodge = 0.7,
-    height_steps = 0.01,
-    height_betw_steps = 0.02,
-    step_labels = c(
-      "beta1" = "Beta1 = {0.5, 1}", 
-      "state" = "State = {REL, NRM}", 
-      "haz_shape" = "Hazard shapes = {similar, different}" 
-    ),
-    top_step = -0.05
-  ) +
-  facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
-    labeller = labeller(`combo-X_Z` = patient_labs)
-  ) +
-  ggplot2::guides(
-    shape = ggplot2::guide_legend("Method"),
-    linetype = ggplot2::guide_legend("Method")
-  ) +
-  ggplot2::ylab("Bias") +
-  ggplot2::scale_y_continuous(breaks = c(-0.05, 0, 0.05)) +
-  ggplot2::theme(legend.position = "bottom")
-```
-
-**RMSE**
-```{r mcar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
-preds_results[
-    beta1 != "0" &
-    miss_mech == "MCAR" & 
-    times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
-    X_level == "binary"& 
-    prop_miss == "50%"
-] %>% 
-  ggplot_nlp(
-    estim = "rmse", 
-    method_var = "analy", 
-    true = 0, 
-    step_factors = c("state", "beta1", "haz_shape"),
-    text_size = 4, 
-    pointsize = 1.5,
-    point_dodge = 0.7,
-    height_steps = 0.01,
-    height_betw_steps = 0.02,
-    step_labels = c(
-      "beta1" = "Beta1 = {0.5, 1}", 
-      "state" = "State = {REL, NRM}", 
-      "haz_shape" = "Hazard shapes = {similar, different}" 
-    ),
-    top_step = -0.04
-  ) +
-  facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
-    labeller = labeller(`combo-X_Z` = patient_labs)
-  ) +
-  ggplot2::guides(
-    shape = ggplot2::guide_legend("Method"),
-    linetype = ggplot2::guide_legend("Method")
-  ) +
-  ggplot2::ylab("Root mean square error (RMSE)") +
-  ggplot2::scale_y_continuous(breaks = c(0, 0.05)) +
-  ggplot2::theme(legend.position = "bottom")
-```

@@ -30,7 +30,7 @@ Recall that the analysis models of interest were the cause-specific Cox proporti
 
 Define $i = 1,2,...,n_{\text{sim}}$ simulation replications, which begin by simulating an independent dataset for each $i$ according to some parametrisation, defined by a scenario. In our notation, we suppress $l = 1,2,...,L$ corresponding to the simulation scenarios.
 
-# Regression coefficients
+# 1 Regression coefficients
 
 Let $\theta$ represent an element of $\theta_{\text{est}}$. At each simulation replication, $m$ imputed datasets are created for each of the four imputation-based methods. In each of these $m$ datasets, both cause-specific Cox models are fit. The regression coefficients and their standard errors are then pooled according to Rubin's rules - yielding a vector $\boldsymbol{\hat{\theta}_{i}} = [\hat{\theta}_{i}, \ \widehat{\text{SE}}(\hat{\theta}_{i})]$. For the complete case analysis, $\boldsymbol{\hat{\theta}_{i}}$ simply contains the estimated coefficient and standard error from the models fit on the complete-cases (no pooling involved). We then define the performance measures as follows:
 
@@ -71,7 +71,7 @@ $$
 
 Monte-carlo standard errors for all measures except RMSE were computed as per the formulas in the tutorial by @morrisUsingSimulationStudies2019. The monte-carlo standard error for RMSE was computed by using the approximate jacknife estimator implement in the simhelpers package - see the relevant [vignette](https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html). [I think there is an error in their implementation, will use bootstrap instead..]
 
-# Predictions
+# 2 Predictions
 
 To obtain the predicted probabilities when using the imputation methods, the cause-specific models fitted in each imputed dataset are used to create \textit{imputation-specific} predictions, which then pooled using Rubin's rules. For computational reasons, standard errors were not recorded, and so the pooling simply involved averaging the probabilities across imputed datasets.
 

@@ -35,7 +35,7 @@ theme_set(
 set.seed(1984)
 ```
 
-# Event times
+# 1 Event times
 
 Given standard normal $Z$ and a standard normal or binary $X$, event times were generated using the following latent parametrisation:
 
@@ -220,7 +220,7 @@ ggpubr::ggarrange(
 )
 ```
 
-# Missingness mechanisms
+# 2 Missingness mechanisms
 
 Recall that there were four difference missingness mechanisms for $X$:
 
@@ -282,7 +282,7 @@ ggpubr::ggarrange(
 ```
 
 
-## Mechanism strength
+## 2.1 Mechanism strength
 
 The $\eta_1$ values represents the strength of the mechanism. Using the MAR mechanism as an example, we can visualise the effect of changing $\eta_1$ while fixing the proportion of missing values at 50\% as follows.
 
