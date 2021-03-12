@@ -19,17 +19,17 @@ This project is set-up as an [R-package compendium](https://github.com/ropensci/
 
 ```
 .
-├── R                   # User-made functions
-├── analysis			      # Scripts for illustrative analysis
-│   ├── figures			    # Manuscript figures
-│   └── simulations		  # Scripts to run simulation study
-├── data			          # Full and processed simulation data/synthetic MDS data
-│   └── sim-reps_indiv	# Individual simulation replications
+├── R   # User-made functions
+├── analysis    # Scripts for illustrative analysis
+│   ├── figures   # Manuscript figures
+│   └── simulations   # Scripts to run simulation study
+├── data    # Full and processed simulation data/synthetic MDS data
+│   └── sim-reps_indiv    # Individual simulation replications
 │       ├── preds
 │       └── regr
-├── data-raw			      # Scripts for processing raw 
-├── man				          # Documentation user-made functions
-└── vignettes			      # Supplementary manuscript results
+├── data-raw    # Scripts for processing raw 
+├── man   # Documentation user-made functions
+└── vignettes   # Supplementary manuscript results
 ```
 
 The `vignettes` directory contains the supplementary material from the manuscript, and is rendered here (add link) using [`pkgdown`](https://pkgdown.r-lib.org/).
