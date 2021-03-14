@@ -48,6 +48,7 @@ sims_regr_summary <- sims_regr_full[, .(
     n = .N,
     est = mean(estimate),
     se = mean(std.error),
+    se_mcse = sqrt(var(std.error^2) / (4 * .N * mean(std.error^2))),
     emp_se = sd(estimate),
     cover = mean(`2.5 %` < true & true < `97.5 %`),
     bias = mean(estimate - true),
@@ -109,7 +110,7 @@ sims_preds_summary <- sims_preds_full[, .(
   )]
 
 # Save sims
-setorder(sims_preds_summary, state, times, analy, m)
+data.table::setorder(sims_preds_summary, state, times, analy, m)
 fst::write_fst(x = sims_preds_summary, path = "data/sims_preds_summary.fst")
 
-rm(sims_preds_summary)
+#rm(sims_preds_full)

@@ -60,9 +60,26 @@ We show results at horizon of 5 years after baseline, restricting to high amount
 
 # 1 Continuous $X$
 
-## 1.1 MCAR
+```{r mcse_contin}
+mcse_bias <- preds_results[beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous" & 
+    prop_miss == "50%"][["bias_mcse"]]
 
-Add mcse predictions
+mcse_rmse <- preds_results[beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    X_level == "continuous" & 
+    prop_miss == "50%"][["rmse_mcse"]]
+```
+
+- Range of Bias MCSE: [`r round(min(mcse_bias), 3)`; `r round(max(mcse_bias), 3)`]
+- Range of RMSE MCSE: [`r round(min(mcse_rmse), 3)`; `r round(max(mcse_rmse), 3)`]
+
+## 1.1 MCAR
 
 ### 1.1.1 Bias
 
@@ -407,6 +424,25 @@ preds_results[
 ```
 
 # 2 Binary $X$
+
+```{r mcse_bin}
+mcse_bias_bin <- preds_results[beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    X_level == "binary" & 
+    prop_miss == "50%"][["bias_mcse"]]
+
+mcse_rmse_bin <- preds_results[beta1 != "0" &
+    miss_mech == "MCAR" & 
+    times == "5 years" &  
+    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    X_level == "binary" & 
+    prop_miss == "50%"][["rmse_mcse"]]
+```
+
+- Range of Bias MCSE: [`r round(min(mcse_bias_bin), 3)`; `r round(max(mcse_bias_bin), 3)`]
+- Range of RMSE MCSE: [`r round(min(mcse_rmse_bin), 3)`; `r round(max(mcse_rmse_bin), 3)`]
 
 ## 2.1 MCAR
 
