@@ -155,7 +155,7 @@ rmse_mcse <- function(estimates, true, K) {
   
   # Calculate rmse and mcse
   rmse <- sqrt(mse)
-  mcse <- sqrt((1/(K)) * sum((rmse_j - rmse)^2))
+  mcse <- sqrt(((K - 1) / (K)) * sum((rmse_j - rmse)^2))
   
   return(mcse)
 }
