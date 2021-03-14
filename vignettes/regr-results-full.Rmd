@@ -78,14 +78,20 @@ scenarios[, !c("seed", "pilot")] %>% knitr::kable()
 mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "continuous"][["bias_mcse"]]
 
-mcse_covarage <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+mcse_rmse <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "continuous"][["rmse_mcse"]]
+
+mcse_coverage <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "continuous"][["cover_mcse"]]
+
+mcse_se <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "continuous"][["se_mcse"]]
 ```
 
 - Range of Bias MCSE: [`r round(min(mcse_bias), 3)`; `r round(max(mcse_bias), 3)`]
-- Range of RMSE MCSE: (to come)
-- Range of Coverage MCSE: [`r round(min(mcse_covarage), 3)`; `r round(max(mcse_covarage), 3)`]
-- Range of estimate standard error MCSE: (to come)
+- Range of RMSE MCSE: [`r round(min(mcse_rmse), 3)`; `r round(max(mcse_rmse), 3)`]
+- Range of Coverage MCSE: [`r round(min(mcse_coverage), 3)`; `r round(max(mcse_coverage), 3)`]
+- Range of Estimated SE MCSE: [`r round(min(mcse_se), 3)`; `r round(max(mcse_se), 3)`]
 
 ## 2.1 MCAR
 
@@ -618,14 +624,20 @@ regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" &
 mcse_bias_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "binary"][["bias_mcse"]]
 
-mcse_covarage_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+mcse_rmse_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "binary"][["rmse_mcse"]]
+
+mcse_coverage_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
                             X_level == "binary"][["cover_mcse"]]
+
+mcse_se_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
+                            X_level == "binary"][["se_mcse"]]
 ```
 
 - Range of Bias MCSE: [`r round(min(mcse_bias_bin), 3)`; `r round(max(mcse_bias_bin), 3)`]
-- Range of RMSE MCSE: (to come)
-- Range of Coverage MCSE: [`r round(min(mcse_covarage_bin), 3)`; `r round(max(mcse_covarage_bin), 3)`]
-- Range of estimate standard error MCSE: (to come)
+- Range of RMSE MCSE: [`r round(min(mcse_rmse_bin), 3)`; `r round(max(mcse_rmse_bin), 3)`]
+- Range of Coverage MCSE: [`r round(min(mcse_coverage_bin), 3)`; `r round(max(mcse_coverage_bin), 3)`]
+- Range of Estimated SE MCSE: [`r round(min(mcse_se_bin), 3)`; `r round(max(mcse_se_bin), 3)`]
 
 
 ## 3.1 MCAR

@@ -429,5 +429,7 @@ forests <- plot_table +
 
 forests
 
-ggsave(filename = "forest_new.png", plot = forests, width = 10, height = 11)
+# Change to eps
+ggsave(filename = "analysis/figures/forest_rel.png", plot = forests, width = 10, height = 11)
 
+# Add NRM plot later
