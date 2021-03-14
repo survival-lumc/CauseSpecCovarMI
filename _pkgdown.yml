@@ -17,7 +17,7 @@ navbar:
     articles:
       text: Supplement
       menu:
-      - text: Generating data
+      - text: Generation of simulated data
         href: articles/data-generation.html
       - text: Performance measures
         href: articles/performance-measures.html
@@ -28,8 +28,4 @@ navbar:
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/survival-lumc/CauseSpecCovarMI
-    
-  
-
-# See JointAI yaml
 

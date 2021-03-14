@@ -28,53 +28,58 @@ Recall that the analysis models of interest were the cause-specific Cox proporti
 - $\theta_{\text{regr}} = \{\beta_1,\gamma_1,\beta_2,\gamma_2\}$, which are the data-generating regression coefficients from both cause-specific Cox models.
 - $\theta_{\text{pred}}$, which is a vector containing the REL and NRM probabilities (cumulative incidences) for a set of reference patients at 6 months, 5 years and 10 years after baseline.
 
-Define $i = 1,2,...,n_{\text{sim}}$ simulation replications, which begin by simulating an independent dataset for each $i$ according to some parametrisation, defined by a scenario. In our notation, we suppress $l = 1,2,...,L$ corresponding to the simulation scenarios.
+Define $j = 1,2,...,n_{\text{sim}}$ simulation replications, which begin by simulating an independent dataset for each $j$ according to some parametrisation, defined by a scenario. In our notation, we suppress $l = 1,2,...,L$ corresponding to the simulation scenarios.
 
 # 1 Regression coefficients
 
-Let $\theta$ represent an element of $\theta_{\text{est}}$. At each simulation replication, $m$ imputed datasets are created for each of the four imputation-based methods. In each of these $m$ datasets, both cause-specific Cox models are fit. The regression coefficients and their standard errors are then pooled according to Rubin's rules - yielding a vector $\boldsymbol{\hat{\theta}_{i}} = [\hat{\theta}_{i}, \ \widehat{\text{SE}}(\hat{\theta}_{i})]$. For the complete case analysis, $\boldsymbol{\hat{\theta}_{i}}$ simply contains the estimated coefficient and standard error from the models fit on the complete-cases (no pooling involved). We then define the performance measures as follows:
+Let $\theta$ represent an element of $\theta_{\text{regr}}$. At each simulation replication, $M$ imputed datasets are created for each of the four imputation-based methods described in section 5.3 of the paper. In each of these $M$ datasets, both cause-specific Cox models are fit. The regression coefficients and their standard errors are then pooled according to Rubin's rules - yielding a vector $\boldsymbol{\hat{\theta}_{j}} = [\hat{\theta}_{j}, \ \widehat{\text{SE}}(\hat{\theta}_{j})]$. For the complete case analysis, $\boldsymbol{\hat{\theta}_{j}}$ simply contains the estimated coefficient and standard error from the models fit on the complete-cases (no pooling involved). We then define the performance measures as follows:
 
 
 *Mean*:
 $$
-\hat{\theta} = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \hat{\theta_i}
+\hat{\theta} = \frac{1}{n_{\text{sim}}} \sum_{j = 1}^{n_{\text{sim}}} \hat{\theta}_j
 $$
 
 	
 *Standard error*: 
 $$
-\widehat{\text{SE}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \widehat{\text{SE}}(\hat{\theta}_i)
+\widehat{\text{SE}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{j = 1}^{n_{\text{sim}}} \widehat{\text{SE}}(\hat{\theta}_j)
 $$
 	
-*Empirical error*:  
+*Empirical standard error*:  
 $$
-\widehat{\text{EmpSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{i = 1}^{n_{\text{sim}}} (\hat{\theta_i} - \hat{\theta})^2}
+\widehat{\text{EmpSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{j = 1}^{n_{\text{sim}}} (\hat{\theta}_j - \hat{\theta})^2}
 $$
 	
 
 *Bias*: 
 $$
-\widehat{\text{Bias}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \hat{\theta_i} - \theta
+\widehat{\text{Bias}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{j = 1}^{n_{\text{sim}}} \hat{\theta}_j - \theta
 $$
 	
 *Coverage*: 
 $$
-\widehat{\text{Cov}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{i = 1}^{n_{\text{sim}}} \mathbf{1}\{ \hat{\theta}_{\text{low},i} < \theta < \hat{\theta}_{\text{upp},i} \}
+\widehat{\text{Cov}}(\hat{\theta}) = \frac{1}{n_{\text{sim}}} \sum_{j = 1}^{n_{\text{sim}}} \mathbf{1}\{ \hat{\theta}_{\text{low},j} < \theta < \hat{\theta}_{\text{upp},j} \}
 $$
-where the bounds of the 95\% confidence interval $\hat{\theta}_{\text{low},i}$ and $\hat{\theta}_{\text{upp},i}$ are computed as $\hat{\theta}_{i} \pm z_{\alpha/2} \times \widehat{\text{SE}}(\hat{\theta}_{i})$ for the complete-case analysis, whereas for the imputation methods they are based on the $t$ distribution - see [confint.mipo](https://github.com/amices/mice/blob/cece48ab1580d23f9435dcaee7aee79abec58c0d/R/mipo.R#L153).
+where the bounds of the 95\% confidence interval $\hat{\theta}_{\text{low},j}$ and $\hat{\theta}_{\text{upp},j}$ are computed as $\hat{\theta}_{j} \pm z_{\alpha/2} \times \widehat{\text{SE}}(\hat{\theta}_{j})$ for the complete-case analysis, whereas for the imputation methods they are based on the $t$ distribution - see [confint.mipo](https://github.com/amices/mice/blob/cece48ab1580d23f9435dcaee7aee79abec58c0d/R/mipo.R#L153).
 	
 *Root mean square error*:
 $$
-\widehat{\text{RMSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{i = 1}^{n_{\text{sim}}} (\hat{\theta_i} - \theta)^2}
+\widehat{\text{RMSE}}(\hat{\theta}) = \sqrt{\frac{1}{n_{\text{sim}} - 1} \sum_{j = 1}^{n_{\text{sim}}} (\hat{\theta}_j - \theta)^2}
 $$
 
 
-Monte-carlo standard errors for all measures except RMSE were computed as per the formulas in the tutorial by @morrisUsingSimulationStudies2019. The monte-carlo standard error for RMSE was computed by using the approximate jacknife estimator implement in the simhelpers package - see the relevant [vignette](https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html). [I think there is an error in their implementation, will use bootstrap instead..]
+Monte Carlo standard errors for all measures except RMSE were computed as per the formulas in the tutorial by @morrisUsingSimulationStudies2019. The Monte Carlo standard error for the RMSE was computed by using the approximate jackknife estimator implemented in the `{simhelpers}` package - see the relevant [vignette](https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html).
 
 # 2 Predictions
 
-To obtain the predicted probabilities when using the imputation methods, the cause-specific models fitted in each imputed dataset are used to create \textit{imputation-specific} predictions, which then pooled using Rubin's rules. For computational reasons, standard errors were not recorded, and so the pooling simply involved averaging the probabilities across imputed datasets.
+To obtain the predicted probabilities when using the imputation methods, the cause-specific models fitted in each imputed dataset are used to create \textit{imputation-specific} predictions, which are then pooled using Rubin's rules. For computational reasons, standard errors were not recorded, and so the pooling simply involved averaging the probabilities across imputed datasets. Letting $\theta$ instead represent an element of $\theta_{\text{pred}}$, the pooled probability at replication $j$ of a simulation scenario is defined as
 
-The performance measures for the predicted probabilities are thus the same as above, with the exceptions of *Standard error* and *Coverage*.
+$$
+\hat{\theta}_j = \frac{1}{M} \sum_{m=1}^M \hat{\theta}_m,
+$$
+where $\hat{\theta}_m$ is the predicted probability obtained in the $m^{\text{th}}$ imputed dataset.
+
+The performance measures for the predicted probabilities are the same as those outlined in the previous section, with the exceptions of *Standard error* and *Coverage* (since they were not recorded).
 
 # References

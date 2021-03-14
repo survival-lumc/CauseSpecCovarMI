@@ -1,8 +1,8 @@
 ---
-title: "Simulated data generation"
+title: "Generation of simulated data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Simulated data generation}
+  %\VignetteIndexEntry{Generation of simulated data}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -37,24 +37,28 @@ set.seed(1984)
 
 # 1 Event times
 
-Given standard normal $Z$ and a standard normal or binary $X$, event times were generated using the following latent parametrisation:
+Please refer to the main paper for introduction of the notation. Given standard normal $Z$ and a standard normal or binary $X$, event times were generated using the following latent parametrisation:
 
 \begin{align*}
 	T_1 &\sim \text{Weibull}(\alpha_1, \lambda_1 = \lambda_{10}e^{\beta_1 X + \gamma_1 Z}), \\
 	T_2 &\sim \text{Weibull}(\alpha_2, \lambda_2 = \lambda_{20}e^{\beta_2 X + \gamma_2 Z}), \\
 	C &\sim \text{Exp}(\lambda_C),
 \end{align*}
+where $\text{Weibull}(\cdot)$ is a Weibull distribution with hazard $h(t) = \lambda\alpha t^{\alpha -1}$, with $\alpha$ and $\lambda$ the shape and *rate* parameters respecitively.
+We varied $\beta_1 = \{0, 0.5, 1\}$, and fixed $\gamma_1 = 1$, $\beta_2 = 0.5$ and $\gamma_2 = 0.5$. The censoring rate was also fixed at $\lambda_C = 0.14$.
 
-where we varied $\beta_1 = \{0, 0.5, 1\}$, and fixed $\gamma_1 = 1$, $\beta_2 = 0.5$ and $\gamma_2 = 0.5$. 
+Concerning the baseline hazard shapes, there were two parametrisations: 'similar' and 'different':
 
-Concerning the baseline hazard shapes, there were two parametrisations: 'similar' and 'different'. For the former, the values were defined as 
+- Similar, $\{\alpha_1,\lambda_{10},\alpha_2,\lambda_{20}\} = \{0.58,0.19,0.53,0.21\}$
+
+- Different, $\{\alpha_1,\lambda_{10},\alpha_2,\lambda_{20}\} = \{1.5,0.04,0.53,0.21\}$
 
 ```{r baseline_coefs, echo=FALSE}
 baseline_evs <- readRDS(
   "../data/mds-shape-rates.rds" #  edit path later
 )
 
-baseline_evs %>% kableExtra::kable(digits = 2)
+#baseline_evs %>% kableExtra::kable(digits = 2)
 
 # Set event-generating parameters for REL
 ev1_pars <- list(
@@ -81,9 +85,7 @@ ev2_pars <- list(
 )
 ```
 
-In the 'different' case, we set $\{\alpha_1,\lambda_{10}\} = \{1.5,0.04\}$.
-
-What do these baseline hazards look like, and what are the baseline cumulative incidences?
+The figures below visualise the baseline hazards, as well as the corresponding baseline cumulative incidences.
 
 ```{r baseline_hazards, echo=FALSE}
 # Over first 10 years
@@ -222,14 +224,14 @@ ggpubr::ggarrange(
 
 # 2 Missingness mechanisms
 
-Recall that there were four difference missingness mechanisms for $X$:
+As defined in section 5.1 of the main paper, $R_X$ denotes whether elements of $X$ are fully observed ($R_X = 1$) or missing ($R_X = 0$). There were four different missingness mechanisms for $X$:
 
 - Missing completely at random (MCAR), defined as $P(R_X = 0) = 0.5$ or $P(R_X = 0) = 0.1$
 - Missing at random conditional on $Z$ (MAR), which was defined as $\text{logit} P(R_X = 0 \vert Z) = \eta_0 + \eta_1 Z$.
 - Outcome-dependent missing at random (MAR-T), which was defined as $\text{logit} P(R_X = 0 \vert \tilde{T}_{\text{stand}}) = \eta_0 + \eta_1 \tilde{T}_{\text{stand}}$. $\tilde{T}_{\text{stand}}$ is $\log \tilde{T}$, standardised to have zero mean and unit variance. Note that $\tilde{T}$ was the observed (event or censoring) time; if missingness depended on the true event time, this would lead to a missing not at random mechanism. 
-- Missing not at random conditional on $X$ (MNAR), which was defined as $\text{logit} P(R_X = 0 \vert X) = \eta_0 + \eta_1 X$
+- Missing not at random conditional on $X$ (MNAR), which was defined as $\text{logit} P(R_X = 0 \vert X) = \eta_0 + \eta_1 X$.
 
-Setting $\eta_1 = -2$, we can visualise each of them as follows:
+Setting $\eta_1 = -2$ and solving for $\eta_0$ such that the average probability of missingness was 50\%, we can visualise each of the mechanisms as follows:
 
 ```{r miss_mechs, echo=FALSE, fig.height=8}
 miss_mechs <- c("MCAR", "MAR", "MAR_GEN", "MNAR")
