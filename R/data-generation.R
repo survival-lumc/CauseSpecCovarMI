@@ -27,6 +27,7 @@
 #' 
 #' @importFrom magrittr `%>%` 
 #' @importFrom rlang .data
+#' @importFrom data.table .N .I ':=' .SD
 #' 
 #' @return Data-frame with missings induced
 #' 
@@ -41,6 +42,9 @@ generate_dat <- function(n,
                          eta1 = NULL,
                          p = NULL,
                          mod_type = "latent") {
+  
+  # For checks
+  X <- X_miss <- eps <- ev1 <- ev2 <- H1 <- H2 <- Z <- X_orig <- . <- NULL
 
   # Generate covariates
   dat_covars <- gen_covars(
@@ -123,9 +127,7 @@ gen_covars <- function(n,
   # Compute true R needed if binary
   if (X_type == "binary") {
     r <- pbiserial_to_pearson(p = 0.5, r_pb = r)
-    
-    covmat <- matrix(c(1, r$r,
-                       r$r, 1), nrow = 2)
+    covmat <- matrix(c(1, r$r, r$r, 1), nrow = 2)
     
     dat_covars <- data.frame(
       MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
@@ -136,8 +138,7 @@ gen_covars <- function(n,
   } else if (X_type == "continuous") {
     
     # MVN
-    covmat <- matrix(c(1, r,
-                       r, 1), nrow = 2)
+    covmat <- matrix(c(1, r, r, 1), nrow = 2)
     
     dat_covars <- data.frame(
       MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
@@ -147,14 +148,14 @@ gen_covars <- function(n,
   } else if (X_type == "ordcat") {
     
     # Ordered categorical
-    Z <- rnorm(n = n, mean = 0, sd = 1)
+    Z <- stats::rnorm(n = n, mean = 0, sd = 1)
     
     # Baseline probabilities
     base_probs <- c(0.5, 0.25, 0.25)
-    break_points <- c(-Inf, qlogis(cumsum(base_probs)))
+    break_points <- c(-Inf, stats::qlogis(cumsum(base_probs)))
     
     # Add shift, covar effect of 1
-    X_latent <- 1 * Z + rlogis(n = n, location = 0, scale = 1)
+    X_latent <- 1 * Z + stats::rlogis(n = n, location = 0, scale = 1)
     X <- cut(X_latent, breaks = break_points, ordered_result = T)
     dat_covars <- cbind.data.frame(X, X_latent, Z)
     
@@ -204,7 +205,7 @@ gen_cmprsk_times <- function(n,
   
   # Get model matrix 
   options(contrasts = rep("contr.treatment", 2)) 
-  mod_mat <- model.matrix(~ X + Z, dat = dat)
+  mod_mat <- stats::model.matrix(~ X + Z, dat = dat)
   
   # Compute rates
   lam1 <- ev1_pars$h1_0 * exp(mod_mat %*% c(0, ev1_pars$b1, ev1_pars$gamm1))
@@ -268,9 +269,9 @@ invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
   
   # Generate uniform values, and find roots
   samps <- dat_roots %>%
-    rowwise() %>%
-    mutate(
-      t_tilde = uniroot(
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      t_tilde = stats::uniroot(
         cdf_U,
         interval = c(.Machine$double.eps,
                      1000),
@@ -282,7 +283,7 @@ invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
         lam2 = lam2
       )$`root`
     ) %>%
-    pull(t_tilde)
+    dplyr::pull(t_tilde)
   
   return(samps)
 }
@@ -317,6 +318,8 @@ rweibull_KM <- function(n, alph, lam) {
 #' 
 #' @noRd
 induce_missings <- function(n, dat, p, mech, eta1) {
+  
+  X <- miss_ind <- NULL
 
   if (is.null(mech) | is.null(p)) {
     pr <- 0

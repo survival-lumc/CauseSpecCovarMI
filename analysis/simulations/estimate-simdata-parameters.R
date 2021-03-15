@@ -7,7 +7,7 @@ library(CauseSpecCovarMI)
 
 # Read-in
 dat_mds <- fst::read_fst(path = "analysis/data/dat-mds_admin-cens.fst") %>% 
-  setDT()
+  data.table::setDT()
 
 
 # Relapse -----------------------------------------------------------------

@@ -21,7 +21,9 @@ extract_rhs_varnames <- function(form, dat) {
   return(rhs_varnames)
 }
 
-
+#' @export
+#' 
+#' @noRd
 choose_standard_refpat <- function(col,
                                    contin_action = c("median", "mean"),
                                    categ_action = c("most_common", "reference")) {

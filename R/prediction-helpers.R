@@ -153,6 +153,10 @@ get_state_probs <- function(obj, # needs to be baseline (covars 0)
                             combo,
                             cox_long) {
   
+  # For checks
+  trans <- Haz <- `1` <- `2` <- H_REL <- H_NRM <- haz_REL <- haz_NRM <- NULL
+  hazsum <- time <- pstate1 <- pstate2 <- pstate3 <- EFS_min1
+  
   # Read in baseline cumulative hazard
   df_baseHaz <- obj$Haz
   

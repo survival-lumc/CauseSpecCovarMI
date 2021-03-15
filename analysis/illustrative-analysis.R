@@ -36,15 +36,15 @@ dat_mds[, ':=' (
 )]
 
 dat_mds[, ':=' (
-  H1 = nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev1),
-  H2 = nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev2)
+  H1 = CauseSpecCovarMI::nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev1),
+  H2 = CauseSpecCovarMI::nelsaalen_timefixed(dat = data.frame(.SD), timevar = ci_allo1, statusvar = ev2)
 )]
 
 # Which vars actually have some data missing? (no binary vars)
 var_names_miss <- colnames(dat_mds)[sapply(dat_mds, anyNA)]
 
 # Set methods accordingly
-meths <- set_mi_methods(
+meths <- CauseSpecCovarMI::set_mi_methods(
   dat = dat_mds,
   var_names_miss = var_names_miss, 
   imp_type = "mice",
@@ -95,7 +95,7 @@ imps_mice <- mice::parlmice(
 
 
 # Change coding of polr and polyreg, exclude the prev vars
-meths <- set_mi_methods(
+meths <- CauseSpecCovarMI::set_mi_methods(
   dat = dat_mds,
   var_names_miss = var_names_miss, 
   imp_type = "smcfcs",
@@ -239,7 +239,7 @@ rm(dat_expand_mds)
 
 # Choose patients to predict
 ref_pat <- dat_mds[, lapply(.SD, function(col) {
-  choose_standard_refpat(col, "median", "reference") 
+  CauseSpecCovarMI::choose_standard_refpat(col, "median", "reference") 
 }), .SD = predictors]
 
 # Make other ref_pats - for excess blasts and sAML
@@ -252,9 +252,9 @@ ref_pat_saml[1, mdsclass := "sAML"]
 #newpat <- make_mstate_refpat(ref_pat, tmat, predictors) 
 
 ref_pats <- list(
-  "MDS without excess blasts" = make_mstate_refpat(ref_pat, tmat, predictors),
-  "MDS with excess blasts" = make_mstate_refpat(ref_pat_excess, tmat, predictors),
-  "sAML" = make_mstate_refpat(ref_pat_saml, tmat, predictors)
+  "MDS without excess blasts" = CauseSpecCovarMI::make_mstate_refpat(ref_pat, tmat, predictors),
+  "MDS with excess blasts" = CauseSpecCovarMI::make_mstate_refpat(ref_pat_excess, tmat, predictors),
+  "sAML" = CauseSpecCovarMI::make_mstate_refpat(ref_pat_saml, tmat, predictors)
 )
 
 rm(ref_pat, ref_pat_excess, ref_pat_saml)
@@ -264,14 +264,14 @@ rm(ref_pat, ref_pat_excess, ref_pat_saml)
 preds_list_mice <- pbapply::pblapply(impdats_mice, function(impdat) {
   
   # Run model
-  mod <- run_mds_model(
+  mod <- CauseSpecCovarMI::run_mds_model(
     form = form_mds_mstate,
     tmat = tmat,
     dat = impdat
   )
   
   # Predict
-  preds <- predict_mds_model(
+  preds <- CauseSpecCovarMI::predict_mds_model(
     mod = mod, 
     ref_pats = ref_pats,
     horizon = 5, 
@@ -284,14 +284,14 @@ preds_list_mice <- pbapply::pblapply(impdats_mice, function(impdat) {
 preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs, function(impdat) {
   
   # Run model
-  mod <- run_mds_model(
+  mod <- CauseSpecCovarMI::run_mds_model(
     form = form_mds_mstate,
     tmat = tmat,
     dat = impdat
   )
   
   # Predict
-  preds <- predict_mds_model(
+  preds <- CauseSpecCovarMI::predict_mds_model(
     mod, 
     ref_pats = ref_pats,
     horizon = 5, 
@@ -302,11 +302,11 @@ preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs, function(impdat) {
 })
 
 # Pool both
-preds_mice <- preds_list_mice %>% pool_morisot(by_vars = c("state", "ref_pat"))
-preds_smcfcs <- preds_list_smcfcs %>% pool_morisot(by_vars = c("state", "ref_pat"))
+preds_mice <- preds_list_mice %>% CauseSpecCovarMI::pool_morisot(by_vars = c("state", "ref_pat"))
+preds_smcfcs <- preds_list_smcfcs %>% CauseSpecCovarMI::pool_morisot(by_vars = c("state", "ref_pat"))
 
 # Make predictions for CCA
-preds_CCA <- predict_mds_model(
+preds_CCA <- CauseSpecCovarMI::predict_mds_model(
   mod = run_mds_model(form_mds_mstate, tmat, dat_mds), 
   ref_pats = ref_pats,
   horizon = 5, 
@@ -316,8 +316,8 @@ preds_CCA <- predict_mds_model(
 # Add CI on invcloglog also for CCA
 preds_CCA[, var_delta := se^2 / (log(1 - prob) * (1 - prob))^2]
 preds_CCA[, ':=' (
-  CI_low = inv_cloglog(cloglog(prob) - qnorm(0.975) * sqrt(var_delta)),
-  CI_upp = inv_cloglog(cloglog(prob) + qnorm(0.975) * sqrt(var_delta)),
+  CI_low = CauseSpecCovarMI::inv_cloglog(cloglog(prob) - qnorm(0.975) * sqrt(var_delta)),
+  CI_upp = CauseSpecCovarMI::inv_cloglog(cloglog(prob) + qnorm(0.975) * sqrt(var_delta)),
   p_pooled = prob # Just to bind rows later
 )]
 
