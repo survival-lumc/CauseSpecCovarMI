@@ -44,7 +44,7 @@ full_factorial <- expand.grid(
   unique() %>% 
 
   # Pick out the pilot scenarios
-  .[, pilot := fcase(
+  .[, pilot := data.table::fcase(
     beta1 == 0.5, 0,
     n == 500, 0,
     rho == 0.1, 0,

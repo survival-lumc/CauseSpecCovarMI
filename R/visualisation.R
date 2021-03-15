@@ -68,7 +68,7 @@ ggplot_lolly <- function(dat,
   if (!is.null(mcarlo_se)) {
     
     mcarlo_se <- rlang::sym(mcarlo_se)
-    crit <- qnorm((1 - conf.int) / 2, lower.tail = FALSE)
+    crit <- stats::qnorm((1 - conf.int) / 2, lower.tail = FALSE)
     
     p <- p + 
       ggplot2::geom_point(ggplot2::aes(x = !!method_var,
@@ -90,7 +90,7 @@ ggplot_lolly <- function(dat,
       stop("Facets should be of length 1 or 2. If you want to include another var,
            use an interaction as one of the facets e.g. X * Z")
     if (length(facets) == 2) {
-      facets <- as.formula(paste(facets, collapse = " ~ ")) 
+      facets <- stats::as.formula(paste(facets, collapse = " ~ ")) 
     } else facets <- as.formula(paste0(". ~ ", facets))
     
     p <- p + ggplot2::facet_grid(facets, scales = scales) 
@@ -231,7 +231,6 @@ ggplot_nlp <- function(dat,
                        height_steps = NULL,
                        step_labels = NULL) {
   
-  
   # Coerce input to data.table (creates a copy)
   dat <- data.table::as.data.table(dat)
   
@@ -243,60 +242,68 @@ ggplot_nlp <- function(dat,
   } else true <- rlang::sym(true)
   
   # Create labels, if step_labels is NULL
-  bounds_obj <- get_nlp_steps(dat = dat, 
-                              estim = estim, 
-                              step_factors, 
-                              step_labels = step_labels, 
-                              top_step = top_step,
-                              height_betw_steps = height_betw_steps,
-                              height_steps = height_steps)
+  bounds_obj <- get_nlp_steps(
+    dat = dat, 
+    estim = estim, 
+    step_factors, 
+    step_labels = step_labels, 
+    top_step = top_step,
+    height_betw_steps = height_betw_steps,
+    height_steps = height_steps
+  )
   
   # Prepare data for plotting
-  dat_obj <- prep_nlp_data(dat = dat,
-                           step_factors = step_factors,
-                           bounds_obj = bounds_obj)
+  dat_obj <- prep_nlp_data(
+    dat = dat,
+    step_factors = step_factors,
+    bounds_obj = bounds_obj
+  )
   
   # Prepare gridline breaks based on steps and scenario
   levels_lowest_step <- droplevels(dat[[step_factors[bounds_obj$num_steps]]])
   gridline_by <- length(levels(levels_lowest_step))
-  gridline_seq <- seq(from = gridline_by, 
-                      to = max(dat_obj$df_main$scenario), 
-                      by = gridline_by)
+  gridline_seq <- seq(
+    from = gridline_by, 
+    to = max(dat_obj$df_main$scenario), 
+    by = gridline_by
+  )
   
   
   # Begin plot
   p <- dat_obj$df_main %>% 
-    ggplot2::ggplot(ggplot2::aes(x = scenario + 0.5, y = !!estim)) +
+    ggplot2::ggplot(ggplot2::aes(x = .data$scenario + 0.5, y = !!estim)) +
     
     # Add step labels
     ggplot2::geom_text(
       data = dat_obj$df_steps,
-      ggplot2::aes(x = lab_xpos, y = labpos, label = lab),
+      ggplot2::aes(x = .data$lab_xpos, y = .data$labpos, label = .data$lab),
       size = text_size,
       na.rm = T, hjust = 0
     ) +
     
     # Add points
     ggplot2::geom_point(
-      ggplot2::aes(shape = !!method_var,  col = as.factor(scenario)),
+      ggplot2::aes(shape = !!method_var,  col = as.factor(.data$scenario)),
       position = ggplot2::position_dodge(point_dodge), 
       size = pointsize#, alpha = 0.8
     ) +
     
     # Add dashed line for true
     ggplot2::geom_step(data = dat_obj$df_steps, 
-                       ggplot2::aes(x = scenario, y = !!true), 
+                       ggplot2::aes(x = .data$scenario, y = !!true), 
                        linetype = "dashed") +
     
     # Add the vertical lines
     ggplot2::geom_linerange(
-      ggplot2::aes(ymin = !!true, 
-                   ymax = !!estim,
-                   xmin = scenario, 
-                   xmax = scenario,
-                   col = as.factor(scenario),
-                   linetype = !!method_var, 
-                   group = !!method_var),
+      ggplot2::aes(
+        ymin = !!true, 
+        ymax = !!estim,
+        xmin = .data$scenario, 
+        xmax = .data$scenario,
+        col = as.factor(.data$scenario),
+        linetype = !!method_var, 
+        group = !!method_var
+      ),
       position =  ggplot2::position_dodge(point_dodge),
       size = pointsize * .25
     ) +
@@ -304,7 +311,7 @@ ggplot_nlp <- function(dat,
     # There are the step functions
     ggplot2::geom_step(
       data = dat_obj$df_steps,
-      ggplot2::aes(x = scenario, y = scaled_vals, group = step_ID)
+      ggplot2::aes(x = .data$scenario, y = .data$scaled_vals, group = step_ID)
     ) +
     ggplot2::guides(colour = F) +
     ggplot2::theme(legend.position = "bottom", 

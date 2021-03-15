@@ -33,6 +33,8 @@ quiet <- function(expr) {
 #' @noRd
 record_warning <- function(expr) {
   
+  warn <- NULL
+  
   value <- withCallingHandlers(expr, warning = function(w) {
     warn <<- w
     invokeRestart("muffleWarning")
@@ -54,6 +56,8 @@ record_warning <- function(expr) {
 add_scen_details <- function(scenario,
                              seed,
                              rep_num) {
+  
+  name <- NULL
   
   scen_dat <- data.frame(t(scenario)) %>% 
     tibble::rownames_to_column(var = "name") %>% 
@@ -146,7 +150,7 @@ rmse_mcse <- function(estimates, true, K) {
   
   # Calculate elements of rmse mcse
   t_bar <- mean(estimates) 
-  var_t <- var(estimates) 
+  var_t <- stats::var(estimates) 
   t_bar_j <- (1 / (K - 1)) * (K * t_bar - estimates) 
   bias_j_sq <- (t_bar_j - true_param)^2 
   s_sq_t_j <- (1 / (K - 2)) * ((K - 1) * var_t - (K / (K - 1)) * (estimates - t_bar)^2) 
@@ -163,6 +167,9 @@ rmse_mcse <- function(estimates, true, K) {
 
 # Add these functions to .R
 extract_scen_num <- function(dat) {
+  
+  scen_summary <- NULL
+  
   dat[, ':=' (
     scen_num = gsub(
       pattern = ".*(scen_num=)|(-rep).*$", 
@@ -181,6 +188,10 @@ extract_scen_num <- function(dat) {
 
 
 format_scen_summary <- function(dat) {
+  
+  # For checks
+  analy <- prop_miss <- haz_shape <- beta1 <- eta1 <- NULL
+  scen_summary <- miss_mech <- X_level <- rho <- n <- NULL
   
   # Labels for variables in the "scen_summary" column
   labs_scens <- c(

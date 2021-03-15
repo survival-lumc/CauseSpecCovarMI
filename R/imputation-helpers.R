@@ -56,11 +56,11 @@ set_mi_methods <- function(dat,
   
   # Set up methods vector
   n_vars_miss <- length(var_names_miss)
-  meths_miss <- setNames(character(n_vars_miss), var_names_miss)
+  meths_miss <- stats::setNames(character(n_vars_miss), var_names_miss)
   
   # Get indicators:
-  ordered_ind <- sapply(dat[, ..var_names_miss], is.ordered)
-  contin_ind <- sapply(dat[, ..var_names_miss], is.numeric)
+  ordered_ind <- sapply(dat[, .SD, .SDcols = var_names_miss], is.ordered)
+  contin_ind <- sapply(dat[, .SD, .SDcols = var_names_miss], is.numeric)
   
   unordered_ind <- sapply(
     dat[, ..var_names_miss], 

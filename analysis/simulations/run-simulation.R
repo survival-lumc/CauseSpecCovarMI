@@ -16,7 +16,7 @@ scen <- as.numeric(args[1])
 repl <- as.numeric(args[2])
 
 # Run one replication of one scenario
-one_simulation(
+CauseSpecCovarMI::one_simulation(
   scenario = scenarios[scenarios$scen_num == scen, ],
   rep_num = repl
 )
