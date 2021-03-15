@@ -208,14 +208,13 @@ data.table::setnames(
 )
 
 
-library(kableExtra)
 caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
 
 # Make table
 final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
   "Variable", "Description", "Levels", "\\% Missing"
 )] %>% 
-  kbl(
+  kableExtra::kbl(
     format = "latex",
     booktabs = "T", 
     position = "h",
@@ -224,8 +223,8 @@ final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")),
     escape = F, 
     digits = 2
   ) %>% 
-  kable_styling(font_size = 7) %>% #full_width = T) %>% 
-  column_spec(2, width = "20em") %>% 
-  collapse_rows(2, latex_hline = "none", valign = "top") %>%
-  collapse_rows(1, latex_hline = "none", valign = "top") %>% 
-  collapse_rows(4, latex_hline = "none", valign = "top")
+  kableExtra::kable_styling(font_size = 7) %>% #full_width = T) %>% 
+  kableExtra::column_spec(2, width = "20em") %>% 
+  kableExtra::collapse_rows(2, latex_hline = "none", valign = "top") %>%
+  kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(4, latex_hline = "none", valign = "top")

@@ -181,7 +181,7 @@ test_forest[order(levels_lab), colour_row := rep(
   c("white", "gray"), length.out = .N
 ), by = .(method, state)]
 
-theme_set(theme_void(base_size = 14))
+ggplot2::theme_set(ggplot2::theme_void(base_size = 14))
 
 # Make the table for the left side
 dat_table <- test_forest[, c("levels_lab", "count", "colour_row",
@@ -430,6 +430,6 @@ forests <- plot_table +
 forests
 
 # Change to eps
-ggsave(filename = "analysis/figures/forest_rel.png", plot = forests, width = 10, height = 11)
+ggsave(filename = "analysis/figures/forest_rel.eps", plot = forests, width = 10, height = 11)
 
 # Add NRM plot later

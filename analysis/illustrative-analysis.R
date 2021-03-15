@@ -216,7 +216,7 @@ dat_mds[, ':=' (ev1 = ci_s_allo1 == 1, ev2 = ci_s_allo1 == 2)]
 dat_msp_mds <- mstate::msprep(
   time = c(NA, "ci_allo1", "ci_allo1"),
   status = c(NA, "ev1", "ev2"), 
-  data = as.data.frame(dat_mds),
+  data = data.frame(dat_mds),
   trans = tmat,
   keep = predictors
 ) 
@@ -228,7 +228,10 @@ dat_expand_mds <- mstate::expand.covs(
 
 # RHS formula mstate - keep transition-specific coefs
 form_mds_mstate <- reformulate(
-  termlabels = colnames(dat_expand_mds)[grep(x = colnames(dat_expand_mds), pattern = "\\.[1-9]+$")],
+  termlabels = c(
+    colnames(dat_expand_mds)[grep(x = colnames(dat_expand_mds), pattern = "\\.[1-9]+$")],
+    "strata(trans)"
+  ),
   response = "Surv(time, status)"
 )
 
@@ -256,11 +259,9 @@ ref_pats <- list(
 
 rm(ref_pat, ref_pat_excess, ref_pat_saml)
 
-impdat <- impdats_mice[[2]]
-
 
 # Predict for mice and smcfcs - do for all later
-preds_list_mice <- pbapply::pblapply(impdats_mice[1:2], function(impdat) {
+preds_list_mice <- pbapply::pblapply(impdats_mice, function(impdat) {
   
   # Run model
   mod <- run_mds_model(
@@ -280,7 +281,7 @@ preds_list_mice <- pbapply::pblapply(impdats_mice[1:2], function(impdat) {
   return(preds)
 })
 
-preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs[1:3], function(impdat) {
+preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs, function(impdat) {
   
   # Run model
   mod <- run_mds_model(
@@ -322,7 +323,7 @@ preds_CCA[, ':=' (
 
 # Bind results together
 preds <- rbind(preds_CCA, preds_mice, preds_smcfcs, fill = TRUE, idcol = "method")
-preds[, method := factor(method, levels = 1:3, labels = c("CC", "CH12", "smcfcs"))]
+preds[, method := factor(method, levels = 1:3, labels = c("$CC$", "$CH_{12}$", "smcfcs"))]
 preds[, est := paste0(
   round(p_pooled * 100, 1), " [",
   round(CI_low * 100, 1), "; ",
@@ -330,16 +331,28 @@ preds[, est := paste0(
 )]
 
 # Present results for REL and NRM
-preds_table <- data.table::dcast(preds[state != 1], formula = state + ref_pat ~ method, value.var = "est")
+preds_table <- data.table::dcast(
+  preds[state != 1], 
+  formula = state + ref_pat ~ method, value.var = "est"
+)
 
 preds_table[, ':=' (
-  "State/patient" = factor(ref_pat, levels = c("MDS without excess blasts", "MDS with excess blasts", "sAML")),
+  "MDS class" = factor(ref_pat, levels = c("MDS without excess blasts", "MDS with excess blasts", "sAML")),
   state = factor(state, levels = c(2, 3), labels = c("REL", "NRM"))
 )]
-data.table::setorder(preds_table, state, "State/patient")
+data.table::setorder(preds_table, state, `MDS class`)
+
+caption <- "Predicted cumulative incidence (\\%) at 5-years for reference patients with different MDS classes. 95\\% confidence intervals were constructed based on a complementary log-log transformation."
 
 # library(kableExtra) add to suggests
-kbl(preds_table[, c("State/patient", "CC", "CH12", "smcfcs")], booktabs = T) %>% 
-  kable_styling(full_width = T) %>% 
-  pack_rows(index = c("REL" = 3, "NRM" = 3))
-
+kableExtra::kbl(
+  x = preds_table[, c("MDS class", "$CC$", "$CH_{12}$", "smcfcs")], 
+  format = "latex",
+  booktabs = T,
+  position = "ht",
+  caption = caption,
+  linesep = "",
+  escape = F,
+  digits = 1
+) %>% 
+  kableExtra::pack_rows(index = c("REL" = 3, "NRM" = 3))
