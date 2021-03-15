@@ -115,7 +115,8 @@ run_mds_model <- function(form,
   )
   
   # Run do.call due to non-standard formula eval
-  mod <- do.call(survival::coxph, list("formula" = form, "data" = dat_expanded))
+  #mod <- do.call(survival::coxph, list("formula" = form, "data" = dat_expanded))
+  mod <- survival::coxph(formula = form, data = dat_expanded, model = TRUE)
   
   return(mod)
 }
