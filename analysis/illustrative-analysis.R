@@ -227,18 +227,12 @@ dat_expand_mds <- mstate::expand.covs(
 )
 
 # RHS formula mstate - keep transition-specific coefs
-rhs_mds_mstate <- paste(
-  colnames(dat_expand_mds)[grep(x = colnames(dat_expand_mds), pattern = "\\.[1-9]+$")],
-  collapse = " + "
+form_mds_mstate <- reformulate(
+  termlabels = colnames(dat_expand_mds)[grep(x = colnames(dat_expand_mds), pattern = "\\.[1-9]+$")],
+  response = "Surv(time, status)"
 )
 
-# Final formula
-form_mds_mstate <- as.formula(
-  paste0("Surv(time, status) ~ ", rhs_mds_mstate, " + strata(trans)")
-)
-
-# Remove redundant objects
-rm(rhs_mds_mstate, dat_msp_mds)
+rm(dat_expand_mds)
 
 # Choose patients to predict
 ref_pat <- dat_mds[, lapply(.SD, function(col) {
@@ -252,7 +246,7 @@ ref_pat_excess[1, mdsclass := "MDS with excess blasts"]
 ref_pat_saml <- data.table::copy(ref_pat)
 ref_pat_saml[1, mdsclass := "sAML"]
 
-newpat <- make_mstate_refpat(ref_pat, tmat, predictors) 
+#newpat <- make_mstate_refpat(ref_pat, tmat, predictors) 
 
 ref_pats <- list(
   "MDS without excess blasts" = make_mstate_refpat(ref_pat, tmat, predictors),
@@ -260,8 +254,13 @@ ref_pats <- list(
   "sAML" = make_mstate_refpat(ref_pat_saml, tmat, predictors)
 )
 
+rm(ref_pat, ref_pat_excess, ref_pat_saml)
+
+impdat <- impdats_mice[[2]]
+
+
 # Predict for mice and smcfcs - do for all later
-preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
+preds_list_mice <- pbapply::pblapply(impdats_mice[1:2], function(impdat) {
   
   # Run model
   mod <- run_mds_model(
@@ -272,7 +271,7 @@ preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
   
   # Predict
   preds <- predict_mds_model(
-    mod, 
+    mod = mod, 
     ref_pats = ref_pats,
     horizon = 5, 
     tmat = tmat 
@@ -281,7 +280,7 @@ preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
   return(preds)
 })
 
-preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs[1:5], function(impdat) {
+preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs[1:3], function(impdat) {
   
   # Run model
   mod <- run_mds_model(
