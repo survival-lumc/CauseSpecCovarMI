@@ -1,8 +1,10 @@
 # Multiple imputation for cause-specific Cox models: assessing methods for estimation and prediction
 
-(To be submitted to Statistical Methods in Medical Research, SMMR)
+(To be submitted to Statistical Methods in Medical Research, SMMR) - link to paper/pre-print
 
-- Abstract here with link to paper/pre-print
+## Abstract
+
+In studies considering competing time-to-event outcomes, interest often lies in both estimating the effects of baseline covariates on the cause-specific hazard, and predicting cumulative incidence functions. When missing values occur in these baseline covariates, they may be partly discarded as part of a complete case analysis (CCA) or multiply imputed. In the latter case, the imputations may be performed either compatibly with a cause-specific Cox model (SMC-FCS), or approximately so (MICE). In a large simulation study, of which part is an independent replication of earlier work, we assessed the performance of these three different methods in terms of estimating cause-specific regression coefficients and cumulative incidence functions. Concerning regression coefficients, results provide further support for use of SMC-FCS over MICE, particularly when covariate effects were large and the baseline hazards of the competing events were substantially different. CCA also showed adequate performance in settings where missingness was not outcome-dependent. Differences in performance with regard to cumulative incidence prediction were less clear-cut, as also evidenced in the illustrative analysis of competing outcomes following a hematopoietic stem cell transplantation. The findings are discussed alongside recommendations for practising statisticians.
 
 ## Supplementary material
 
