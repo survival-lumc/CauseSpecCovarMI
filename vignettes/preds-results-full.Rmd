@@ -42,13 +42,32 @@ preds_results <- fst::read_fst("../data/sims_preds_summary.fst") %>%
   data.table::setDT()
 
 preds_results <- preds_results[n != 500 & state != "EFS" &  
-                                 m %in% c(0, 50)]
+                                 m %in% c(0, 50) & 
+                                 `combo-X_Z` %in% c(
+                                   "mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD",
+                                   "0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD"
+                                   )]
+
+# Get factor order right
+preds_results[, `combo-X_Z` := factor(
+  `combo-X_Z`,
+  levels = c(
+    "mean_X-Z_mean",
+    "0_X-Z_mean", 
+    "-1SD_X-Z_-1SD",
+    "0_X-Z_-1SD", 
+    "+1SD_X-Z_+1SD",
+    "1_X-Z_+1SD"
+  )
+)]
 
 patient_labs <- ggplot2::as_labeller(c(
   "+1SD_X-Z_+1SD" = "High risk", 
   "-1SD_X-Z_-1SD" = "Low risk",
+  "mean_X-Z_mean" = "Baseline",
   "1_X-Z_+1SD" = "High risk",
-  "0_X-Z_-1SD" = "Low risk"
+  "0_X-Z_-1SD" = "Low risk",
+  "0_X-Z_mean" = "Baseline"
 ))
 
 # Prep labeller
@@ -64,14 +83,14 @@ We show results at horizon of 5 years after baseline, restricting to high amount
 mcse_bias <- preds_results[beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"][["bias_mcse"]]
 
 mcse_rmse <- preds_results[beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"][["rmse_mcse"]]
 ```
@@ -83,12 +102,12 @@ mcse_rmse <- preds_results[beta1 != "0" &
 
 ### 1.1.1 Bias
 
-```{r mcar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mcar_bias_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"
 ] %>% 
@@ -110,7 +129,7 @@ preds_results[
     top_step = -0.05
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -124,12 +143,12 @@ preds_results[
 
 ### 1.1.2 RMSE
 
-```{r mcar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mcar_rmse_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous"& 
     prop_miss == "50%"
 ] %>% 
@@ -151,7 +170,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -167,12 +186,12 @@ preds_results[
 
 ### 1.2.1 Bias
 
-```{r mar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mar_bias_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"
 ] %>% 
@@ -195,7 +214,7 @@ preds_results[
     top_step = -0.025
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -209,12 +228,12 @@ preds_results[
 
 ### 1.2.2 RMSE
 
-```{r mar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mar_rmse_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous"& 
     prop_miss == "50%"
 ] %>% 
@@ -237,7 +256,7 @@ preds_results[
     top_step = -0.004
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -254,12 +273,12 @@ preds_results[
 
 ### 1.3.1 Bias
 
-```{r mart_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mart_bias_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR_GEN" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"
 ] %>% 
@@ -282,7 +301,7 @@ preds_results[
     top_step = -0.2
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -296,12 +315,12 @@ preds_results[
 
 ### 1.3.2 RMSE
 
-```{r mart_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mart_rmse_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR_GEN" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous"& 
     prop_miss == "50%"
 ] %>% 
@@ -324,7 +343,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -341,12 +360,12 @@ preds_results[
 
 ### 1.4.1 Bias
 
-```{r mnar_bias_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mnar_bias_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MNAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous" & 
     prop_miss == "50%"
 ] %>% 
@@ -369,7 +388,7 @@ preds_results[
     top_step = -0.1
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -383,12 +402,12 @@ preds_results[
 
 ### 1.4.2 RMSE
 
-```{r mnar_rmse_contin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mnar_rmse_contin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MNAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD") & 
     X_level == "continuous"& 
     prop_miss == "50%"
 ] %>% 
@@ -411,7 +430,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -429,14 +448,14 @@ preds_results[
 mcse_bias_bin <- preds_results[beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"][["bias_mcse"]]
 
 mcse_rmse_bin <- preds_results[beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"][["rmse_mcse"]]
 ```
@@ -448,12 +467,12 @@ mcse_rmse_bin <- preds_results[beta1 != "0" &
 
 ### 2.1.1 Bias
 
-```{r mcar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mcar_bias_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"
 ] %>% 
@@ -475,7 +494,7 @@ preds_results[
     top_step = -0.05
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -489,12 +508,12 @@ preds_results[
 
 ### 2.1.2 RMSE
 
-```{r mcar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mcar_rmse_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MCAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary"& 
     prop_miss == "50%"
 ] %>% 
@@ -516,7 +535,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -533,12 +552,12 @@ preds_results[
 
 ### 2.2.1 Bias
 
-```{r mar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mar_bias_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"
 ] %>% 
@@ -561,7 +580,7 @@ preds_results[
     top_step = -0.025
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -575,12 +594,12 @@ preds_results[
 
 ### 2.2.2 RMSE
 
-```{r mar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mar_rmse_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary"& 
     prop_miss == "50%"
 ] %>% 
@@ -603,7 +622,7 @@ preds_results[
     top_step = -0.004
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -620,12 +639,12 @@ preds_results[
 
 ### 2.3.1 Bias
 
-```{r mart_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mart_bias_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR_GEN" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"
 ] %>% 
@@ -648,7 +667,7 @@ preds_results[
     top_step = -0.2
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -662,12 +681,12 @@ preds_results[
 
 ### 2.3.2 RMSE
 
-```{r mart_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mart_rmse_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MAR_GEN" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary"& 
     prop_miss == "50%"
 ] %>% 
@@ -690,7 +709,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -707,12 +726,12 @@ preds_results[
 
 ### 2.4.1 Bias
 
-```{r mnar_bias_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mnar_bias_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MNAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary" & 
     prop_miss == "50%"
 ] %>% 
@@ -735,7 +754,7 @@ preds_results[
     top_step = -0.1
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
@@ -749,12 +768,12 @@ preds_results[
 
 ### 2.4.2 RMSE
 
-```{r mnar_rmse_bin, fig.height=8, fig.width=11,fig.align='left'}
+```{r mnar_rmse_bin, fig.height=10, fig.width=11,fig.align='left'}
 preds_results[
     beta1 != "0" &
     miss_mech == "MNAR" & 
     times == "5 years" &  
-    `combo-X_Z` %in% c("0_X-Z_-1SD", "1_X-Z_+1SD") & 
+    `combo-X_Z` %in% c("0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD") & 
     X_level == "binary"& 
     prop_miss == "50%"
 ] %>% 
@@ -777,7 +796,7 @@ preds_results[
     top_step = -0.04
   ) +
   facet_wrap(
-    . ~ `combo-X_Z`, nrow = 2, ncol = 1,
+    . ~ `combo-X_Z`, nrow = 3, ncol = 1,
     labeller = labeller(`combo-X_Z` = patient_labs)
   ) +
   ggplot2::guides(
