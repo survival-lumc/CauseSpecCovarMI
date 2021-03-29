@@ -40,18 +40,18 @@ set.seed(1984)
 Please refer to the main paper for introduction of the notation. Given standard normal $Z$ and a standard normal or binary $X$, event times were generated using the following latent parametrisation:
 
 \begin{align*}
-	T_1 &\sim \text{Weibull}(\alpha_1, \lambda_1 = \lambda_{10}e^{\beta_1 X + \gamma_1 Z}), \\
-	T_2 &\sim \text{Weibull}(\alpha_2, \lambda_2 = \lambda_{20}e^{\beta_2 X + \gamma_2 Z}), \\
+	T_1 &\sim \text{Weibull}(\kappa_1, \lambda_1 = \lambda_{10}e^{\beta_1 X + \gamma_1 Z}), \\
+	T_2 &\sim \text{Weibull}(\kappa_2, \lambda_2 = \lambda_{20}e^{\beta_2 X + \gamma_2 Z}), \\
 	C &\sim \text{Exp}(\lambda_C),
 \end{align*}
-where $\text{Weibull}(\cdot)$ is a Weibull distribution with hazard $h(t) = \lambda\alpha t^{\alpha -1}$, with $\alpha$ and $\lambda$ the shape and *rate* parameters respecitively.
+where $\text{Weibull}(\cdot)$ is a Weibull distribution with hazard $h(t) = \lambda\kappa t^{\kappa -1}$, with $\kappa$ and $\lambda$ the shape and *rate* parameters respecitively.
 We varied $\beta_1 = \{0, 0.5, 1\}$, and fixed $\gamma_1 = 1$, $\beta_2 = 0.5$ and $\gamma_2 = 0.5$. The censoring rate was also fixed at $\lambda_C = 0.14$.
 
 Concerning the baseline hazard shapes, there were two parametrisations: 'similar' and 'different':
 
-- Similar, $\{\alpha_1,\lambda_{10},\alpha_2,\lambda_{20}\} = \{0.58,0.19,0.53,0.21\}$
+- Similar, $\{\kappa_1,\lambda_{10},\kappa_2,\lambda_{20}\} = \{0.58,0.19,0.53,0.21\}$
 
-- Different, $\{\alpha_1,\lambda_{10},\alpha_2,\lambda_{20}\} = \{1.5,0.04,0.53,0.21\}$
+- Different, $\{\kappa_1,\lambda_{10},\kappa_2,\lambda_{20}\} = \{1.5,0.04,0.53,0.21\}$
 
 ```{r baseline_coefs, echo=FALSE}
 baseline_evs <- readRDS(
