@@ -17,13 +17,13 @@ navbar:
     articles:
       text: Supplement
       menu:
-      - text: Generation of simulated data
+      - text: Generating simulated data
         href: articles/data-generation.html
       - text: Performance measures
         href: articles/performance-measures.html
-      - text: Regression coefficients
+      - text: "Full results: regression coefficients"
         href: articles/regr-results-full.html
-      - text: Predictions
+      - text: "Full results: predictions"
         href: articles/preds-results-full.html
     github:
       icon: fab fa-github fa-lg
