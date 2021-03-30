@@ -20,7 +20,8 @@ If 0 means no censoring is applied.}
 
 \item{mod_type}{Either "latent", weibull times generated from 
 separate weibull distribution, or "total", times generated from 
-sum of cause-specific hazards (using inverse transform method)}
+sum of cause-specific hazards (using inverse transform method). For educational
+purposes - both methods yield virtually same results.}
 }
 \value{
 Data-frame with missings induced
