@@ -12,7 +12,7 @@
 one_simulation <- function(scenario, # scenario
                            rep_num) { # repetition number
   
-  # Reproducibiliy
+  # Set seed based on scenario and repetition number
   seed <- scenario$seed + rep_num
   set.seed(seed)
   
@@ -20,10 +20,8 @@ one_simulation <- function(scenario, # scenario
   # Data generation section ----
   
 
-  # Extract parameters from AFTs ran on MDS-long term data
-  baseline <- readRDS(
-    "data/mds-shape-rates.rds"
-  )
+  # Read parameters from AFTs ran on MDS-long term data
+  baseline <- readRDS("data/mds-shape-rates.rds")
   
   # Check shape of 1st hazard
   if (scenario$haz_shape == "similar") {
@@ -32,8 +30,8 @@ one_simulation <- function(scenario, # scenario
     
   } else {
     
-    # shape > 1 so increasing hazard -> lower base rate to 0.04
-    # which avoids 10y EFS of zero!
+    # shape > 1 so increasing hazard -> lower base rate to 0.04 
+    # it avoids 10y EFS of zero
     shape_ev1 <- 1.5
     base_rate_ev1 <- 0.04
   }
@@ -71,10 +69,8 @@ one_simulation <- function(scenario, # scenario
   # Run reference and CCA models ---- 
   
   
-  # Reference (full dataset)
-  mod_ref <- setup_mstate(
-    dat %>% dplyr::mutate(X = .data$X_orig)
-  )
+  # Reference model (full dataset)
+  mod_ref <- setup_mstate(dat %>% dplyr::mutate(X = .data$X_orig))
   
   # Complete case analyses
   mod_CCA <- setup_mstate(dat)
@@ -139,24 +135,19 @@ one_simulation <- function(scenario, # scenario
   
   cat("\n Running smcfcs... \n\n")
   
-  # Smcfcs - quiet stops printing
-  imp_smcfcs <- #CauseSpecCovarMI::quiet(
-    
-    # Record number of rej sampling failures, if any
-    record_warning(
-      
-      # Smcfcs starts here
-      smcfcs::smcfcs(
-        originaldata = dat, 
-        smtype = "compet", 
-        smformula = c("Surv(t, eps == 1) ~ X + Z",
-                      "Surv(t, eps == 2) ~ X + Z"), 
-        method = methods, 
-        m = m[length(m)], 
-        numit = iters_MI, 
-        rjlimit = 5000) # 5 times higher than default, avoid rej sampling errors
-    )
-  #)
+  # Smcfcs - 
+  imp_smcfcs <- record_warning(
+    smcfcs::smcfcs(
+      originaldata = dat, 
+      smtype = "compet", 
+      smformula = c("Surv(t, eps == 1) ~ X + Z",
+                    "Surv(t, eps == 2) ~ X + Z"), 
+      method = methods, 
+      m = m[length(m)], 
+      numit = iters_MI, 
+      rjlimit = 5000
+    ) # 5 times higher than default, avoid rej sampling errors
+  )
   
   # Store all complete imputed datasets
   complist <- list(
@@ -176,42 +167,48 @@ one_simulation <- function(scenario, # scenario
   
   cat("\n Pooling estimates... \n\n")
   
-  # Make this into a function?
+  # Bind all estimates
   estimates <- purrr::imap_dfr(
     mods_complist, 
     ~ pool_diffm(.x, n_imp = m, analy = .y)
   ) %>% 
     
-    # Bind Bayes, CCA, ref
+    # Bind CCA, ref
     dplyr::bind_rows(
       summarise_ref_CCA(mod_ref, analy = "ref"),
       summarise_ref_CCA(mod_CCA, analy = "CCA")
     ) %>% 
     
     # Add true values
-    dplyr::mutate(true = dplyr::case_when(
-      stringr::str_detect(var, "X.1") ~ ev1_pars$b1,
-      stringr::str_detect(var, "Z.1") ~ ev1_pars$gamm1,
-      stringr::str_detect(var, "X.2") ~ ev2_pars$b2,
-      stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2
-    )) %>% 
+    dplyr::mutate(
+      true = dplyr::case_when(
+        stringr::str_detect(var, "X.1") ~ ev1_pars$b1,
+        stringr::str_detect(var, "Z.1") ~ ev1_pars$gamm1,
+        stringr::str_detect(var, "X.2") ~ ev2_pars$b2,
+        stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2
+      )
+    ) %>% 
     
     # Add mice warnings and rej sampling errors for smcfcs
     dplyr::mutate(
       warns = dplyr::case_when(
         analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning, "[0-9]+")),
-        analy == "ch12" ~ as.numeric(!(is.null(imp_ch12$loggedEvents))),
+        analy == "ch12" ~ as.numeric(!is.null(imp_ch12$loggedEvents)),
         analy == "ch12_int" ~ as.numeric(!(is.null(imp_ch12_int$loggedEvents))),
         analy %in% c("CCA", "ref", "ch1") ~ 0
       ) 
     ) %>% 
     
     # Add scenario summary
-    cbind.data.frame(scen_summary = add_scen_details(
-      scenario, 
-      seed = seed, 
-      rep_num = rep_num
-    ), row.names = NULL, stringsAsFactors = FALSE)
+    cbind.data.frame(
+      scen_summary = add_scen_details(
+        scenario = scenario, 
+        seed = seed, 
+        rep_num = rep_num
+      ), 
+      row.names = NULL, 
+      stringsAsFactors = FALSE
+    )
   
   
   # Prediction part ----
@@ -225,13 +222,15 @@ one_simulation <- function(scenario, # scenario
   # Make predictions for cox models fitted in each imputed dataset 
   preds_list <- purrr::modify_depth(
     mods_complist, .depth = 2,
-    ~ get_preds_grid(
+    ~ {
+      get_preds_grid(
         cox_long = .x,
         grid_obj = covar_grid, 
         times = horiz, 
         ev1_pars = ev1_pars,
         ev2_pars = ev2_pars
-    )
+      )
+    } 
   )
   
   # Make predictions also for ref and CCA
@@ -250,8 +249,6 @@ one_simulation <- function(scenario, # scenario
     ev1_pars = ev1_pars,
     ev2_pars = ev2_pars
   )
-    
-  
   
   
   # Pool predictions
@@ -272,7 +269,9 @@ one_simulation <- function(scenario, # scenario
         scenario, 
         seed = seed, 
         rep_num = rep_num
-      ), row.names = NULL, stringsAsFactors = FALSE
+      ), 
+      row.names = NULL, 
+      stringsAsFactors = FALSE
     )
   
 
@@ -282,12 +281,18 @@ one_simulation <- function(scenario, # scenario
   
   # Save as RDS in analysis/simulation results/predictions
   saveRDS( 
-    estimates, 
-    file = paste0("data/sim-reps_indiv/regr/regr_scen", scenario$scen_num, "_seed", seed, ".rds")
+    object = estimates, 
+    file = paste0(
+      "data/sim-reps_indiv/regr/regr_scen", 
+      scenario$scen_num, "_seed", seed, ".rds"
+    )
   )
   saveRDS(
-    pooled_preds, 
-    file = paste0("data/sim-reps_indiv/preds/preds_scen", scenario$scen_num, "_seed", seed, ".rds")
+    object = pooled_preds, 
+    file = paste0(
+      "data/sim-reps_indiv/preds/preds_scen", 
+      scenario$scen_num, "_seed", seed, ".rds"
+    )
   )
 }
 
