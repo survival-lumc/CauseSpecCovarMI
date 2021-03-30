@@ -128,21 +128,25 @@ prep_nlp_data <- function(dat,
 #' @param method_var Character for column containing method
 #' @param true Character for column containing true data-generating 
 #' estimand value, or a scalar e.g. 0
-#' @param step_factors Vector of step factors for bottom of the NL
+#' @param step_factors Vector of variable names to use as step factors at 
+#' bottom of the NLP.
 #' @param pointsize Size of points
 #' @param point_dodge Measure of horizontal dodge
 #' @param text_size Size of the step labels
-#' @param top_step Position of top step (in scale of data)
+#' @param top_step Position of top step (on scale of data)
 #' @param height_betw_steps Height between NLP step (on scale of data)
 #' @param height_steps Height of the NLP steps themselves (on scale of data)
-#' @param step_labels Optional vector of labels for the step functions.
+#' @param step_labels Optional named vector of labels for the step functions.
 #' Defaults to variable name and the factor labels
 #'
 #' @return A ggplot2 object
 #' @export
 #'
 #' @examples
-#' # Later here
+#' 
+#' sim_results <- CauseSpecCovarMI::regr_results
+#' 
+#' # Plot example code here...
 ggplot_nlp <- function(dat,
                        estim,
                        method_var,
