@@ -77,7 +77,7 @@ scenarios_remaining <- data.table::copy(full_factorial) %>%
     pilot_scenarios$scen_num
   )]
 
-# Set up copy of pilots with n = 500
+# Set up copy of pilots with n = 500 - these are not part of the manuscript!
 n_sim_500 <- 400 # 0.2^2/0.01^2
 pilots_n500 <- data.table::copy(pilot_scenarios) %>% 
   .[, ':=' (
@@ -97,5 +97,5 @@ scenarios_full <- rbind(
 
 # Note we do not report results of n = 500
 
-# Save as .RDS file to load in
-#saveRDS(scenarios_full, file = "data/scenarios.rds")
+# Save as .Rdata to load in 
+#save(scenarios_full, file = "data/scenarios.RData")
