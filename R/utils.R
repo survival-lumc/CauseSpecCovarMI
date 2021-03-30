@@ -188,11 +188,13 @@ preds_CCA_ref <- function(preds,
     
     # Make single state variable
     tidyr::unite("state", .data$state_est, .data$state_true) %>% 
-    dplyr::mutate(state = dplyr::case_when(
-      stringr::str_detect(.data$state, "pstate1_true_pstate1") ~ "1",
-      stringr::str_detect(.data$state, "pstate2_true_pstate2") ~ "2",
-      stringr::str_detect(.data$state, "pstate3_true_pstate3") ~ "3"
-    )) %>% 
+    dplyr::mutate(
+      state = dplyr::case_when(
+        stringr::str_detect(.data$state, "pstate1_true_pstate1") ~ "1",
+        stringr::str_detect(.data$state, "pstate2_true_pstate2") ~ "2",
+        stringr::str_detect(.data$state, "pstate3_true_pstate3") ~ "3"
+      )
+    ) %>% 
     dplyr::filter(!is.na(.data$state)) %>% 
     tidyr::unite("combo-X_Z", .data$X, .data$Z, sep = "_X-Z_") %>% 
     
