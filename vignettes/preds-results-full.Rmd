@@ -40,12 +40,18 @@ set.seed(1984)
 # Read-in summarised results and scenarios
 preds_results <- data.table::setDT(CauseSpecCovarMI::preds_results)
 
-preds_results <- preds_results[n != 500 & state != "EFS" &  
-                                 m %in% c(0, 50) & 
-                                 `combo-X_Z` %in% c(
-                                   "mean_X-Z_mean", "-1SD_X-Z_-1SD", "+1SD_X-Z_+1SD",
-                                   "0_X-Z_mean", "0_X-Z_-1SD", "1_X-Z_+1SD"
-                                   )]
+preds_results <- preds_results[
+  n != 500 & state != "EFS" &  
+    m %in% c(0, 50) & 
+    `combo-X_Z` %in% c(
+      "mean_X-Z_mean", 
+      "-1SD_X-Z_-1SD", 
+      "+1SD_X-Z_+1SD",
+      "0_X-Z_mean", 
+      "0_X-Z_-1SD", 
+      "1_X-Z_+1SD"
+    )
+]
 
 # Get factor order right
 preds_results[, `combo-X_Z` := factor(

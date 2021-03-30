@@ -21,7 +21,7 @@ one_simulation <- function(scenario, # scenario
   
 
   # Read parameters from AFTs ran on MDS-long term data
-  baseline <- readRDS("data/mds-shape-rates.rds")
+  baseline <- CauseSpecCovarMI::mds_shape_rates
   
   # Check shape of 1st hazard
   if (scenario$haz_shape == "similar") {

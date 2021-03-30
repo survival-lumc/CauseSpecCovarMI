@@ -7,7 +7,7 @@
 # Ignore analysis folder, pkgdown files and license
 ^analysis
 ^_pkgdown\.yml$
-^docs$
+^doc
 ^pkgdown$
 ^LICENSE\.md$
 

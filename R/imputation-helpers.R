@@ -52,8 +52,13 @@ get_predictor_mats <- function(dat) {
 
 #' Set methods vector for mice
 #' 
+#' @param dat A dataframe to be imputed
+#' @param var_names_miss Vector of characters names for variables with missing data
+#' @param imp_type Imputation type, either "mice" or "smcfcs"
+#' @param cont_method Method use to impute continuous covariates, default is 
+#' "norm" but can for example change to "pmm"
+#' 
 #' @export
-#' @noRd
 set_mi_methods <- function(dat,
                            var_names_miss,
                            imp_type = "mice",

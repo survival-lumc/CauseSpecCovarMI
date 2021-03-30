@@ -8,13 +8,18 @@
 
 #' Compute Weibull hazard
 #' 
+#' @param alph Shape of Weibull distribution
+#' @param lam Rate of Weibull distribution
+#' @param t Postive scalar or numeric vector, for time
+#' 
+#' @return Weibull hazard(s) at t as scalar or vector
+#' 
 #' @export
-#' @noRd
 haz_weib <- Vectorize(function(alph, lam, t) {
   return(alph * lam * t^(alph - 1))
 })
 
-#' Compute Weibul cumulative hazard 
+#' Compute Weibull cumulative hazard 
 #' 
 #' @noRd
 cumhaz_weib <- Vectorize(function(alph, lam, t) {
@@ -63,7 +68,7 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 }
 
 
-#' @title Compute true cumulative incidence (in simulation study)
+#' Compute true cumulative incidence (in simulation study)
 #' 
 #' Relevant only in context of simulation study when generating based on
 #' two variables X and Z.
@@ -75,7 +80,7 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 #' 
 #' @return True cumulative incidence at given times.
 #' 
-#' @noRd
+#' @export
 get_true_cuminc <- function(ev1_pars, 
                             ev2_pars,
                             combo,
