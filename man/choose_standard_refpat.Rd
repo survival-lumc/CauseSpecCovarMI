@@ -10,6 +10,18 @@ choose_standard_refpat(
   categ_action = c("most_common", "reference")
 )
 }
+\arguments{
+\item{col}{A vector, generally corresponding to a dataframe column}
+
+\item{contin_action}{Character, choosing whether to select mean or median value
+for a continuous variable}
+
+\item{categ_action}{Character, choosing whether to select most common or reference
+factor levels for a categorical variable}
+}
+\value{
+Returns single either numeric or character value for a specific col
+}
 \description{
 Based on either most common or reference factor levels in sample for
 categorical variable, or median/mean for continuous variables.
