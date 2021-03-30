@@ -2,7 +2,6 @@
 ## Support functions for generating data ##
 ##***************************************##
 
-.datatable.aware = TRUE
 
 # Main --------------------------------------------------------------------
 
@@ -72,7 +71,7 @@ generate_dat <- function(n,
   dat <- induce_missings(n, dat_times, p, mech, eta1) %>% 
     
     # Append original (unimputed) covariate
-   dplyr::mutate(X_orig = X, X = X_miss) %>% 
+    dplyr::mutate(X_orig = X, X = X_miss) %>% 
     dplyr::select(-X_miss) %>% # remove redundant variable
     
     # Compute individual event indicators
@@ -95,17 +94,7 @@ generate_dat <- function(n,
     dplyr::arrange(t) 
 
   # Convert to factors if binary
-  if (X_type == "ordcat") {
-    dat <- dat %>% 
-      dplyr::mutate(
-        X = factor(dat$X, levels = 1:3, 
-                   labels = c("low", "interm", "high"),
-                   ordered = T), 
-        X_orig = factor(dat$X_orig, 
-                        labels = c("low", "interm", "high"),
-                        ordered = T)
-      )
-  } else if (X_type == "binary") {
+  if (X_type == "binary") {
     dat <- dat %>% 
       dplyr::mutate(
         X = as.factor(X),
@@ -116,18 +105,14 @@ generate_dat <- function(n,
   return(dat)
 }
 
-gen_covars <- function(n,
-                       X_type,
-                       r) {
+gen_covars <- function(n, X_type, r) {
   
   # Compute true R needed if binary
   if (X_type == "binary") {
     r <- pbiserial_to_pearson(p = 0.5, r_pb = r)
     covmat <- matrix(c(1, r$r, r$r, 1), nrow = 2)
     
-    dat_covars <- data.frame(
-      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
-    ) %>%
+    dat_covars <- data.frame(MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)) %>%
       dplyr::rename_all(~ c("X", "Z")) %>%
       dplyr::mutate(X = ifelse(X <= r$x_cut, 0, 1))
     
@@ -136,12 +121,10 @@ gen_covars <- function(n,
     # MVN
     covmat <- matrix(c(1, r, r, 1), nrow = 2)
     
-    dat_covars <- data.frame(
-      MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)
-    ) %>%
+    dat_covars <- data.frame(MASS::mvrnorm(n = n, mu = c(0, 0), Sigma = covmat)) %>%
       dplyr::rename_all(~ c("X", "Z"))
     
-  } else if (X_type == "ordcat") {
+  } else if (X_type == "ordcat") { # Not relevant anymore
     
     # Ordered categorical
     Z <- stats::rnorm(n = n, mean = 0, sd = 1)
@@ -187,7 +170,8 @@ pbiserial_to_pearson <- function(p, r_pb) {
 #' If 0 means no censoring is applied.
 #' @param mod_type Either "latent", weibull times generated from 
 #' separate weibull distribution, or "total", times generated from 
-#' sum of cause-specific hazards (using inverse transform method)
+#' sum of cause-specific hazards (using inverse transform method). For educational
+#' purposes - both methods yield virtually same results.
 #' 
 #' @return Data-frame with missings induced
 #' 
@@ -218,7 +202,7 @@ gen_cmprsk_times <- function(n,
     
   } else if (mod_type == "total") {
     
-    # This is a mistake - change this!
+    # Use inverse transform sampling
     t <- invtrans_weib(
       n = n, 
       alph1 = ev1_pars$a1, 
@@ -228,9 +212,9 @@ gen_cmprsk_times <- function(n,
     )
     
     # Determine which event occured
-    haz_ev1 <- haz_weib(ev1_pars$a1, lam1, t)
-    haz_ev2 <- haz_weib(ev2_pars$a2, lam2, t)
-    event <- stats::rbinom(n, 1, prob = haz_ev1 / (haz_ev1 + haz_ev2))
+    haz_ev1 <- haz_weib(alph = ev1_pars$a1, lam = lam1, t = t)
+    haz_ev2 <- haz_weib(alph = ev2_pars$a2, lam = lam2, t = t)
+    event <- stats::rbinom(n = n, size = 1, prob = haz_ev1 / (haz_ev1 + haz_ev2))
     eps <- ifelse(event == 1, 1, 2)
   }
   
@@ -265,7 +249,7 @@ invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
   u <- stats::runif(n)
   dat_roots <- cbind.data.frame(u, alph1, lam1, alph2, lam2)
   
-  # Generate uniform values, and find roots
+  # Generate uniform values, and find roots - better to use later rstpm2::vuniroot()
   samps <- dat_roots %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
@@ -370,10 +354,13 @@ logreg_missings <- function(p, eta1, covar) {
     return(mean(pr) - p)  
   }
   
-  eta0 <- stats::uniroot(intercept_solve, 
-                         interval = c(-25, 25), 
-                         extendInt = "yes", 
-                         eta1 = eta1, p = p)$`root` 
+  eta0 <- stats::uniroot(
+    intercept_solve, 
+    interval = c(-25, 25), 
+    extendInt = "yes", 
+    eta1 = eta1, 
+    p = p
+  )$`root` 
   
   # Induce missingness
   pr <- stats::plogis(eta0 + eta1 * covar)
@@ -399,8 +386,10 @@ nelsaalen_timefixed <- function(dat,
   statusvar <- as.character(substitute(statusvar))
   time <- dat[, timevar]
   status <- dat[, statusvar]
-  mod <- survival::coxph(Surv(time, status) ~ 1, 
-                         control = survival::coxph.control(timefix = timefix))
+  mod <- survival::coxph(
+    Surv(time, status) ~ 1, 
+    control = survival::coxph.control(timefix = timefix)
+  )
   hazard <- survival::basehaz(mod)
   idx <- match(time, hazard[, "time"])
   return(hazard[idx, "hazard"])

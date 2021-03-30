@@ -5,6 +5,7 @@
 
 # Imports from other packages ---------------------------------------------
 
+.datatable.aware = TRUE
 
 #' @importFrom magrittr `%$%`
 #' @importFrom rlang .data

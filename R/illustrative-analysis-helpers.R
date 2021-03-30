@@ -4,8 +4,9 @@
 
 
 
-#' @export
+#' Extract variable names from right side of model formula
 #' 
+#' @export
 #' @noRd
 extract_rhs_varnames <- function(form, dat) {
   
@@ -55,9 +56,17 @@ choose_standard_refpat <- function(col,
   return(val)
 }
 
-#' @export
+#' Prepare reference patient to predict with probtrans
 #' 
-#' @noRd
+#' Utility function which allows to prepare one row of data.frame
+#' to be fed into \code{mstate::msfit} for prediction.
+#' 
+#' @param refpat A single-row data.frane containing the covariate
+#' values to predict
+#' @param tmat Transition matrix
+#' @param covs Covariates used in the cause-specific Cox models
+#' 
+#' @export
 make_mstate_refpat <- function(refpat, tmat, covs) {
   
   # Get number of transitioins
@@ -77,8 +86,9 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
   return(refpat_expanded)
 }
 
-#' @export
+#' Utility to add reference factor levels
 #' 
+#' @export
 #' @noRd
 reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
   
@@ -99,8 +109,9 @@ reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
 
 # Pooling predictions -----------------------------------------------------
 
-#' @export
+#' Helper function to run models in the illustrative analysis
 #' 
+#' @export
 #' @noRd
 run_mds_model <- function(form,
                           tmat,
@@ -135,10 +146,11 @@ run_mds_model <- function(form,
 }
 
 
-#' Predictions from mstate Cox model
+#' Helper function to obtain predictions in the illustrative analysis
+#' 
+#' (For each imputed dataset)
 #' 
 #' @export
-#' 
 #' @noRd
 predict_mds_model <- function(mod,
                               ref_pats,
@@ -184,9 +196,17 @@ cloglog <- Vectorize(function(x) log(-log(1 - x)))
 inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 
 
-# Function for clean pooling here..
+#' Pooling probabilities based on complementary log-log transformation
+#' 
+#' Method described in paper of morisot and colleagues
+#' 
+#' @param preds_list A list of length equal to number of imputed datasets,
+#' containing the imputation-specific predictions. Each element should be a dataframe
+#' containing columns "prob" (probability), "se" (standard error of probability) and 
+#' any other variables which identify groups of predictions (to be used in by_vars)
+#' @param by_vars Vector of variable names to pool across
+#' 
 #' @export
-#' @noRd
 pool_morisot <- function(preds_list, # add p_var and se_var, also confint
                          by_vars) {
   
