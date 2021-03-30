@@ -7,13 +7,13 @@
 reflevels_add_summary(summ, dat, form, term_col = "term")
 }
 \arguments{
-\item{summ}{Model summary}
+\item{summ}{Model summary (possibly custom made)}
 
 \item{dat}{Original dataset used to run the model}
 
 \item{form}{Formula from the run model}
 
-\item{term_col}{Column referencing terms in summm (maybe redundant?)}
+\item{term_col}{Column referencing coefficient names in summ}
 }
 \description{
 (Not for use beyond this repository)
