@@ -3,7 +3,8 @@
 ##***************************##
 
 
-# General -----------------------------------------------------------------
+# Imports from other packages ---------------------------------------------
+
 
 #' @importFrom magrittr `%$%`
 #' @importFrom rlang .data
@@ -18,54 +19,58 @@ NULL
 #' @name %>%
 #' @rdname pipe
 #' @keywords internal
-#' @export
 #' @importFrom magrittr %>%
 #' @usage lhs \%>\% rhs
+#' @export
 NULL
 
 
-#' Surv operator
+#' Imported \code{survival::Surv}
 #'
 #' See \code{survival::\link[survival:Surv]{\%>\%}} for details.
 #'
 #' @name Surv
 #' @rdname Surv
 #' @keywords internal
-#' @export
 #' @importFrom survival Surv
+#' @export
 NULL
 
-#' Strata operator
+
+#' Imported \code{survival::strata}
 #'
 #' See \code{survival::\link[survival:strata]{\%>\%}} for details.
 #'
 #' @name strata
 #' @rdname strata
 #' @keywords internal
-#' @export
 #' @importFrom survival strata
+#' @export
 NULL
 
 
-#' Pipe operator
+#' Imported pipe operator
 #'
 #' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
 #'
 #' @name %>%
 #' @rdname pipe
 #' @keywords internal
-#' @export
 #' @importFrom magrittr %>%
 #' @usage lhs \%>\% rhs
+#' @export
 NULL
+
+
+# General utilities -------------------------------------------------------
 
 
 #' Silence function printing
 #' 
-#' Takes a function/expression that by default uses 
-#' print() or cat(), and stops it. We use ot for MIcombine() or smcfcs()
+#' Takes a function/expression that by default uses print() or cat(), and stops it. 
+#' We use it for \code{MIcombine()} or \code{smcfcs()}.
 #' 
-#' Source: http://r.789695.n4.nabble.com/Suppressing-output-e-g-from-cat-td859876.html
+#' @source \link{http://r.789695.n4.nabble.com/Suppressing-output-e-g-from-cat-td859876.html}
 #' 
 #' @param expr Expression to silence
 #' 
@@ -78,15 +83,15 @@ quiet <- function(expr) {
 } 
 
 
-#' Record rejection sampling failure smcfcs
+#' Record warnings
 #' 
-#' @param expr Expression from which to record possible error
+#' Used to capture number of rejection sampling failures from \code{smcfcs}.
+#' 
+#' @param expr Expression from which to record possible warning
 #' 
 #' @return List with expression and associated warning
 #' 
 #' @noRd
-#' 
-#' @export
 record_warning <- function(expr) {
   
   warn <- NULL
@@ -108,6 +113,8 @@ record_warning <- function(expr) {
 
 #' Appending scenario details as column
 #' 
+#' Used to collapse scenario identifiers in one column.
+#' 
 #' @export
 #' @noRd
 add_scen_details <- function(scenario,
@@ -119,7 +126,7 @@ add_scen_details <- function(scenario,
   scen_dat <- data.frame(t(scenario)) %>% 
     tibble::rownames_to_column(var = "name") %>% 
     dplyr::filter(!(name %in% c("pilot", "seed"))) %>% 
-    tidyr::unite("scen", 1:2, sep = "=") 
+    tidyr::unite("scen", c(1, 2), sep = "=") 
   
   scen_collapse <- paste(scen_dat$scen, collapse = "-")
   rep <- paste0("rep=", rep_num)
@@ -129,20 +136,21 @@ add_scen_details <- function(scenario,
 }
 
 
-#' Format CCA and ref analyses
+#' Format CCA and reference analyses
 #' 
-#' @param mod Cause-specific model
+#' Essentially a version \code{broom::tidy} - made before I knew of the existence
+#' of the broom package.
+#' 
+#' @param mod Cause-specific Cox model as returned by çode{survival::coxph}
 #' @inheritParams pool_diffm
 #' 
-#' @return Formatted df
+#' @return Formatted dataframe with model summary
 #'
-#' @export
 #' @noRd
 summarise_ref_CCA <- function(mod,
                               analy) {
   
-  summ_ref_CCA <- cbind(summary(mod)$coefficients,
-                        stats::confint(mod)) %>% 
+  summ_ref_CCA <- cbind(summary(mod)$coefficients, stats::confint(mod)) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("var") %>% 
     dplyr::rename(
@@ -159,7 +167,9 @@ summarise_ref_CCA <- function(mod,
 
 #' Format predictions of CCA and ref
 #' 
-#' @export
+#' Similar to \code{broom::tidy} - but specifically for the probabilities
+#' returned by \code{mstate::probtrans}. Only works for competing risks data.
+#' 
 #' @noRd
 preds_CCA_ref <- function(preds,
                           analy) {
@@ -200,10 +210,17 @@ preds_CCA_ref <- function(preds,
 
 # Adapted from calc_absolute - without dplyr::pull for speed,
 # operating solely on vectors
-# https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R
-# https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html
+# 
+# 
+
+#' Approximate jackknife estimate for MCSE of RMSE
+#' 
+#' Adapted from the simhelpers CRAN package, see \link{https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html}.
+#' This version takes vectors as inputs instead.
+#' 
+#' @source \link{https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R}
+#' 
 #' @export
-#' @noRd
 rmse_mcse <- function(estimates, true, K) {
   
   # Keep first true value
@@ -226,7 +243,8 @@ rmse_mcse <- function(estimates, true, K) {
 }
 
 
-# Add these functions to .R
+#' Helper function to extract scenario number
+#' 
 #' @export
 #' @noRd
 extract_scen_num <- function(dat) {
@@ -249,6 +267,8 @@ extract_scen_num <- function(dat) {
   return(dat)
 }
 
+#' Helper function for formatting full simulation results before summarising
+#' 
 #' @export
 #' @noRd
 format_scen_summary <- function(dat) {
