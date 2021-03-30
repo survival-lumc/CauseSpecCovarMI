@@ -3,9 +3,6 @@
 ##******************************************##
 
 
-library(CauseSpecCovarMI)
-
-
 # Parameters varied -------------------------------------------------------
 
 
@@ -37,7 +34,7 @@ full_factorial <- expand.grid(
   "eta1" = eta1,
   "haz_shape" = haz_shape
 ) %>% 
-  data.table() %>% 
+  data.table::data.table() %>% 
   
   # Eta1 not relevant for MCAR, remove resulting duplicates
   .[, eta1 := ifelse(miss_mech == "MCAR", NA, eta1)] %>% 
@@ -101,4 +98,4 @@ scenarios_full <- rbind(
 # Note we do not report results of n = 500
 
 # Save as .RDS file to load in
-saveRDS(scenarios_full, file = "data/scenarios.rds")
+#saveRDS(scenarios_full, file = "data/scenarios.rds")

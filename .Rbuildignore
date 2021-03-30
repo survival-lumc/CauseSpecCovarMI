@@ -1,13 +1,18 @@
+# Generic and R project files to ignore from build
 ^CauseSpecCovarMI\.Rproj$
 ^\.Rproj\.user$
-analysis
-data-raw
 .Rhistory
 .git
+
+# Ignore analysis folder, pkgdown files and license
+^analysis
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
-data\sim-reps_indiv
-.*fst$
-.*rds$
 ^LICENSE\.md$
+
+# Data files to ignore
+^data\sim-reps_indiv
+^data-raw
+.*\.fst$
+.*\.rds$

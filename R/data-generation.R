@@ -25,10 +25,6 @@
 #' 
 #' @inheritParams gen_cmprsk_times
 #' 
-#' @importFrom magrittr `%>%` 
-#' @importFrom rlang .data
-#' @importFrom data.table .N .I ':=' .SD
-#' 
 #' @return Data-frame with missings induced
 #' 
 #' @export
@@ -257,6 +253,8 @@ gen_cmprsk_times <- function(n,
 
 invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
   
+  t_tilde <- NULL
+  
   # Define cdf - U first
   cdf_U <- function(t, alph1, lam1, alph2, lam2, U) {
     F_min_U <- 1 - exp(-(lam1 * t^alph1 + lam2 * t^alph2)) - U
@@ -383,9 +381,15 @@ logreg_missings <- function(p, eta1, covar) {
   return(pr)
 }
 
-
-#' @importFrom survival Surv strata
-#' @noRd
+#' Compute Nelson Aalen estimate for simulated data
+#' 
+#' Version of `mice::nelsonaalen` but with the
+#' `control = survival::coxph.control(timefix = FALSE)` argument added
+#' to the `survival::coxph` call. This is to deal with floating point errors
+#' within the simulation procedure, where two or more simulated time points
+#' with minimal difference between would normally be considered as a tie.
+#' 
+#' @export
 nelsaalen_timefixed <- function(dat,
                                 timevar,
                                 statusvar,

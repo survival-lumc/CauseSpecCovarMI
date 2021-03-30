@@ -1,8 +1,5 @@
 # Generic R files to ignore
 .Rproj.user
-inst/doc
-doc
-Meta
 .Rhistory
 
 # Raw EBMT files remove from git
@@ -15,4 +12,6 @@ data/*full.fst
 # Remove processed MDS data
 data/dat-mds.fst
 data/dat-mds_admin-cens.fst
+
+# For now do not commit pkgdown - comment out later
 docs

@@ -3,10 +3,8 @@
 ##*****************************************##
 
 
-library(CauseSpecCovarMI)
-
 # Read-in
-dat_mds <- fst::read_fst(path = "analysis/data/dat-mds_admin-cens.fst") %>% 
+dat_mds <- fst::read_fst(path = "data/dat-mds_admin-cens.fst") %>% 
   data.table::setDT()
 
 
@@ -67,4 +65,4 @@ mds_shape_rates <- cbind.data.frame(
 mds_shape_rates
 
 # Write into fst (write original rds one here)
-fst::write_fst(x = mds_shape_rates, path = "analysis/data/mds-shape-rates.fst")
+#fst::write_fst(x = mds_shape_rates, path = "analysis/data/mds-shape-rates.fst")

@@ -2,12 +2,7 @@
 ## Summarise simulation results ##
 ##******************************##
 
-
 # Process individual replications -----------------------------------------
-
-
-# Load all functions in compendium
-library(CauseSpecCovarMI)
 
 # Regression coefficients
 sims_regr_full <- list.files(

@@ -3,6 +3,11 @@
 ##*************************************##
 
 
+#' Run one replication of one scenario
+#' 
+#' @param scenario A row from the scenarios dataframe (link)
+#' @param rep_num Scalar, replication numbr
+#' 
 #' @export
 one_simulation <- function(scenario, # scenario
                            rep_num) { # repetition number
@@ -50,7 +55,7 @@ one_simulation <- function(scenario, # scenario
   )
 
   # Generate a dataset based on scenario
-  dat <- SimsCauseSpecCovarMiss::generate_dat(
+  dat <- generate_dat(
     n = scenario$n,
     X_type = scenario$X_level, 
     r = scenario$rho, 
@@ -67,12 +72,12 @@ one_simulation <- function(scenario, # scenario
   
   
   # Reference (full dataset)
-  mod_ref <- SimsCauseSpecCovarMiss::setup_mstate(
-    dat %>% dplyr::mutate(X = X_orig)
+  mod_ref <- setup_mstate(
+    dat %>% dplyr::mutate(X = .data$X_orig)
   )
   
   # Complete case analyses
-  mod_CCA <- SimsCauseSpecCovarMiss::setup_mstate(dat)
+  mod_CCA <- setup_mstate(dat)
   
   
   # Imputation part ----
@@ -135,10 +140,10 @@ one_simulation <- function(scenario, # scenario
   cat("\n Running smcfcs... \n\n")
   
   # Smcfcs - quiet stops printing
-  imp_smcfcs <- #SimsCauseSpecCovarMiss::quiet(
+  imp_smcfcs <- #CauseSpecCovarMI::quiet(
     
     # Record number of rej sampling failures, if any
-    SimsCauseSpecCovarMiss::record_warning(
+    record_warning(
       
       # Smcfcs starts here
       smcfcs::smcfcs(
@@ -174,13 +179,13 @@ one_simulation <- function(scenario, # scenario
   # Make this into a function?
   estimates <- purrr::imap_dfr(
     mods_complist, 
-    ~ SimsCauseSpecCovarMiss::pool_diffm(.x, n_imp = m, analy = .y)
+    ~ pool_diffm(.x, n_imp = m, analy = .y)
   ) %>% 
     
     # Bind Bayes, CCA, ref
     dplyr::bind_rows(
-      SimsCauseSpecCovarMiss::summarise_ref_CCA(mod_ref, analy = "ref"),
-      SimsCauseSpecCovarMiss::summarise_ref_CCA(mod_CCA, analy = "CCA")
+      summarise_ref_CCA(mod_ref, analy = "ref"),
+      summarise_ref_CCA(mod_CCA, analy = "CCA")
     ) %>% 
     
     # Add true values
@@ -194,8 +199,7 @@ one_simulation <- function(scenario, # scenario
     # Add mice warnings and rej sampling errors for smcfcs
     dplyr::mutate(
       warns = dplyr::case_when(
-        analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning,
-                                                            "[0-9]+")),
+        analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning, "[0-9]+")),
         analy == "ch12" ~ as.numeric(!(is.null(imp_ch12$loggedEvents))),
         analy == "ch12_int" ~ as.numeric(!(is.null(imp_ch12_int$loggedEvents))),
         analy %in% c("CCA", "ref", "ch1") ~ 0
@@ -214,14 +218,14 @@ one_simulation <- function(scenario, # scenario
   
   
   horiz <- c(0.5, 5, 10) # Prediction horizons, 6mo, 5Y, 10Y, c(0.5, 5, 10)
-  covar_grid <- SimsCauseSpecCovarMiss::make_covar_grid(dat)
+  covar_grid <- make_covar_grid(dat)
   
   cat("\n Making predictions and pooling... \n\n")
   
   # Make predictions for cox models fitted in each imputed dataset 
   preds_list <- purrr::modify_depth(
     mods_complist, .depth = 2,
-    ~ SimsCauseSpecCovarMiss::get_preds_grid(
+    ~ get_preds_grid(
         cox_long = .x,
         grid_obj = covar_grid, 
         times = horiz, 
@@ -253,7 +257,7 @@ one_simulation <- function(scenario, # scenario
   # Pool predictions
   pooled_preds <- purrr::imap_dfr(
     preds_list, 
-    ~ SimsCauseSpecCovarMiss::pool_diffm_preds(.x, n_imp = m, analy = .y)
+    ~ pool_diffm_preds(.x, n_imp = m, analy = .y)
   ) %>% 
     
     # Bind preds for CCA and ref
@@ -277,7 +281,7 @@ one_simulation <- function(scenario, # scenario
   # RDS saving and storing seeds/scen_num ----
   
   # Save as RDS in analysis/simulation results/predictions
-  saveRDS(
+  saveRDS( 
     estimates, 
     file = paste0("data/sim-reps_indiv/regr/regr_scen", scenario$scen_num, "_seed", seed, ".rds")
   )

@@ -67,8 +67,8 @@ matpred[!(rownames(matpred) %in% var_names_miss), ] <- 0
 matpred
 
 # Set number of imputations and iterations globally
-m <- 100
-iters <- 20 
+m <- 2 #100
+iters <- 2 #20 
 
 
 # Run MICE ----------------------------------------------------------------
@@ -80,8 +80,8 @@ imps_mice <- mice::parlmice(
   m = m,
   maxit = iters,
   cluster.seed = 1984, 
-  n.core = 10, 
-  n.imp.core = 10, #floor(m / 3),
+  n.core = 2, #10, 
+  n.imp.core = 1, #10, 
   method = meths,
   predictorMatrix = matpred
 )
@@ -110,13 +110,13 @@ smform_smcfcs <- c(
 
 imps_smcfcs <- parlSMCFCS::parlsmcfcs(
   seed = 4891,
-  n_cores = 10,
+  n_cores = 2, #10,
   outfile = "out_paralsmcfcs.txt",
   originaldata = dat_mds,
   smtype = "compet",
   smformula = smform_smcfcs,
-  m = m,
-  numit = iters,
+  m = 2, #m,
+  numit = 2, #iters,
   method = meths,
   rjlimit = 3000 # 3x normal, reduce num warnings
 )
@@ -178,7 +178,7 @@ smcfcs_nrm <- pbapply::pblapply(
 
 # CCA ---------------------------------------------------------------------
 
-
+  
 mod_rel <- survival::coxph(form_rel, data = dat_mds) %>% 
   summary(conf.int = 0.95) %$% 
   conf.int %>% 
@@ -261,7 +261,7 @@ rm(ref_pat, ref_pat_excess, ref_pat_saml)
 
 
 # Predict for mice and smcfcs - do for all later
-preds_list_mice <- pbapply::pblapply(impdats_mice, function(impdat) {
+preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
   
   # Run model
   mod <- CauseSpecCovarMI::run_mds_model(
@@ -281,7 +281,7 @@ preds_list_mice <- pbapply::pblapply(impdats_mice, function(impdat) {
   return(preds)
 })
 
-preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs, function(impdat) {
+preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs[1:5], function(impdat) {
   
   # Run model
   mod <- CauseSpecCovarMI::run_mds_model(

@@ -5,6 +5,60 @@
 
 # General -----------------------------------------------------------------
 
+#' @importFrom magrittr `%$%`
+#' @importFrom rlang .data
+#' @importFrom data.table .N .I ':=' .SD
+NULL
+
+
+#' Pipe operator
+#'
+#' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+NULL
+
+
+#' Surv operator
+#'
+#' See \code{survival::\link[survival:Surv]{\%>\%}} for details.
+#'
+#' @name Surv
+#' @rdname Surv
+#' @keywords internal
+#' @export
+#' @importFrom survival Surv
+NULL
+
+#' Strata operator
+#'
+#' See \code{survival::\link[survival:strata]{\%>\%}} for details.
+#'
+#' @name strata
+#' @rdname strata
+#' @keywords internal
+#' @export
+#' @importFrom survival strata
+NULL
+
+
+#' Pipe operator
+#'
+#' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+NULL
+
 
 #' Silence function printing
 #' 
@@ -31,6 +85,8 @@ quiet <- function(expr) {
 #' @return List with expression and associated warning
 #' 
 #' @noRd
+#' 
+#' @export
 record_warning <- function(expr) {
   
   warn <- NULL
@@ -52,6 +108,7 @@ record_warning <- function(expr) {
 
 #' Appending scenario details as column
 #' 
+#' @export
 #' @noRd
 add_scen_details <- function(scenario,
                              seed,
@@ -78,7 +135,8 @@ add_scen_details <- function(scenario,
 #' @inheritParams pool_diffm
 #' 
 #' @return Formatted df
-#' 
+#'
+#' @export
 #' @noRd
 summarise_ref_CCA <- function(mod,
                               analy) {
@@ -101,6 +159,7 @@ summarise_ref_CCA <- function(mod,
 
 #' Format predictions of CCA and ref
 #' 
+#' @export
 #' @noRd
 preds_CCA_ref <- function(preds,
                           analy) {
@@ -143,6 +202,8 @@ preds_CCA_ref <- function(preds,
 # operating solely on vectors
 # https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R
 # https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html
+#' @export
+#' @noRd
 rmse_mcse <- function(estimates, true, K) {
   
   # Keep first true value
@@ -166,6 +227,8 @@ rmse_mcse <- function(estimates, true, K) {
 
 
 # Add these functions to .R
+#' @export
+#' @noRd
 extract_scen_num <- function(dat) {
   
   scen_summary <- NULL
@@ -186,7 +249,8 @@ extract_scen_num <- function(dat) {
   return(dat)
 }
 
-
+#' @export
+#' @noRd
 format_scen_summary <- function(dat) {
   
   # For checks
