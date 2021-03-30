@@ -97,7 +97,34 @@ mod_nrm <- survival::coxph(form_nrm, data = dat_mds) %>%
 
 
 
+# Attempt with lists of lists ---------------------------------------------
 
+
+list_rel <- list(
+  "CCA" = mod_rel,
+  "MICE" = mice_rel,
+  "SMC-FCS" = smcfcs_rel
+)
+
+res_rel <- data.table::rbindlist(
+  lapply(X = list_rel, FUN = function(mod_summary) {
+      reflevels_add_summary(summ = mod_summary, dat = dat_mds, form = form_rel)
+  }), 
+  fill = TRUE,
+  idcol = "method"
+)
+
+res_rel[, method := factor(method, levels = names(list_rel))]
+
+# Get predictors from RHS
+predictors_patt <- paste0("(", paste(predictors, collapse = "|"), ")")
+
+# Set var_name and levels according to data dict?
+# Possibly along with function: create_data_dictionary
+res_rel[, ':=' (
+  var_name = regmatches(x = term, m = regexpr(pattern = predictors_patt, text = term)),
+  levels = gsub(pattern = predictors_patt, replacement = "", x = term)
+)]
 
 
 # Prepare forest plot data ------------------------------------------------
@@ -150,14 +177,14 @@ res_full[, ':=' (
 
 #
 
-data_dict <- readRDS("data/data-dictionary.rds")
+dictionary_df <- get(load("R/data_dictionary.rda"))
 
 # Add reference values
 res_full[is.na(estimate), c("estimate", "2.5 %", "97.5 %") := NA]
 res_full[levels == "", levels := NA_character_]
 
 
-res_full <- merge(res_full, data_dict, by = c("var_name", "levels"))
+res_full <- merge(res_full, dictionary_df, by = c("var_name", "levels"))
 
 
 

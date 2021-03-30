@@ -102,10 +102,10 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
 #' 
 #' (Not for use beyond this repository)
 #' 
-#' @param summ Model summary 
+#' @param summ Model summary (possibly custom made)
 #' @param dat Original dataset used to run the model
 #' @param form Formula from the run model
-#' @param term_col Column referencing terms in summm (maybe redundant?)
+#' @param term_col Column referencing coefficient names in summ
 #' 
 #' @export
 reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
@@ -123,7 +123,11 @@ reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
   ref_levels[, "term" := paste0(variable, coef)]
   ref_levels[, setdiff(names(ref_levels), "term") := NULL]
   
-  return(rbind(data.table::data.table(summ), ref_levels, fill = TRUE))
+  # Make sure term column in summary is called "term"
+  new_summary <- data.table::data.table(summ)
+  data.table::setnames(new_summary, old = term_col, new = "term")
+  
+  return(rbind(new_summary, ref_levels, fill = TRUE))
 }
 
 
