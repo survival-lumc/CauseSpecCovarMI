@@ -370,11 +370,17 @@ logreg_missings <- function(p, eta1, covar) {
 
 #' Compute Nelson Aalen estimate for simulated data
 #' 
-#' Version of `mice::nelsonaalen` but with the
-#' `control = survival::coxph.control(timefix = FALSE)` argument added
-#' to the `survival::coxph` call. This is to deal with floating point errors
+#' Version of \code{mice::nelsonaalen} but with the
+#' \code{control = survival::coxph.control(timefix = FALSE)} argument added
+#' to the \code{survival::coxph} call. This is to deal with floating point errors
 #' within the simulation procedure, where two or more simulated time points
 #' with minimal difference between would normally be considered as a tie.
+#' 
+#' @param dat Data frame with time and status variables
+#' @param timevar Column name of time variable
+#' @param statusvar Column name of (numeric) status variable
+#' @param timefix Logical, whether to apply timefix or not. If TRUE it corresponds 
+#' to using \code{mice::nelsonaalen}
 #' 
 #' @export
 nelsaalen_timefixed <- function(dat,

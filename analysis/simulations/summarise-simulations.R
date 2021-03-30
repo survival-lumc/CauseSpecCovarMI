@@ -36,7 +36,7 @@ rm(sims_regr_full, sims_preds_full)
 # Read-in estimates
 sims_regr_full <- fst::read_fst("data/sims_regr_full.fst") %>% 
   data.table::setDT() %>% 
-  CauseSpecCovarMI::extract_scen_num()
+  CauseSpecCovarMI:::extract_scen_num()
 
 # Compute measures per scenario
 sims_regr_summary <- sims_regr_full[, .(
@@ -57,11 +57,11 @@ sims_regr_summary <- sims_regr_full[, .(
     bias_mcse = emp_se / sqrt(n),
     cover_mcse = sqrt((cover * (1 - cover)) / n)
   )] %>% 
-  CauseSpecCovarMI::format_scen_summary()
+  CauseSpecCovarMI:::format_scen_summary()
 
 # Save sims
 data.table::setorder(sims_regr_summary, var, analy, m)
-fst::write_fst(x = sims_regr_summary, path = "data/sims_regr_summary.fst")
+save(sims_regr_summary, file = "data/sims_regr_summary.RData")
 
 # Clear environment
 rm(sims_regr_full)
@@ -72,7 +72,7 @@ rm(sims_regr_full)
 
 sims_preds_full <- fst::read_fst("data/sims_preds_full.fst") %>% 
   data.table::setDT() %>% 
-  CauseSpecCovarMI::extract_scen_num()
+  CauseSpecCovarMI:::extract_scen_num()
 
 # Compute measures per scenario
 sims_preds_summary <- sims_preds_full[, .(
@@ -88,7 +88,7 @@ sims_preds_summary <- sims_preds_full[, .(
   .[, ':=' (
     bias_mcse = emp_se / sqrt(n)
   )] %>% 
-  CauseSpecCovarMI::format_scen_summary() %>% 
+  CauseSpecCovarMI:::format_scen_summary() %>% 
   
   # Relevel prediction-specific factors
   .[, ':=' (
@@ -106,6 +106,6 @@ sims_preds_summary <- sims_preds_full[, .(
 
 # Save sims
 data.table::setorder(sims_preds_summary, state, times, analy, m)
-fst::write_fst(x = sims_preds_summary, path = "data/sims_preds_summary.fst")
+save(sims_preds_summary, file = "data/sims_preds_summary.RData")
 
 #rm(sims_preds_full)

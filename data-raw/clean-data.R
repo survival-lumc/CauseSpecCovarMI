@@ -2,6 +2,7 @@
 ## Process/clean MDS data ##
 ##************************##
 
+# Script to clean original MDS dataset - synthetic dataset already cleaned.
 
 # Reading-in --------------------------------------------------------------
 
@@ -13,17 +14,15 @@ dat_hctci <- sjlabelled::read_spss(
   
   # Clean variable names (i.e. bring lower case, with _ in between)
   janitor::clean_names() %>% 
-  
-  # Make into data.table
-  data.table::setDT() %>% 
+  data.table::setDT()
   
   # Subset aa_auto for matching and new vars
-  .[, .(
-    aa_auto,
-    hctci,
-    hctci_risk,
-    agedonor_allo1_1
-  )]
+dat_hctci <- dat_hctci[, .(
+  aa_auto,
+  hctci,
+  hctci_risk,
+  agedonor_allo1_1
+)]
 
 
 # Load-in cytogenetics data
@@ -100,51 +99,50 @@ vars_val_labs <- c(
 )
 
 # Make dataset ready for regression
-dat_mds <- data.table::copy(dat_combined) %>% 
+dat_mds <- data.table::copy(dat_combined)  
   
-  # Select variables, Remove one patient with wrong donor age (data error)
-  .[aa_auto != 357439, ..vars_keep] %>% 
+# Select variables, Remove one patient with wrong donor age (data error)
+dat_mds <- dat_mds[aa_auto != 357439, ..vars_keep] 
   
-  # Set time in years, age and donor age in decades
-  .[, ':=' (
-    ci_allo1 = ci_allo1 / 12,
-    srv_allo1 = srv_allo1 / 12,
-    agedonor_allo1_decades = agedonor_allo1_1 / 10,
-    age_allo1_decades = age_allo1 / 10
-  )] %>% 
+# Set time in years, age and donor age in decades
+dat_mds[, ':=' (
+  ci_allo1 = ci_allo1 / 12,
+  srv_allo1 = srv_allo1 / 12,
+  agedonor_allo1_decades = agedonor_allo1_1 / 10,
+  age_allo1_decades = age_allo1 / 10
+)] 
   
-  # For some vars, use the spss values labels as factor labels
-  .[, (vars_val_labs) := lapply(.SD, sjlabelled::as_label), 
-    .SDcols = vars_val_labs] %>% 
+# For some vars, use the spss values labels as factor labels
+dat_mds[, (vars_val_labs) := lapply(.SD, sjlabelled::as_label), .SDcols = vars_val_labs] 
   
-  # Make Karnofsky into ordered three categories
-  .[, karnofsk_allo1 := cut(
-    x = karnofsk_allo1, 
-    breaks = c(-Inf, 70, 80, 100), 
-    include.lowest = T, 
-    ordered_result = T, 
-    labels = c("<=70", "80", ">=90")
-  )] %>% 
+# Make Karnofsky into ordered three categories
+dat_mds[, karnofsk_allo1 := cut(
+  x = karnofsk_allo1, 
+  breaks = c(-Inf, 70, 80, 100), 
+  include.lowest = T, 
+  ordered_result = T, 
+  labels = c("<=70", "80", ">=90")
+)] 
   
-  # Reverse ordering to have >= 90 as reference
-  .[, karnofsk_allo1 := factor(
-    karnofsk_allo1, levels = rev(levels(karnofsk_allo1))
-  )] %>% 
+# Reverse ordering to have >= 90 as reference
+dat_mds[, karnofsk_allo1 := factor(
+  karnofsk_allo1, levels = rev(levels(karnofsk_allo1))
+)]  
   
-  # Reorder crnocr, order hctci
-  .[, ':=' (
-    crnocr = factor(
-      crnocr, 
-      levels = c("CR", "noCR", "Untreated/not aimed at remission")
-    ),
-    hctci_risk = as.ordered(hctci_risk)
-  )] %>%
+# Reorder crnocr, order hctci
+dat_mds[, ':=' (
+  crnocr = factor(
+    crnocr, 
+    levels = c("CR", "noCR", "Untreated/not aimed at remission")
+  ),
+  hctci_risk = as.ordered(hctci_risk)
+)] 
   
-  # Delete redundant age and donor age not in decades (they are in dat_orig)
-  .[, ':=' (
-    agedonor_allo1_1 = NULL,
-    age_allo1 = NULL
-  )]
+# Delete redundant age and donor age not in decades (they are in dat_orig)
+dat_mds[, ':=' (
+  agedonor_allo1_1 = NULL,
+  age_allo1 = NULL
+)]  
 
 # Drop unused factor levels 
 which_factors <- names(dat_mds)[sapply(dat_mds, is.factor)]
@@ -163,7 +161,7 @@ dat_mds[, aa_auto := NULL]
 
 
 # Save as fst
-fst::write_fst(x = dat_mds, path = "analysis/data/dat-mds.fst")
+#fst::write_fst(x = dat_mds, path = "analysis/data/dat-mds.fst")
 
 # Save a second version with admin censoring at 10 years
 dat_mds[, ':=' (
@@ -176,5 +174,5 @@ dat_mds[, ':=' (
   srv_s_allo1 = ifelse(srv_allo1 == 10, 0, sjlabelled::as_numeric(srv_s_allo1))
 )]
 
-fst::write_fst(x = dat_mds, path = "analysis/data/dat-mds_admin-cens.fst")
+#fst::write_fst(x = dat_mds, path = "analysis/data/dat-mds_admin-cens.fst")
 

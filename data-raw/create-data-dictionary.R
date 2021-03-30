@@ -1,6 +1,16 @@
+##************************##
+## Create data dictionary ##
+##************************##
 
-dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% data.table::setDT()
+# Choose whether synthetic or not
+synth <- FALSE
 
+if (synth) {
+  dat_mds <- CauseSpecCovarMI::dat_mds_synth %>% data.table::setDT()
+} else {
+  dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% data.table::setDT()
+  dat_mds[, c("srv_s_allo1", "srv_allo1") := NULL]
+}
 
 
 # Variable descriptions ---------------------------------------------------
@@ -18,21 +28,6 @@ vars[["ci_s_allo1"]] <- cbind.data.frame(
 vars[["ci_allo1"]] <- cbind.data.frame(
   "var_label" = "Time to competing event",
   "var_description" = "Time from alloHCT to competing event (months)"
-)
-
-vars[["srv_s_allo1"]] <- cbind.data.frame(
-  "var_label" = "Death/censoring indicator",
-  "var_description" = "Time from alloHCT to competing event (years)"
-)
-
-vars[["srv_allo1"]] <- cbind.data.frame(
-  "var_label" = "Time to death/censoring",
-  "var_description" = "Time from alloHCT to death or censoring (years)"
-)
-
-vars[["srv_allo1"]] <- cbind.data.frame(
-  "var_label" = "Time to death/censoring",
-  "var_description" = "Time from alloHCT to death or censoring (years)"
 )
 
 vars[["match_allo1_1"]] <- cbind.data.frame(
@@ -85,10 +80,12 @@ vars[["age_allo1_decades"]] <- cbind.data.frame(
   "var_description" = "Patient age at alloHCT (decades)"
 )
 
+# Keep proportion of missing data per variable
 missing_dat <- data.table::transpose(
   dat_mds[, lapply(.SD, function(col) mean(is.na(col)))], 
   keep.names = "var_name"
 )
+
 data.table::setnames(missing_dat, setdiff(names(missing_dat), "var_name"), "prop_miss")
 vars_meta <- merge(data.table::rbindlist(vars, idcol = "var_name"), missing_dat)
 vars_meta[, prop_miss := paste0(round(prop_miss, 4) * 100)]
@@ -97,13 +94,17 @@ vars_meta[, prop_miss := paste0(round(prop_miss, 4) * 100)]
 # Label factor levels -----------------------------------------------------
 
 
+# Extract factors and their levels in a list
 factors <- sapply(dat_mds, is.factor)
 levs <- lapply(names(dat_mds)[factors], function(col) {
   var <- dat_mds[[col]]
-  cbind.data.frame("levels" = levels(var), "level_num" = 1:length(levels(var)))
+  cbind.data.frame("levels" = levels(var), "level_num" = seq_len(length(levels(var))))
 })
+
 names(levs) <- names(dat_mds)[factors]
 
+
+# Add factor level labels (for data dictionary table)
 levs[["match_allo1_1"]] <- transform(
   levs[["match_allo1_1"]], 
   "levels_lab" = c("M/M", "M/F", "F/M", "F/F")
@@ -147,9 +148,10 @@ levs[["hctci_risk"]] <- transform(
 levels_dat <- data.table::rbindlist(levs, idcol = "var_name")
 
 
-# Merge -------------------------------------------------------------------
+# Keep all label info for vars and factor in one df -----------------------
 
-tot <- merge(levels_dat, vars_meta, by = "var_name", all.y = TRUE)
+
+labels_all <- merge(levels_dat, vars_meta, by = "var_name", all.y = TRUE)
 
 # Add counts per factor - and REL / NRM counts too
 counters <- lapply(names(dat_mds), function(col) {
@@ -177,32 +179,42 @@ counters <- lapply(names(dat_mds), function(col) {
 
 names(counters) <- names(dat_mds)
 
-final <- data.table::rbindlist(counters, idcol = "var_name",fill = TRUE) %>% 
-  merge(tot, by = c("levels", "var_name"), all.y = TRUE)
-final[, "miss_ind" := NULL]
+# Bind counters, labels all together
+dictionary_df <- data.table::rbindlist(
+  l = counters, 
+  idcol = "var_name", 
+  fill = TRUE
+) %>% 
+  data.table::merge.data.table(
+    y = labels_all, 
+    by = c("levels", "var_name"), 
+    all.y = TRUE
+  )
 
-saveRDS(final, file = "data/data-dictionary.rds")
+dictionary_df[, "miss_ind" := NULL]
 
+# Save if not the synthetic version - as "internal"data
+if (!synth) save(dictionary_df, file = "R/data_dictionary.rda")
 
 # Descriptives table ------------------------------------------------------
 
 
-final <- readRDS("data/data-dictionary.rds")
-data.table::setorder(final, "var_name", "level_num")
-final[is.na(levels_lab), levels_lab := ""]
+dictionary_df <- get(load("R/data_dictionary.rda"))
+data.table::setorder(dictionary_df, "var_name", "level_num")
+dictionary_df[is.na(levels_lab), levels_lab := ""]
 
 # Make columns for LaTex
-final[, levels_lab_tex := data.table::fcase(
+dictionary_df[, levels_lab_tex := data.table::fcase(
   var_name == "cmv_combi_allo1_1", paste0("$", levels_lab, "$"),
   grepl(pattern = ">=", x = levels_lab), gsub(">=", x = levels_lab, replacement = "$\\\\geq$"),
   grepl(pattern = "<=", x = levels_lab), gsub("<=", x = levels_lab, replacement = "$\\\\leq$")
 )]
 
-final[is.na(levels_lab_tex), levels_lab_tex := levels_lab]
+dictionary_df[is.na(levels_lab_tex), levels_lab_tex := levels_lab]
 
 # Set column names
 data.table::setnames(
-  final,
+  dictionary_df,
   c("var_label", "var_description", "levels_lab_tex", "prop_miss"),
   c("Variable", "Description", "Levels", "\\% Missing")
 )
@@ -211,7 +223,7 @@ data.table::setnames(
 caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
 
 # Make table
-final[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
+dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
   "Variable", "Description", "Levels", "\\% Missing"
 )] %>% 
   kableExtra::kbl(

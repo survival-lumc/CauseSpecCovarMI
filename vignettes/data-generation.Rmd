@@ -54,11 +54,7 @@ Concerning the baseline hazard shapes, there were two parametrisations: 'similar
 - Different, $\{\kappa_1,\lambda_{10},\kappa_2,\lambda_{20}\} = \{1.5,0.04,0.53,0.21\}$
 
 ```{r baseline_coefs, echo=FALSE}
-baseline_evs <- readRDS(
-  "../data/mds-shape-rates.rds" #  edit path later
-)
-
-#baseline_evs %>% kableExtra::kable(digits = 2)
+baseline_evs <- CauseSpecCovarMI::mds_shape_rates
 
 # Set event-generating parameters for REL
 ev1_pars <- list(

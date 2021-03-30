@@ -4,8 +4,7 @@
 
 
 # Read-in
-dat_mds <- fst::read_fst(path = "data/dat-mds_admin-cens.fst") %>% 
-  data.table::setDT()
+dat_mds <- data.table::data.table(CauseSpecCovarMI::dat_mds_synth)
 
 
 # Relapse -----------------------------------------------------------------
@@ -40,8 +39,8 @@ rate_nrm <- exp(aft_nrm$coefficients)^(-shape_nrm)
 
 # Censoring is event, and those with admin censoring are set to event
 # just after 10 years
-dat_mds[, srv_s_rev := ifelse(srv_allo1 == 10, 1, srv_s_allo1)]
-dat_mds[, srv_allo1_rev := ifelse(srv_allo1 == 10, srv_allo1 + 0.01, srv_allo1)]
+dat_mds[, srv_s_rev := ifelse(ci_allo1 == 10, 1, ci_s_allo1)]
+dat_mds[, srv_allo1_rev := ifelse(ci_allo1 == 10, ci_allo1 + 0.01, ci_allo1)]
 
 
 # Exponential AFT this time
@@ -56,13 +55,16 @@ rate_cens <- exp(aft_cens$coefficients)^(-1)
 
 # Save parameters in df ---------------------------------------------------
 
-mds_shape_rates <- cbind.data.frame(
+mds_baseline_parameters <- cbind.data.frame(
   "state" = c("REL", "NRM", "EFS"),
   "shape" = c(shape_rel, shape_nrm, 1),
   "rate" = c(rate_rel, rate_nrm, rate_cens)
 )
 
+mds_baseline_parameters
+
+# Check against ones from true dataset
 mds_shape_rates
 
-# Write into fst (write original rds one here)
-#fst::write_fst(x = mds_shape_rates, path = "analysis/data/mds-shape-rates.fst")
+# Save
+#save(x = mds_baseline_parameters, path = "data/mds_shape_rates.RData")

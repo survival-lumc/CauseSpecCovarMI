@@ -57,7 +57,7 @@ regr_results[, coverage := round(100 * cover, 0)]
 regr_results[, se_round := round(se, 2)]
 
 
-scenarios <- readRDS("../data/scenarios.rds")
+scenarios <- data.table::setDT(CauseSpecCovarMI::scenarios)
 ```
 
 # 1 Scenarios

@@ -6,12 +6,16 @@
 
 #' Extract variable names from right side of model formula
 #' 
+#' @param form Formula object
+#' @param dat Dataframe on which the formula is applied
+#' 
+#' @return Character vector of variable names in right hand side of formula
+#' 
 #' @export
-#' @noRd
 extract_rhs_varnames <- function(form, dat) {
   
   # Extract rhs terms
-  coef_names <- attr(x = terms(form), which = "term.labels")
+  coef_names <- attr(x = stats::terms(form), which = "term.labels")
   
   # Get column names to match
   colnames_pattern <- paste0("(", paste(colnames(dat), collapse = "|"), ")")
@@ -29,6 +33,14 @@ extract_rhs_varnames <- function(form, dat) {
 #' Based on either most common or reference factor levels in sample for
 #' categorical variable, or median/mean for continuous variables.
 #' 
+#' @param col A vector, generally corresponding to a dataframe column
+#' @param contin_action Character, choosing whether to select mean or median value
+#' for a continuous variable
+#' @param categ_action Character, choosing whether to select most common or reference
+#' factor levels for a categorical variable
+#' 
+#' @return Returns single either numeric or character value for a specific col
+#' 
 #' @export
 choose_standard_refpat <- function(col,
                                    contin_action = c("median", "mean"),
@@ -44,7 +56,7 @@ choose_standard_refpat <- function(col,
   # Set if continuous
   if (is.numeric(col)) {
     mean_val <- mean(col, na.rm = TRUE)
-    median_val <- median(col, na.rm = TRUE)
+    median_val <- stats::median(col, na.rm = TRUE)
     val <- ifelse(contin == "mean", mean_val, median_val) 
   } else {
     common_cat <- names(which.max(table(col, useNA = "no")))
@@ -86,21 +98,29 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
   return(refpat_expanded)
 }
 
-#' Utility to add reference factor levels
+#' Utility to add reference factor levels to add model summary
+#' 
+#' (Not for use beyond this repository)
+#' 
+#' @param summ Model summary 
+#' @param dat Original dataset used to run the model
+#' @param form Formula from the run model
+#' @param term_col Column referencing terms in summm (maybe redundant?)
 #' 
 #' @export
-#' @noRd
 reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
   
+  variable <- coef <- NULL
+  
   # Get predictors
-  preds <- attr(terms(form), "term.labels")
+  preds <- attr(stats::terms(form), "term.labels")
   
   # Identify factors
   ref_levels <- dat[, lapply(.SD, function(col) levels(col)[1]), .SDcols = is.factor] %>% 
     data.table::transpose(keep.names = "variable") %>% 
     data.table::setnames(old = "V1", new = "coef")
   
-  ref_levels[, term := paste0(variable, coef)]
+  ref_levels[, "term" := paste0(variable, coef)]
   ref_levels[, setdiff(names(ref_levels), "term") := NULL]
   
   return(rbind(data.table::data.table(summ), ref_levels, fill = TRUE))
@@ -111,12 +131,18 @@ reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
 
 #' Helper function to run models in the illustrative analysis
 #' 
+#' (Not for use beyond this repository)
+#' 
+#' @param form Formula of model
+#' @param tmat Transition matrix
+#' @param dat Dataframe for analysis
+#' 
 #' @export
-#' @noRd
 run_mds_model <- function(form,
                           tmat,
                           dat) {
                               
+  ci_s_allo1 <- NULL
   
   # Get predictor names from formula
   predictors <- extract_rhs_varnames(form, dat)
@@ -148,10 +174,14 @@ run_mds_model <- function(form,
 
 #' Helper function to obtain predictions in the illustrative analysis
 #' 
-#' (For each imputed dataset)
+#' (Not for use beyond this repository)
+#' 
+#' @param mod Cox model based on data prepared with mstate
+#' @param ref_pats List of reference patients as prepared by function
+#' @param tmat Transition matrix
+#' @param horizon Scale, time horizon of prediction
 #' 
 #' @export
-#' @noRd
 predict_mds_model <- function(mod,
                               ref_pats,
                               tmat, 
@@ -187,12 +217,18 @@ predict_mds_model <- function(mod,
 }
 
 
+#' Complementary log-log transformation
+#' 
+#' @param x Scalar or numeric vector
+#' 
 #' @export
-#' @noRd
 cloglog <- Vectorize(function(x) log(-log(1 - x)))
 
+#' Inverse of complementary log-log transformation
+#' 
+#' @param x Scalar or numeric vector
+#' 
 #' @export
-#' @noRd
 inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 
 
@@ -210,6 +246,10 @@ inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 pool_morisot <- function(preds_list, # add p_var and se_var, also confint
                          by_vars) {
   
+  # For checks
+  . <- Ui <- p_trans <- Qbar <- total_var <- m <- NULL
+  Ubar <- B <- prob <- se <- var_p <- p <-  NULL
+  
   # Bind the predictions  
   preds_full <- data.table::rbindlist(preds_list)
 
@@ -225,7 +265,7 @@ pool_morisot <- function(preds_list, # add p_var and se_var, also confint
   preds_summ <- preds_full[, .(
     m = .N,
     Ubar = mean(Ui),
-    B = var(p_trans),
+    B = stats::var(p_trans),
     Qbar = mean(p_trans)
   ), by = by_vars]
   
@@ -233,8 +273,8 @@ pool_morisot <- function(preds_list, # add p_var and se_var, also confint
   
   preds_final <- preds_summ[, .(
     p_pooled = inv_cloglog(Qbar),
-    CI_low = inv_cloglog(Qbar - qnorm(0.975) * sqrt(total_var)),
-    CI_upp = inv_cloglog(Qbar + qnorm(0.975) * sqrt(total_var))
+    CI_low = inv_cloglog(Qbar - stats::qnorm(0.975) * sqrt(total_var)),
+    CI_upp = inv_cloglog(Qbar + stats::qnorm(0.975) * sqrt(total_var))
   ), by = by_vars]
   
   return(preds_final)

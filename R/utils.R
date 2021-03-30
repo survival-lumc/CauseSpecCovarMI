@@ -114,9 +114,9 @@ record_warning <- function(expr) {
 
 #' Appending scenario details as column
 #' 
-#' Used to collapse scenario identifiers in one column.
+#' Used to collapse scenario identifiers in one column. 
+#' (Not for use beyond this repository)
 #' 
-#' @export
 #' @noRd
 add_scen_details <- function(scenario,
                              seed,
@@ -218,10 +218,16 @@ preds_CCA_ref <- function(preds,
 
 #' Approximate jackknife estimate for MCSE of RMSE
 #' 
-#' Adapted from the simhelpers CRAN package, see \link{https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html}.
+#' Adapted from the simhelpers CRAN package, see \href{https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html}{here}.
 #' This version takes vectors as inputs instead.
 #' 
-#' @source \link{https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R}
+#' @param estimates Numeric vector of estimates
+#' @param true Scalar or numeric vector containing true data-generating value
+#' of estimands targeted in estimates
+#' @param K Length of estimates vector, which should be the number of simulation
+#' replications
+#' 
+#' @source \url{https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R}
 #' 
 #' @export
 rmse_mcse <- function(estimates, true, K) {
@@ -248,7 +254,10 @@ rmse_mcse <- function(estimates, true, K) {
 
 #' Helper function to extract scenario number
 #' 
-#' @export
+#' (Not for use beyond this repository)
+#' 
+#' @param dat Simulation results dataframe (full)
+#' 
 #' @noRd
 extract_scen_num <- function(dat) {
   
@@ -272,7 +281,8 @@ extract_scen_num <- function(dat) {
 
 #' Helper function for formatting full simulation results before summarising
 #' 
-#' @export
+#' (Not for use beyond this repository)
+#' 
 #' @noRd
 format_scen_summary <- function(dat) {
   

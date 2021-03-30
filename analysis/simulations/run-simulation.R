@@ -3,7 +3,7 @@
 ##************************************##
 
 # Load scenarios 
-scenarios <- readRDS("data/scenarios.rds") 
+scenarios_df <- CauseSpecCovarMI::scenarios
 
 # Load all functions in compendium
 library(CauseSpecCovarMI)
@@ -17,7 +17,7 @@ repl <- as.numeric(args[2])
 
 # Run one replication of one scenario
 CauseSpecCovarMI::one_simulation(
-  scenario = scenarios[scenarios$scen_num == scen, ],
+  scenario = scenarios_df[scenarios_df$scen_num == scen, ],
   rep_num = repl
 )
 
