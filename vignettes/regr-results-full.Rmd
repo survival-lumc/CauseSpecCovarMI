@@ -39,9 +39,7 @@ In this section, we present the full results for the regression coefficients par
 
 ```{r read}
 # Read-in summarised results and scenarios
-regr_results <- fst::read_fst("../data/sims_regr_summary.fst") %>% 
-  data.table::setDT()
-
+regr_results <- data.table::setDT(CauseSpecCovarMI::regr_results)
 regr_results <- regr_results[n != 500]
 
 regr_results[, var_label := factor(

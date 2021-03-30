@@ -3,108 +3,6 @@
 ##********************************##
 
 
-# Lolly plot --------------------------------------------------------------
-
-
-#' Lolly plot for simulation results
-#'
-#' @export
-#' @noRd
-ggplot_lolly <- function(dat,
-                         estim,
-                         method_var,
-                         true,
-                         mcarlo_se = NULL, # This would be a MCSE
-                         group = NULL,
-                         facets = NULL,
-                         conf.int = 0.95,
-                         dodge = 0.75,
-                         scales = "fixed",
-                         lims_estim = NULL) {
-  
-  # Check if true is numeric or a variable
-  if (is.numeric(true)) dat$true <- true
-  else true <- rlang::sym(true)
-  
-  # Convert characters
-  estim <- rlang::sym(estim)
-  method_var <- rlang::sym(method_var)
-  
-  # Build basic lolly plot - base on groups
-  if (!is.null(group)) {
-    
-    group <- rlang::sym(group)
-    
-    p <- dat %>% 
-      ggplot2::ggplot(ggplot2::aes(x = !!method_var, 
-                                   y = !!estim, 
-                                   col = !!method_var,
-                                   group = !!group, 
-                                   shape = !!group, 
-                                   linetype = !!group)) +
-      ggplot2::geom_hline(ggplot2::aes(yintercept = !!true), 
-                          linetype = "dashed") 
-    
-  } else {
-    p <- dat %>%
-      ggplot2::ggplot(ggplot2::aes(x = !!method_var, 
-                                   y = !!estim, 
-                                   col = !!method_var)) +
-      ggplot2::geom_hline(ggplot2::aes(yintercept = !!true),
-                          linetype = "dashed")
-  }
-  
-  # Add points and line range
-  p <- p +
-    ggplot2::geom_point(size = 2, position = ggplot2::position_dodge(dodge)) + 
-    ggplot2::geom_linerange(ggplot2::aes(ymin = !!true,
-                                         ymax = !!estim, 
-                                         xmin = !!method_var, 
-                                         xmax = !!method_var),
-                            position = ggplot2::position_dodge(dodge))
-  
-  
-  # Add standard errors
-  if (!is.null(mcarlo_se)) {
-    
-    mcarlo_se <- rlang::sym(mcarlo_se)
-    crit <- stats::qnorm((1 - conf.int) / 2, lower.tail = FALSE)
-    
-    p <- p + 
-      ggplot2::geom_point(ggplot2::aes(x = !!method_var,
-                                       y = !!estim + crit * !!mcarlo_se),
-                          position = ggplot2::position_dodge(dodge), 
-                          shape = 41,
-                          size = 1.5) + 
-      ggplot2::geom_point(ggplot2::aes(x = !!method_var, 
-                                       y = !!estim - crit * !!mcarlo_se),
-                          position = ggplot2::position_dodge(dodge), 
-                          shape = 40,
-                          size = 1.5)
-  }
-  
-  # Check facets
-  if (!is.null(facets)) {
-    
-    if (length(facets) > 2)
-      stop("Facets should be of length 1 or 2. If you want to include another var,
-           use an interaction as one of the facets e.g. X * Z")
-    if (length(facets) == 2) {
-      facets <- stats::as.formula(paste(facets, collapse = " ~ ")) 
-    } else facets <- as.formula(paste0(". ~ ", facets))
-    
-    p <- p + ggplot2::facet_grid(facets, scales = scales) 
-  } 
-  
-  # Final touches
-  p <- p + 
-    ggplot2::coord_flip(ylim = lims_estim) +
-    ggplot2::guides(colour = FALSE)
-  
-  return(p)
-}
-
-
 # Nested-loop plots -------------------------------------------------------
 
 
@@ -121,36 +19,39 @@ get_nlp_steps <- function(dat,
   
   # Create labels for the steps
   if (is.null(step_labels)) {
-    step_labels <- sapply(step_factors, function(step_var) {
-      
-      steps <- levels(droplevels(dat[[step_var]]))
-      label <- paste0(step_var, ": ", paste(steps, collapse = ", "))
-      return(label)
-    }, USE.NAMES = T)
+    step_labels <- vapply(
+      X = step_factors, 
+      FUN = function(step_var) {
+        steps <- levels(droplevels(dat[[step_var]]))
+        paste0(step_var, ": ", paste(steps, collapse = ", "))
+      }, 
+      FUN.VALUE = character(1), 
+      USE.NAMES = TRUE
+    )
   }
   
   # Set up height of steps and space between them, based on range
-  range_data <- range(dat[[estim]], na.rm = T)
-  
+  range_data <- range(dat[[estim]], na.rm = TRUE)
   if (is.null(height_steps)) height_steps <- 0.1 * diff(range_data)
   if (is.null(height_betw_steps)) height_betw_steps <- (2 / 3) * height_steps
-  
-  # Location of top of the first step
   if (is.null(top_step)) top_step <- range_data[1] - (1 / 4) * diff(range_data)
   
   # Compute bounds, 'top - heigh_steps' is lower bound of steps
-  bounds <- sapply(
-    top_step - 0:(num_steps - 1) * (height_steps + height_betw_steps), 
-    function(top) c(top - height_steps, top)
+  bounds <- vapply(
+    X = top_step - 0:(num_steps - 1) * (height_steps + height_betw_steps), 
+    FUN = function(top) c(top - height_steps, top),
+    FUN.VALUE = numeric(2)
   )
   colnames(bounds) <- step_factors
   
   # Make list
-  obj <- list("bounds" = bounds,
-              "betw_steps" = height_betw_steps,
-              "labs" = step_labels,
-              "num_steps" = num_steps,
-              "range" = range_data)
+  obj <- list(
+    "bounds" = bounds,
+    "betw_steps" = height_betw_steps,
+    "labs" = step_labels,
+    "num_steps" = num_steps,
+    "range" = range_data
+  )
   
   return(obj)
 }
@@ -160,64 +61,88 @@ prep_nlp_data <- function(dat,
                           step_factors,
                           bounds_obj) {
   
+  # For checks
+  . <- scenario <- step_ID <- labpos <- scaled_vals <- NULL
+  
   # Lex order true ensures steps biggest from large to small
   dat_nlp <- dat[, scenario := as.numeric(
-    interaction(.SD, lex.order = T, drop = T)
+    interaction(.SD, lex.order = TRUE, drop = TRUE)
   ), .SDcols = step_factors] 
   
   # Scale the steps based on bounds
-  steps_scaled <- sapply(step_factors, function(col) {
-    scales::rescale(as.numeric(dat[[col]]), to = bounds_obj$bounds[, col])
-  }) %>% 
-    data.table::data.table() %>%
-    
-    # Add scenario and true, for plotting
-    .[, ':=' (
-      scenario = dat_nlp$scenario,
-      true = dat_nlp$true
-    )] %>% 
-    .[order(scenario)] 
+  steps_scaled <- vapply(
+    X = step_factors, 
+    FUN = function(col) scales::rescale(as.numeric(dat[[col]]), to = bounds_obj$bounds[, col]),
+    FUN.VALUE = numeric(nrow(dat))
+  ) %>% 
+    data.table::data.table()
+
+  steps_scaled[, ':=' (
+    scenario = dat_nlp$scenario,
+    true = dat_nlp$true
+  )]
   
+  data.table::setorder(steps_scaled, scenario)
+
   # Complete df, first expand last step so steps don't end abruptly
-  dat_steps <- steps_scaled[.N, ] %>% 
-    .[, scenario := scenario + 1] %>% 
-    rbind(., steps_scaled) %>% 
+  dat_steps <- steps_scaled[.N, ] 
+  dat_steps[, scenario := scenario + 1]
+
+  # Put in long format
+  dat_steps_long <- data.table::melt.data.table(
+    data = rbind(dat_steps, steps_scaled),
+    id.vars = "scenario", 
+    measure.vars = step_factors,
+    variable.name = "step_ID", 
+    value.name = "scaled_vals" 
+  )  
+  
+  # Remove duplicates
+  dat_steps_long <- dat_steps_long[, .SD[.N], by = .(scenario, step_ID)]
     
-    # Put in long format
-    data.table::melt.data.table(
-      id.vars = "scenario", 
-      measure.vars = step_factors,
-      variable.name = "step_ID", 
-      value.name = "scaled_vals" 
-    ) %>% 
+  # Put label in middle of first step
+  dat_steps_long[, labpos := ifelse(
+    scenario == min(scenario), 
+    max(scaled_vals) + bounds_obj$betw_steps / 2,
+    NA
+  ), by = step_ID]  
     
-    # Remove duplicates
-    .[, .SD[.N], by = .(scenario, step_ID)] %>% 
-    
-    # Put label in middle of first step
-    .[, labpos := ifelse(
-      scenario == min(scenario), 
-      max(scaled_vals) + bounds_obj$betw_steps / 2,
-      NA
-    ), by = step_ID] %>% 
-    
-    # Match label to its ID
-    .[scenario == min(scenario), ':=' (
-      lab = bounds_obj$labs[match(step_ID, names(bounds_obj$labs))],
-      lab_xpos = scenario + (1 / 5)
-    ), by = step_ID]
+  # Match label to its ID
+  dat_steps_long[scenario == min(scenario), ':=' (
+    lab = bounds_obj$labs[match(step_ID, names(bounds_obj$labs))],
+    lab_xpos = scenario + (1 / 5)
+  ), by = step_ID]
   
   # Make list
-  obj <- list("df_main" = dat_nlp,
-              "df_steps" = dat_steps)
+  obj <- list("df_main" = dat_nlp, "df_steps" = dat_steps_long)
   
   return(obj)
 }
 
 
+
+#' Custom ggplot-based nested loop plots
+#'
+#' @param dat Data frame with simulation results
+#' @param estim Character for column containing estimates
+#' @param method_var Character for column containing method
+#' @param true Character for column containing true data-generating 
+#' estimand value, or a scalar e.g. 0
+#' @param step_factors Vector of step factors for bottom of the NL
+#' @param pointsize Size of points
+#' @param point_dodge Measure of horizontal dodge
+#' @param text_size Size of the step labels
+#' @param top_step Position of top step (in scale of data)
+#' @param height_betw_steps Height between NLP step (on scale of data)
+#' @param height_steps Height of the NLP steps themselves (on scale of data)
+#' @param step_labels Optional vector of labels for the step functions.
+#' Defaults to variable name and the factor labels
+#'
+#' @return A ggplot2 object
 #' @export
-#' 
-#' @noRd
+#'
+#' @examples
+#' # Later here
 ggplot_nlp <- function(dat,
                        estim,
                        method_var,
@@ -232,14 +157,12 @@ ggplot_nlp <- function(dat,
                        step_labels = NULL) {
   
   # Coerce input to data.table (creates a copy)
-  dat <- data.table::as.data.table(dat)
+  dat <- data.table::data.table(dat)
   
   # Read-in key parameters
   estim <- rlang::sym(estim)
   method_var <- rlang::sym(method_var)
-  if (is.numeric(true)) {
-    dat$true <- true
-  } else true <- rlang::sym(true)
+  if (is.numeric(true)) dat$true <- true else true <- rlang::sym(true)
   
   # Create labels, if step_labels is NULL
   bounds_obj <- get_nlp_steps(
@@ -268,7 +191,6 @@ ggplot_nlp <- function(dat,
     by = gridline_by
   )
   
-  
   # Begin plot
   p <- dat_obj$df_main %>% 
     ggplot2::ggplot(ggplot2::aes(x = .data$scenario + 0.5, y = !!estim)) +
@@ -278,7 +200,7 @@ ggplot_nlp <- function(dat,
       data = dat_obj$df_steps,
       ggplot2::aes(x = .data$lab_xpos, y = .data$labpos, label = .data$lab),
       size = text_size,
-      na.rm = T, hjust = 0
+      na.rm = TRUE, hjust = 0
     ) +
     
     # Add points
@@ -289,9 +211,11 @@ ggplot_nlp <- function(dat,
     ) +
     
     # Add dashed line for true
-    ggplot2::geom_step(data = dat_obj$df_steps, 
-                       ggplot2::aes(x = .data$scenario, y = !!true), 
-                       linetype = "dashed") +
+    ggplot2::geom_step(
+      data = dat_obj$df_steps, 
+      ggplot2::aes(x = .data$scenario, y = !!true), 
+      linetype = "dashed"
+    ) +
     
     # Add the vertical lines
     ggplot2::geom_linerange(
@@ -304,24 +228,32 @@ ggplot_nlp <- function(dat,
         linetype = !!method_var, 
         group = !!method_var
       ),
-      position =  ggplot2::position_dodge(point_dodge),
+      position = ggplot2::position_dodge(point_dodge),
       size = pointsize * .25
     ) +
     
     # There are the step functions
     ggplot2::geom_step(
       data = dat_obj$df_steps,
-      ggplot2::aes(x = .data$scenario, y = .data$scaled_vals, group = step_ID)
+      ggplot2::aes(
+        x = .data$scenario, 
+        y = .data$scaled_vals, 
+        group = .data$step_ID
+      )
     ) +
     ggplot2::guides(colour = F) +
-    ggplot2::theme(legend.position = "bottom", 
-                   axis.ticks.x = ggplot2::element_blank()) +
+    ggplot2::theme(
+      legend.position = "bottom",
+      axis.ticks.x = ggplot2::element_blank()
+    ) +
     
     # Zoom in on plot
     ggplot2::coord_cartesian(
       expand = 0, 
-      ylim = c(min(bounds_obj$bounds) - bounds_obj$betw_steps, 
-               bounds_obj$range[2] + bounds_obj$betw_steps)
+      ylim = c(
+        min(bounds_obj$bounds) - bounds_obj$betw_steps, 
+        bounds_obj$range[2] + bounds_obj$betw_steps
+      )
     ) +
     
     # Add proper gridlines
@@ -331,65 +263,8 @@ ggplot_nlp <- function(dat,
 }
 
 
-# 'Classic' estimates plots -----------------------------------------------
+
+# Forest plots ------------------------------------------------------------
 
 
-ggplot_estimates <- function(dat,
-                             estim,
-                             method_var,
-                             se,
-                             true,
-                             facets = NULL,
-                             scales = "fixed",
-                             conf.int = 0.95,
-                             lims_estim = NULL) {
-  
-  # Check if true is numeric or a variable
-  if (is.numeric(true)) dat$true <- true
-  else true <- rlang::sym(true)
-  
-  # Convert characters
-  estim <- rlang::sym(estim)
-  method_var <- rlang::sym(method_var)
-  se <- rlang::sym(se)
-  
-  # Calculate critical val
-  crit <- qnorm((1 - conf.int) / 2, lower.tail = FALSE)
-  
-  # Build basic plots
-  p <- dat %>% 
-    ggplot2::ggplot(ggplot2::aes(x = !!method_var,
-                                 y = !!estim, 
-                                 col = !!method_var)) +
-    ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 2)) +
-    ggplot2::geom_segment(aes(y = !!estim - crit * !!se,
-                              yend = !!estim + crit * !!se,
-                              x = !!method_var,
-                              xend = !!method_var), 
-                          size = 2,
-                          alpha = .5)+ 
-    ggplot2::geom_point(size = 2) +
-    ggplot2::geom_hline(aes(yintercept = !!true), 
-                        linetype = "dashed")  
-  
-  
-  # Check facets
-  if (!is.null(facets)) {
-    
-    if (length(facets) > 2)
-      stop("Facets should be of length 1 or 2. If you want to include another var,
-           use an interaction as one of the facets e.g. X * Z")
-    if (length(facets) == 2) {
-      facets <- as.formula(paste(facets, collapse = " ~ ")) 
-    } else facets <- as.formula(paste0(". ~ ", facets))
-    
-    p <- p + ggplot2::facet_grid(facets, scales = scales) 
-  } 
-  
-  # Final touches
-  p <- p + 
-    ggplot2::coord_cartesian(ylim = lims_estim) +
-    ggplot2::guides(colour = FALSE)
-  
-  return(p)
-}
+#...

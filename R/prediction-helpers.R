@@ -9,7 +9,6 @@
 #' Compute Weibull hazard
 #' 
 #' @export
-#' 
 #' @noRd
 haz_weib <- Vectorize(function(alph, lam, t) {
   return(alph * lam * t^(alph - 1))
@@ -104,8 +103,11 @@ get_true_cuminc <- function(ev1_pars,
 #' 
 #' @return Grid of covariate combos.
 #' 
+#' @export
 #' @noRd
 make_covar_grid <- function(dat) {
+  
+  X <- Z <- NULL
   
   sd_units <- c(0, 1, 2, -1, -2)
   z <- 0 + sd_units * 1 # standard normal
@@ -155,7 +157,7 @@ get_state_probs <- function(obj, # needs to be baseline (covars 0)
   
   # For checks
   trans <- Haz <- `1` <- `2` <- H_REL <- H_NRM <- haz_REL <- haz_NRM <- NULL
-  hazsum <- time <- pstate1 <- pstate2 <- pstate3 <- EFS_min1
+  hazsum <- time <- pstate1 <- pstate2 <- pstate3 <- EFS_min1 <- NULL
   
   # Read in baseline cumulative hazard
   df_baseHaz <- obj$Haz

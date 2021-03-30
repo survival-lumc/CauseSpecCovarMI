@@ -23,8 +23,8 @@ predictors <- sort(colnames(dat_mds)[!(colnames(dat_mds) %in% outcomes)])
 rhs <- paste(predictors, collapse = " + ")
 
 # Make both model formulas
-form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
-form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
+form_rel <- as.formula(paste0("survival::Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
+form_nrm <- as.formula(paste0("survival::Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
 
 
 # Load imputations --------------------------------------------------------

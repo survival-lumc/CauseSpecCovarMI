@@ -3,15 +3,12 @@
 ##*********************************************##
 
 
-library(CauseSpecCovarMI)
-
-
 # Manuscript plots --------------------------------------------------------
 
 
 # Read-in summarised to save time
-regr_results <- fst::read_fst("data/sims_regr_summary.fst") %>% data.table::setDT()
-pred_results <- fst::read_fst("data/sims_preds_summary.fst") %>% data.table::setDT()
+regr_results <- data.table::data.table(regr_results)
+preds_results <- data.table::data.table(preds_results)
 
 # Global theme
 ggplot2::theme_set(
@@ -105,7 +102,7 @@ ggplot2::ggsave(plot = fig2, filename = "analysis/figures/MAR-T_B1_NLP.eps")
 # Figure 3 ----------------------------------------------------------------
 
 
-fig3 <- pred_results[
+fig3 <- preds_results[
   m %in% c(0, 50) & 
     state != "EFS" &
     n == 2000 & 

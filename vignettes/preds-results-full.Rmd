@@ -38,8 +38,7 @@ set.seed(1984)
 
 ```{r read}
 # Read-in summarised results and scenarios
-preds_results <- fst::read_fst("../data/sims_preds_summary.fst") %>% 
-  data.table::setDT()
+preds_results <- data.table::setDT(CauseSpecCovarMI::preds_results)
 
 preds_results <- preds_results[n != 500 & state != "EFS" &  
                                  m %in% c(0, 50) & 

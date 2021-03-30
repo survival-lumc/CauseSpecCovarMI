@@ -46,6 +46,9 @@ get_predictor_mats <- function(dat) {
 
 
 # Add var_names_miss within function
+#' @export
+#' 
+#' @noRd
 set_mi_methods <- function(dat,
                            var_names_miss,
                            imp_type = "mice",
@@ -63,12 +66,12 @@ set_mi_methods <- function(dat,
   contin_ind <- sapply(dat[, .SD, .SDcols = var_names_miss], is.numeric)
   
   unordered_ind <- sapply(
-    dat[, ..var_names_miss], 
+    dat[, .SD, .SDcols = var_names_miss], 
     function(col) length(levels(col)) > 2 & !is.ordered(col)
   )
   
   binary_ind <- sapply(
-    dat[, ..var_names_miss], 
+    dat[, .SD, .SDcols = var_names_miss], 
     function(col) length(levels(col)) == 2 & !is.ordered(col)
   )
   
@@ -85,7 +88,7 @@ set_mi_methods <- function(dat,
   }
   
   # Make global vec
-  meths <- setNames(character(ncol(dat)), names(dat))
+  meths <- stats::setNames(character(ncol(dat)), names(dat))
   meths[var_names_miss] <- meths_miss
   
   return(meths)
@@ -161,12 +164,12 @@ setup_mstate <- function(dat) {
 #' @param n_imp Vector of m imputations to extract
 #' @param analy String label to attach
 #' 
-#' @importFrom magrittr `%$%` 
-#' 
 #' @noRd
 pool_diffm <- function(mods_impdats,
                        n_imp,
                        analy) {
+  
+  . <- NULL
 
   purrr::map_dfr(n_imp, function(m) {
     estims <- mods_impdats[1:m] %$%

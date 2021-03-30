@@ -4,7 +4,9 @@
 
 
 
-
+#' @export
+#' 
+#' @noRd
 extract_rhs_varnames <- function(form, dat) {
   
   # Extract rhs terms
@@ -21,9 +23,12 @@ extract_rhs_varnames <- function(form, dat) {
   return(rhs_varnames)
 }
 
-#' @export
+#' Choose standard reference patient to predict
 #' 
-#' @noRd
+#' Based on either most common or reference factor levels in sample for
+#' categorical variable, or median/mean for continuous variables.
+#' 
+#' @export
 choose_standard_refpat <- function(col,
                                    contin_action = c("median", "mean"),
                                    categ_action = c("most_common", "reference")) {
@@ -50,7 +55,9 @@ choose_standard_refpat <- function(col,
   return(val)
 }
 
-
+#' @export
+#' 
+#' @noRd
 make_mstate_refpat <- function(refpat, tmat, covs) {
   
   # Get number of transitioins
@@ -70,7 +77,9 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
   return(refpat_expanded)
 }
 
-
+#' @export
+#' 
+#' @noRd
 reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
   
   # Get predictors
@@ -90,7 +99,9 @@ reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
 
 # Pooling predictions -----------------------------------------------------
 
-
+#' @export
+#' 
+#' @noRd
 run_mds_model <- function(form,
                           tmat,
                           dat) {
@@ -125,6 +136,8 @@ run_mds_model <- function(form,
 
 
 #' Predictions from mstate Cox model
+#' 
+#' @export
 #' 
 #' @noRd
 predict_mds_model <- function(mod,
@@ -162,12 +175,18 @@ predict_mds_model <- function(mod,
 }
 
 
+#' @export
+#' @noRd
 cloglog <- Vectorize(function(x) log(-log(1 - x)))
 
+#' @export
+#' @noRd
 inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 
 
 # Function for clean pooling here..
+#' @export
+#' @noRd
 pool_morisot <- function(preds_list, # add p_var and se_var, also confint
                          by_vars) {
   
