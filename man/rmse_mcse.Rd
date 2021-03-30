@@ -4,12 +4,21 @@
 \alias{rmse_mcse}
 \title{Approximate jackknife estimate for MCSE of RMSE}
 \source{
-\link{https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R}
+\url{https://github.com/meghapsimatrix/simhelpers/blob/master/R/calc_absolute.R}
 }
 \usage{
 rmse_mcse(estimates, true, K)
 }
+\arguments{
+\item{estimates}{Numeric vector of estimates}
+
+\item{true}{Scalar or numeric vector containing true data-generating value
+of estimands targeted in estimates}
+
+\item{K}{Length of estimates vector, which should be the number of simulation
+replications}
+}
 \description{
-Adapted from the simhelpers CRAN package, see \link{https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html}.
+Adapted from the simhelpers CRAN package, see \href{https://cran.r-project.org/web/packages/simhelpers/vignettes/MCSE.html}{here}.
 This version takes vectors as inputs instead.
 }
