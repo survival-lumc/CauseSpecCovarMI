@@ -198,12 +198,56 @@ mod_nrm <- survival::coxph(form_nrm, data = dat_mds) %>%
   )
 
 
-
 # Forest plot -------------------------------------------------------------
 
 
-# .. add here
+# Read in data dictionary
+dictionary <- get(load(here::here("R/data_dictionary.rda")))
 
+list_rel <- list(
+  "SMC-FCS" = smcfcs_rel,
+  "MICE" = mice_rel,
+  "CCA" = mod_rel
+)
+
+list_nrm <- list(
+  "SMC-FCS" = smcfcs_nrm,
+  "MICE" = mice_nrm,
+  "CCA" = mod_nrm
+)
+
+forest_rel <- CauseSpecCovarMI:::ggplot_grouped_forest(
+  dat = dat_mds,
+  dictionary = dictionary,
+  results = list_rel,
+  event = "Relapse",
+  form = form_rel
+)
+
+forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
+  dat = dat_mds,
+  dictionary = dictionary,
+  results = list_nrm,
+  event = "Non-relapse mortality",
+  form = form_nrm,
+  lims_x = c(0.5, 3.1)
+)
+
+# Change to rel
+ggsave(
+  filename = here::here("analysis/figures/forest_rel.eps"), 
+  plot = forest_rel, 
+  width = 10, 
+  height = 11
+)
+
+# Change to nrm
+ggsave(
+  filename = here::here("analysis/figures/forest_nrm.eps"), 
+  plot = forest_rel, 
+  width = 10, 
+  height = 11
+)
 
 
 # Predictions -------------------------------------------------------------
