@@ -363,19 +363,19 @@ ggplot_grouped_forest <- function(dat,
     ) +
     ggplot2::geom_linerange(
       ggplot2::aes(
-        ymin = `2.5 %`, 
-        ymax = `97.5 %`, 
+        ymin = .data$`2.5 %`, 
+        ymax = .data$`97.5 %`, 
         xmin = .data$levels_lab, 
         xmax = .data$levels_lab, 
         col = .data$method
       ),
-      position = position_dodge(width = 0.75), 
+      position = ggplot2::position_dodge(width = 0.75), 
       size = 0.5,
       na.rm = TRUE
     ) +
     ggplot2::geom_point(
       ggplot2::aes(col = .data$method, shape = .data$method), 
-      position = position_dodge(width = 0.75), 
+      position = ggplot2::position_dodge(width = 0.75), 
       size = 1.25,
       na.rm = TRUE
     ) +
@@ -413,6 +413,10 @@ prepare_forest_df <- function(dat,
                               dictionary, 
                               form,
                               results) {
+  
+  # For checks
+  . <- colour_row <- graph_x <- level_num <- NULL
+  var_label <- var_name <- levels_lab <- term <- method  <- NULL
   
   # Combine list of regression results - add also NA row with reference categories
   res <- data.table::rbindlist(

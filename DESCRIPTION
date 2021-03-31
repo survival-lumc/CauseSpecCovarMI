@@ -55,7 +55,8 @@ Imports:
     stringr,
     survival,
     tibble,
-    tidyr
+    tidyr,
+    patchwork
 Suggests:
     devtools,
     ggpubr,

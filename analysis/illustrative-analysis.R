@@ -24,6 +24,7 @@ rhs <- paste(predictors, collapse = " + ")
 form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
 form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
 
+# use reformulate..
 
 # Prepare MI --------------------------------------------------------------
 
@@ -202,7 +203,7 @@ mod_nrm <- survival::coxph(form_nrm, data = dat_mds) %>%
 
 
 # Read in data dictionary
-dictionary <- get(load(here::here("R/data_dictionary.rda")))
+dictionary <- get(load("R/data_dictionary.rda"))
 
 list_rel <- list(
   "SMC-FCS" = smcfcs_rel,
@@ -235,7 +236,7 @@ forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
 
 # Change to rel
 ggsave(
-  filename = here::here("analysis/figures/forest_rel.eps"), 
+  filename = "analysis/figures/forest_rel.eps", 
   plot = forest_rel, 
   width = 10, 
   height = 11
@@ -243,7 +244,7 @@ ggsave(
 
 # Change to nrm
 ggsave(
-  filename = here::here("analysis/figures/forest_nrm.eps"), 
+  filename = "analysis/figures/forest_nrm.eps", 
   plot = forest_rel, 
   width = 10, 
   height = 11
