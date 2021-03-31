@@ -24,3 +24,24 @@ Scalar, value of cumulative incidence
 Based on Weibull hazards from both competing events. Integration is
 done via \code{stats::integrate}.
 }
+\examples{
+time <- seq(0.1, 10, by = 0.1)
+
+# Use baseline parametrisation from sim study
+cuminc <- cuminc_weib(
+alph_ev = 0.58,
+lam_ev = 0.19,
+alph_comp = 0.53,
+lam_comp = 0.21,
+t = time
+)
+
+plot(
+x = time, 
+y = cuminc, 
+type = "l", 
+xlab = "Time", 
+ylab = "Cumulative incidence"
+)
+
+}

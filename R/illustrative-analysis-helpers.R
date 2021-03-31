@@ -12,6 +12,15 @@
 #' @return Character vector of variable names in right hand side of formula
 #' 
 #' @export
+#' 
+#' @examples 
+#' form <- reformulate(
+#'   termlabels = c("age_allo1_decades", "mdsclass"),
+#'   response = "Surv(ci_allo1, ci_s_allo1 == 1)"
+#' )
+#' 
+#' extract_rhs_varnames(form, dat_mds_synth)
+#' 
 extract_rhs_varnames <- function(form, dat) {
   
   # Extract rhs terms
@@ -42,6 +51,19 @@ extract_rhs_varnames <- function(form, dat) {
 #' @return Returns single either numeric or character value for a specific col
 #' 
 #' @export
+#' 
+#' @examples 
+#' # Used on single column:
+#' choose_standard_refpat(dat_mds_synth$karnofsk_allo1, categ_action = "most_common")
+#' 
+#' # Used on many columns
+#' dat <- data.table::data.table(dat_mds_synth)
+#' ref_pat <- dat[, lapply(.SD, function(col) {
+#' CauseSpecCovarMI::choose_standard_refpat(col, "median", "reference") 
+#' }), .SD = c("karnofsk_allo1", "age_allo1_decades")]
+#' 
+#' ref_pat[]
+#' 
 choose_standard_refpat <- function(col,
                                    contin_action = c("median", "mean"),
                                    categ_action = c("most_common", "reference")) {
@@ -79,6 +101,15 @@ choose_standard_refpat <- function(col,
 #' @param covs Covariates used in the cause-specific Cox models
 #' 
 #' @export
+#' 
+#' @examples 
+#' tmat <- mstate::trans.comprisk(2, c("REL", "NRM"))
+#' covs <- c("age_allo1_decades", "mdsclass")
+#' 
+#' ref_pat <- dat_mds_synth[1, ]
+#' ref_pat[]
+#' make_mstate_refpat(ref_pat, tmat, covs)
+#' 
 make_mstate_refpat <- function(refpat, tmat, covs) {
   
   # Get number of transitioins
@@ -107,7 +138,7 @@ make_mstate_refpat <- function(refpat, tmat, covs) {
 #' @param form Formula from the run model
 #' @param term_col Column referencing coefficient names in summ
 #' 
-#' @export
+#' @noRd
 reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
   
   variable <- coef <- NULL
@@ -141,7 +172,7 @@ reflevels_add_summary <- function(summ, dat, form, term_col = "term") {
 #' @param tmat Transition matrix
 #' @param dat Dataframe for analysis
 #' 
-#' @export
+#' @noRd
 run_mds_model <- function(form,
                           tmat,
                           dat) {
@@ -185,7 +216,7 @@ run_mds_model <- function(form,
 #' @param tmat Transition matrix
 #' @param horizon Scale, time horizon of prediction
 #' 
-#' @export
+#' @noRd
 predict_mds_model <- function(mod,
                               ref_pats,
                               tmat, 
@@ -225,14 +256,14 @@ predict_mds_model <- function(mod,
 #' 
 #' @param x Scalar or numeric vector
 #' 
-#' @export
+#' @noRd
 cloglog <- Vectorize(function(x) log(-log(1 - x)))
 
 #' Inverse of complementary log-log transformation
 #' 
 #' @param x Scalar or numeric vector
 #' 
-#' @export
+#' @noRd
 inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 
 
@@ -247,6 +278,29 @@ inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
 #' @param by_vars Vector of variable names to pool across
 #' 
 #' @export
+#' 
+#' @examples 
+#' set.seed(1234)
+#' 
+#' # This represents a prediction for patients A and B made
+#' # across 20 imputed datasets 
+#' preds_list <- replicate(
+#'   n = 20, 
+#'   simplify = FALSE,
+#'   expr = {
+#'     cbind.data.frame(
+#'       "prob" = runif(2, min = 0.25, max = 0.5),
+#'       "se" = runif(2, min = 0.01, max = 0.05),
+#'       "patient" = c("A", "B")
+#'     )
+#'   }
+#' )
+#' 
+#' preds_list[c(1, 2)]
+#' 
+#' # Pool the probabilities
+#' pool_morisot(preds_list, by_vars = "patient")
+#' 
 pool_morisot <- function(preds_list, # add p_var and se_var, also confint
                          by_vars) {
   

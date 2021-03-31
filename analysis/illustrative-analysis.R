@@ -21,10 +21,15 @@ predictors <- sort(colnames(dat_mds)[!(colnames(dat_mds) %in% outcomes)])
 rhs <- paste(predictors, collapse = " + ")
 
 # Make both model formulas
-form_rel <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 1) ~ ", rhs))
-form_nrm <- as.formula(paste0("Surv(ci_allo1, ci_s_allo1 == 2) ~ ", rhs))
-
-# use reformulate..
+form_rel <- stats::reformulate(
+  termlabels = predictors,
+  response = "Surv(ci_allo1, ci_s_allo1 == 1)"
+)
+  
+form_nrm <- stats::reformulate(
+  termlabels = predictors,
+  response = "Surv(ci_allo1, ci_s_allo1 == 2)"
+)
 
 # Prepare MI --------------------------------------------------------------
 
@@ -45,7 +50,7 @@ dat_mds[, ':=' (
 var_names_miss <- colnames(dat_mds)[sapply(dat_mds, anyNA)]
 
 # Set methods accordingly
-meths <- CauseSpecCovarMI::set_mi_methods(
+meths <- CauseSpecCovarMI:::set_mi_methods(
   dat = dat_mds,
   var_names_miss = var_names_miss, 
   imp_type = "mice",
@@ -309,14 +314,14 @@ rm(ref_pat, ref_pat_excess, ref_pat_saml)
 preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
   
   # Run model
-  mod <- CauseSpecCovarMI::run_mds_model(
+  mod <- CauseSpecCovarMI:::run_mds_model(
     form = form_mds_mstate,
     tmat = tmat,
     dat = impdat
   )
   
   # Predict
-  preds <- CauseSpecCovarMI::predict_mds_model(
+  preds <- CauseSpecCovarMI:::predict_mds_model(
     mod = mod, 
     ref_pats = ref_pats,
     horizon = 5, 
@@ -329,14 +334,14 @@ preds_list_mice <- pbapply::pblapply(impdats_mice[1:5], function(impdat) {
 preds_list_smcfcs <- pbapply::pblapply(impdats_smcfcs[1:5], function(impdat) {
   
   # Run model
-  mod <- CauseSpecCovarMI::run_mds_model(
+  mod <- CauseSpecCovarMI:::run_mds_model(
     form = form_mds_mstate,
     tmat = tmat,
     dat = impdat
   )
   
   # Predict
-  preds <- CauseSpecCovarMI::predict_mds_model(
+  preds <- CauseSpecCovarMI:::predict_mds_model(
     mod, 
     ref_pats = ref_pats,
     horizon = 5, 
@@ -358,11 +363,15 @@ preds_CCA <- CauseSpecCovarMI::predict_mds_model(
   tmat = tmat
 ) %>% data.table::setDT()
 
+# Recall transformation functions
+cloglog <- Vectorize(function(x) log(-log(1 - x)))
+inv_cloglog <- Vectorize(function(x) 1 - exp(-exp(x)))
+
 # Add CI on invcloglog also for CCA
 preds_CCA[, var_delta := se^2 / (log(1 - prob) * (1 - prob))^2]
 preds_CCA[, ':=' (
-  CI_low = CauseSpecCovarMI::inv_cloglog(cloglog(prob) - qnorm(0.975) * sqrt(var_delta)),
-  CI_upp = CauseSpecCovarMI::inv_cloglog(cloglog(prob) + qnorm(0.975) * sqrt(var_delta)),
+  CI_low = inv_cloglog(cloglog(prob) - qnorm(0.975) * sqrt(var_delta)),
+  CI_upp = inv_cloglog(cloglog(prob) + qnorm(0.975) * sqrt(var_delta)),
   p_pooled = prob # Just to bind rows later
 )]
 

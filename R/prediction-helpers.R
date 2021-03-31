@@ -48,6 +48,27 @@ gen_surv_weib <- Vectorize(function(cumhaz1, cumhaz2) {
 #' @return Scalar, value of cumulative incidence
 #' 
 #' @export
+#' 
+#' @examples 
+#' time <- seq(0.1, 10, by = 0.1)
+#' 
+#' # Use baseline parametrisation from sim study
+#' cuminc <- cuminc_weib(
+#' alph_ev = 0.58,
+#' lam_ev = 0.19,
+#' alph_comp = 0.53,
+#' lam_comp = 0.21,
+#' t = time
+#' )
+#' 
+#' plot(
+#' x = time, 
+#' y = cuminc, 
+#' type = "l", 
+#' xlab = "Time", 
+#' ylab = "Cumulative incidence"
+#' )
+#' 
 cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
   
   prod <-  function(t) {
@@ -71,7 +92,7 @@ cuminc_weib <- function(alph_ev, lam_ev, alph_comp, lam_comp, t) {
 #' Compute true cumulative incidence (in simulation study)
 #' 
 #' Relevant only in context of simulation study when generating based on
-#' two variables X and Z.
+#' two variables X and Z (also used in vignette)
 #' 
 #' @param ev1_pars List parameters for weibull event 1
 #' @param ev2_pars List parameters for weibull event 2

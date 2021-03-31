@@ -18,3 +18,12 @@ values to predict}
 Utility function which allows to prepare one row of data.frame
 to be fed into \code{mstate::msfit} for prediction.
 }
+\examples{
+tmat <- mstate::trans.comprisk(2, c("REL", "NRM"))
+covs <- c("age_allo1_decades", "mdsclass")
+
+ref_pat <- dat_mds_synth[1, ]
+ref_pat[]
+make_mstate_refpat(ref_pat, tmat, covs)
+
+}

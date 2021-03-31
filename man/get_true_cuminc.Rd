@@ -20,5 +20,5 @@ True cumulative incidence at given times.
 }
 \description{
 Relevant only in context of simulation study when generating based on
-two variables X and Z.
+two variables X and Z (also used in vignette)
 }

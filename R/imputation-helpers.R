@@ -58,7 +58,7 @@ get_predictor_mats <- function(dat) {
 #' @param cont_method Method use to impute continuous covariates, default is 
 #' "norm" but can for example change to "pmm"
 #' 
-#' @export
+#' @noRd
 set_mi_methods <- function(dat,
                            var_names_miss,
                            imp_type = "mice",
