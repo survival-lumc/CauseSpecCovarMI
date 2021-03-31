@@ -761,8 +761,14 @@
     "parlSMCFCS": {
       "Package": "parlSMCFCS",
       "Version": "0.0.1",
-      "Source": "unknown",
-      "Hash": "f19acf2a47b9b137301a0c4be126b339"
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "edbonneville",
+      "RemoteRepo": "parlSMCFCS",
+      "RemoteRef": "master",
+      "RemoteSha": "9e94a7e15bc12867f3f56aec0cdcceb96204bad5",
+      "Hash": "a6e8db222d55b4d620132e81b9997786"
     },
     "patchwork": {
       "Package": "patchwork",

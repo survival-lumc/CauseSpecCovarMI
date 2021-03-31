@@ -65,8 +65,8 @@ Suggests:
 VignetteBuilder: 
     knitr
 Remotes: 
-    edbonneville/parlSMCFCS,
-    josherrickson/howManyImputations
+    github::edbonneville/parlSMCFCS,
+    github::josherrickson/howManyImputations
 ByteCompile: true
 Encoding: UTF-8
 LazyData: true
