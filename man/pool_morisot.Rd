@@ -17,3 +17,26 @@ any other variables which identify groups of predictions (to be used in by_vars)
 \description{
 Method described in paper of morisot and colleagues
 }
+\examples{
+set.seed(1234)
+
+# This represents a prediction for patients A and B made
+# across 20 imputed datasets 
+preds_list <- replicate(
+  n = 20, 
+  simplify = FALSE,
+  expr = {
+    cbind.data.frame(
+      "prob" = runif(2, min = 0.25, max = 0.5),
+      "se" = runif(2, min = 0.01, max = 0.05),
+      "patient" = c("A", "B")
+    )
+  }
+)
+
+preds_list[c(1, 2)]
+
+# Pool the probabilities
+pool_morisot(preds_list, by_vars = "patient")
+
+}

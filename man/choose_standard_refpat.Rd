@@ -26,3 +26,16 @@ Returns single either numeric or character value for a specific col
 Based on either most common or reference factor levels in sample for
 categorical variable, or median/mean for continuous variables.
 }
+\examples{
+# Used on single column:
+choose_standard_refpat(dat_mds_synth$karnofsk_allo1, categ_action = "most_common")
+
+# Used on many columns
+dat <- data.table::data.table(dat_mds_synth)
+ref_pat <- dat[, lapply(.SD, function(col) {
+CauseSpecCovarMI::choose_standard_refpat(col, "median", "reference") 
+}), .SD = c("karnofsk_allo1", "age_allo1_decades")]
+
+ref_pat[]
+
+}

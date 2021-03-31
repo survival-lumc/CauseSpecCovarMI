@@ -17,3 +17,12 @@ Character vector of variable names in right hand side of formula
 \description{
 Extract variable names from right side of model formula
 }
+\examples{
+form <- reformulate(
+  termlabels = c("age_allo1_decades", "mdsclass"),
+  response = "Surv(ci_allo1, ci_s_allo1 == 1)"
+)
+
+extract_rhs_varnames(form, dat_mds_synth)
+
+}

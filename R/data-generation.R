@@ -6,12 +6,12 @@
 # Main --------------------------------------------------------------------
 
 
-#' @title Generates data.
+#' @title Generates simulated data
 #'
 #' @param n Sample size.
 #' @param X_type Either "binary", or "contin"
-#' @param r Desired correlation between X and Z.
-#' @param ev1_pars Named list of ("a1" =, "h1_0", "b1", "gamm1")
+#' @param r Desired correlation between X and Z
+#' @param ev1_pars Named list of ("a1", "h1_0", "b1", "gamm1")
 #' @param ev2_pars Named list of ("a2", "h2_0", "b2", "gamm2")
 #' @param rate_cens Rate of exponential distributiion for censoring.
 #' If 0 means no censoring is applied.
@@ -20,9 +20,11 @@
 #' @param eta1 Only necessary for mech != "MCAR" - degree/direction
 #' of assocation between variable responsible for missingness
 #' and probability of missingness
-#' @param p Proportion of missing values in X.
-#' 
-#' @inheritParams gen_cmprsk_times
+#' @param p Proportion of missing values in X
+#' @param mod_type Either "latent", weibull times generated from 
+#' separate weibull distribution, or "total", times generated from 
+#' sum of cause-specific hazards (using inverse transform method). For educational
+#' purposes - both methods yield virtually same results.
 #' 
 #' @return Data-frame with missings induced
 #' 
@@ -175,7 +177,7 @@ pbiserial_to_pearson <- function(p, r_pb) {
 #' 
 #' @return Data-frame with missings induced
 #' 
-#' @export
+#' @noRd
 gen_cmprsk_times <- function(n,
                              dat,
                              ev1_pars,
@@ -278,6 +280,15 @@ invtrans_weib <- function(n, alph1, lam1, alph2, lam2) {
 #' @param n sample size
 #' 
 #' @return n samples from weibull distribution.
+#' 
+#' @export
+#' @examples 
+#' 
+#' set.seed(4321)
+#' 
+#' times <- rweibull_KM(n = 1000, alph = 0.58, lam = 0.19)
+#' hist(times, breaks = 30)
+#' 
 rweibull_KM <- function(n, alph, lam) {
   
   samp <- (-log(1 - stats::runif(n)) / lam)^(1 / alph)

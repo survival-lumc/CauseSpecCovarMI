@@ -2,7 +2,7 @@
 % Please edit documentation in R/data-generation.R
 \name{generate_dat}
 \alias{generate_dat}
-\title{Generates data.}
+\title{Generates simulated data}
 \usage{
 generate_dat(
   n,
@@ -22,9 +22,9 @@ generate_dat(
 
 \item{X_type}{Either "binary", or "contin"}
 
-\item{r}{Desired correlation between X and Z.}
+\item{r}{Desired correlation between X and Z}
 
-\item{ev1_pars}{Named list of ("a1" =, "h1_0", "b1", "gamm1")}
+\item{ev1_pars}{Named list of ("a1", "h1_0", "b1", "gamm1")}
 
 \item{ev2_pars}{Named list of ("a2", "h2_0", "b2", "gamm2")}
 
@@ -38,7 +38,7 @@ If 0 means no censoring is applied.}
 of assocation between variable responsible for missingness
 and probability of missingness}
 
-\item{p}{Proportion of missing values in X.}
+\item{p}{Proportion of missing values in X}
 
 \item{mod_type}{Either "latent", weibull times generated from 
 separate weibull distribution, or "total", times generated from 
@@ -49,5 +49,5 @@ purposes - both methods yield virtually same results.}
 Data-frame with missings induced
 }
 \description{
-Generates data.
+Generates simulated data
 }

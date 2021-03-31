@@ -7,13 +7,11 @@
 
 
 # Read-in summarised to save time
-regr_results <- data.table::data.table(regr_results)
-preds_results <- data.table::data.table(preds_results)
+regr_results <- data.table::data.table(CauseSpecCovarMI::regr_results)
+preds_results <- data.table::data.table(CauseSpecCovarMI::preds_results)
 
 # Global theme
-ggplot2::theme_set(
-  ggplot2::theme_minimal(base_size = 12)
-)
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 12))
 
 
 # Figure 1 ----------------------------------------------------------------

@@ -19,3 +19,11 @@ n samples from weibull distribution.
 \description{
 Sample from Weibull distirbution in K&M parametrisation.
 }
+\examples{
+
+set.seed(4321)
+
+times <- rweibull_KM(n = 1000, alph = 0.58, lam = 0.19)
+hist(times, breaks = 30)
+
+}

@@ -28,4 +28,20 @@ navbar:
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/survival-lumc/CauseSpecCovarMI
+      
+reference:
+- title: Functions
+  desc: Useful functions beyond scope of simulation study
+  contents:
+  - cuminc_weib
+  - rweibull_KM
+  - nelsaalen_timefixed
+  - choose_standard_refpat
+  - make_mstate_refpat
+  - pool_morisot
+  - ggplot_nlp
+- title: Datasets
+  desc: Summarised simulation data and synthetic version of applied dataset
+  contents:
+  - has_keyword("datasets")
 
