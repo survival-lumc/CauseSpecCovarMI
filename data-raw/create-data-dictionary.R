@@ -62,7 +62,7 @@ vars[["cmv_combi_allo1_1"]] <- cbind.data.frame(
 
 vars[["cytog_threecat"]] <- cbind.data.frame(
   "var_label" = "Cytogenetics",
-  "var_description" = "Cytogenetics categories within IPSS-R"
+  "var_description" = "Cytogenetics categories used for IPSS-R"
 )
 
 vars[["hctci_risk"]] <- cbind.data.frame(
@@ -137,7 +137,7 @@ levs[["cmv_combi_allo1_1"]] <- transform(
 
 levs[["cytog_threecat"]] <- transform(
   levs[["cytog_threecat"]],
-  "levels_lab" = c("Interm./good (<=3)", "Poor (4)", "Very poor (5)")
+  "levels_lab" = c("V. good/good/interm.", "Poor", "V. poor")
 )
 
 levs[["hctci_risk"]] <- transform(
@@ -220,7 +220,7 @@ data.table::setnames(
 )
 
 
-caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
+caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, V. = very, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
 
 # Make table
 dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
