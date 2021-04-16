@@ -131,6 +131,8 @@
 #'
 #' @docType data 
 #' 
+#' @encoding UTF-8
+#' 
 #' @format 
 #' \describe{
 #' \item{ci_s_allo1}{Competing event indicator: 0 = censored, 1 = relapse,
@@ -150,16 +152,29 @@
 #' Four-level categorical corresponding to all combinations of patient positive/negative
 #' and donor positive/negative. For example, level "+/-" corresponds to CMV positive
 #' in patient and negative in donor.}
-#' \item{cytog_threecat}{Cytogenetics categories within International Prognostic 
-#' Scoring System}
+#' \item{cytog_threecat}{Cytogenetics categories for International Prognostic 
+#' Scoring System (IPSS-R) - see Greenberg et al. (2012).}
 #' \item{hctci_risk}{Hematopoietic stemcell transplantation-comorbidity index score.
 #' Three-level ordered categorical: low risk (0), intermediate risk (1-2) and 
-#' high risk (>= 3).}
+#' high risk (>= 3). See Sorror et al. (2005).}
 #' \item{agedonor_allo1_decades}{Donor age at alloHCT (decades).}
 #' \item{age_allo1_decades}{Patient age at alloHCT (decades).}
 #' }
 #' 
 #' @usage dat_mds_synth
+#' 
+#' @references {
+#' Greenberg, Peter L., Heinz Tuechler, Julie Schanz, Guillermo Sanz, 
+#' Guillermo Garcia-Manero, Francesc Solé, John M. Bennett et al. 
+#' "Revised international prognostic scoring system for myelodysplastic syndromes." 
+#' \emph{Blood} 120, no. 12 (2012): 2454-2465.
+#' 
+#' Sorror, Mohamed L., Michael B. Maris, Rainer Storb, Frederic Baron, Brenda M. Sandmaier, 
+#' David G. Maloney, and Barry Storer. 
+#' "Hematopoietic cell transplantation (HCT)-specific comorbidity index: 
+#' a new tool for risk assessment before allogeneic HCT." 
+#' \emph{Blood} 106, no. 8 (2005): 2912-2919.
+#' }
 #' 
 #' @keywords datasets
 "dat_mds_synth"
