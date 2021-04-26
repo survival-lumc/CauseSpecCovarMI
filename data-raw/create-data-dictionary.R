@@ -240,3 +240,84 @@ dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_a
   kableExtra::collapse_rows(2, latex_hline = "none", valign = "top") %>%
   kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(4, latex_hline = "none", valign = "top")
+
+# Test with extra measurement level ---------------------------------------
+
+classes <- vapply(dat_mds, function(col) {
+  cls <- class(col)[1]
+  if (length(levels(col)) == 2) cls <- "Binary"
+  return(cls)
+}, FUN.VALUE = character(1))
+
+dictionary_df[, "Meas. level" := classes[match(
+  dictionary_df$var_name, 
+  names(classes)
+)]]
+
+dictionary_df[, "Meas. level" := data.table::fcase(
+  `Meas. level` == "numeric", "Continuous",
+  `Meas. level` == "factor", "Nominal categorical",
+  `Meas. level` == "ordered", "Ordered categorical",
+  `Meas. level` == "Binary", "Binary"
+)]
+
+dictionary_df[!(is.na(level_num) | level_num == 2), `Meas. level` := ""]
+
+
+dictionary_df <- dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
+  "Variable", "Meas. level", "Description", "Levels", "\\% Missing"
+)]
+
+dictionary_df%>% 
+  kableExtra::kbl(
+    format = "latex",
+    booktabs = "T", 
+    position = "h",
+    caption = caption,
+    linesep = "",
+    escape = F, 
+    digits = 2
+  ) %>% 
+  kableExtra::kable_styling(font_size = 7) %>% 
+  kableExtra::column_spec(1, width = "8em", latex_valign = "p") %>% 
+  kableExtra::column_spec(2,
+                          latex_column_spec = ">{\\\\raggedright\\\\arraybackslash}b{5em}") %>% 
+  kableExtra::column_spec(3, width = "14em", latex_valign = "b") %>% 
+  kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(3, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(5, latex_hline = "none", valign = "top")
+
+
+
+
+
+# With index 
+dictionary_df <- dictionary_df[
+  !(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1"))
+]
+
+dictionary_df[, c(
+  "Meas. level", "Description", "Levels", "\\% Missing"
+)] %>% 
+  kableExtra::kbl(
+    format = "latex",
+    booktabs = "T",
+    position = "h",
+    col.names = c("Variable name / meas. level",
+                "Description", "Levels", "\\% Missing"),
+    caption = caption,
+    linesep = "",
+    escape = F,
+    digits = 2
+  ) %>% 
+  kableExtra::kable_styling(font_size = 7) %>% 
+  #kableExtra::column_spec(column = 1, width = "8em") %>% 
+  kableExtra::collapse_rows(columns = 2, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(columns = 3, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(columns = 4, latex_hline = "none", valign = "top") %>% 
+  kableExtra::pack_rows(
+    index = table(dictionary_df$Variable)[match(
+      unique(dictionary_df$Variable), 
+      names(table(dictionary_df$Variable))
+    )]
+  ) 
