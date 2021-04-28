@@ -1,6 +1,6 @@
 # Multiple imputation for cause-specific Cox models: assessing methods for estimation and prediction
 
-(To be submitted to Statistical Methods in Medical Research, SMMR) - link to paper/pre-print
+(In preparation)
 
 ## Abstract
 
