@@ -263,11 +263,14 @@ dictionary_df[, "Meas. level" := data.table::fcase(
   `Meas. level` == "Binary", "Binary"
 )]
 
+# Edit for mds class, which is ordered
+dictionary_df[var_name == "mdsclass", `Meas. level` := "Ordered categorical"]
+
 dictionary_df[!(is.na(level_num) | level_num == 1), `Meas. level` := ""]
 
 
 dictionary_df <- dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
-  "Variable", "Meas. level", "Description", "Levels", "\\% Missing"
+  "Variable", "Description", "Meas. level", "Levels", "\\% Missing"
 )]
 
 dictionary_df %>% 
@@ -280,45 +283,11 @@ dictionary_df %>%
     escape = F, 
     digits = 2
   ) %>% 
-  kableExtra::kable_styling(font_size = 9) %>% 
+  kableExtra::kable_styling(font_size = 8) %>% 
   kableExtra::column_spec(1, width = "7em") %>% 
-  kableExtra::column_spec(3, width = "10em") %>% 
+  kableExtra::column_spec(2, width = "10em") %>% 
   kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
-  kableExtra::collapse_rows(3, latex_hline = "none", valign = "top") %>% 
+  kableExtra::collapse_rows(2, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(5, latex_hline = "none", valign = "top")
 
 
-# Indentation for grouping instead ----------------------------------------
-
-
-# With index 
-dictionary_df <- dictionary_df[
-  !(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1"))
-]
-
-dictionary_df[, c(
-  "Meas. level", "Description", "Levels", "\\% Missing"
-)] %>% 
-  kableExtra::kbl(
-    format = "latex",
-    booktabs = "T",
-    position = "h",
-    col.names = c("Variable name / meas. level",
-                "Description", "Levels", "\\% Missing"),
-    caption = caption,
-    linesep = "",
-    escape = F,
-    digits = 2
-  ) %>% 
-  kableExtra::kable_styling(font_size = 9) %>% 
-  kableExtra::column_spec(1, width = "10em") %>% 
-  kableExtra::column_spec(2, width = "14em") %>% 
-  kableExtra::collapse_rows(columns = 2, latex_hline = "none", valign = "top") %>% 
-  kableExtra::collapse_rows(columns = 3, latex_hline = "none", valign = "top") %>% 
-  kableExtra::collapse_rows(columns = 4, latex_hline = "none", valign = "top") %>% 
-  kableExtra::pack_rows(
-    index = table(dictionary_df$Variable)[match(
-      unique(dictionary_df$Variable), 
-      names(table(dictionary_df$Variable))
-    )]
-  ) 
