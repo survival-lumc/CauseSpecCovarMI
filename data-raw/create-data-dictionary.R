@@ -241,7 +241,9 @@ dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_a
   kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(4, latex_hline = "none", valign = "top")
 
-# Test with extra measurement level ---------------------------------------
+
+# Table with extra measurment level column --------------------------------
+
 
 classes <- vapply(dat_mds, function(col) {
   cls <- class(col)[1]
@@ -261,14 +263,14 @@ dictionary_df[, "Meas. level" := data.table::fcase(
   `Meas. level` == "Binary", "Binary"
 )]
 
-dictionary_df[!(is.na(level_num) | level_num == 2), `Meas. level` := ""]
+dictionary_df[!(is.na(level_num) | level_num == 1), `Meas. level` := ""]
 
 
 dictionary_df <- dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
   "Variable", "Meas. level", "Description", "Levels", "\\% Missing"
 )]
 
-dictionary_df%>% 
+dictionary_df %>% 
   kableExtra::kbl(
     format = "latex",
     booktabs = "T", 
@@ -278,17 +280,15 @@ dictionary_df%>%
     escape = F, 
     digits = 2
   ) %>% 
-  kableExtra::kable_styling(font_size = 7) %>% 
-  kableExtra::column_spec(1, width = "8em", latex_valign = "p") %>% 
-  kableExtra::column_spec(2,
-                          latex_column_spec = ">{\\\\raggedright\\\\arraybackslash}b{5em}") %>% 
-  kableExtra::column_spec(3, width = "14em", latex_valign = "b") %>% 
+  kableExtra::kable_styling(font_size = 9) %>% 
+  kableExtra::column_spec(1, width = "7em") %>% 
+  kableExtra::column_spec(3, width = "10em") %>% 
   kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(3, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(5, latex_hline = "none", valign = "top")
 
 
-
+# Indentation for grouping instead ----------------------------------------
 
 
 # With index 
@@ -310,8 +310,9 @@ dictionary_df[, c(
     escape = F,
     digits = 2
   ) %>% 
-  kableExtra::kable_styling(font_size = 7) %>% 
-  #kableExtra::column_spec(column = 1, width = "8em") %>% 
+  kableExtra::kable_styling(font_size = 9) %>% 
+  kableExtra::column_spec(1, width = "10em") %>% 
+  kableExtra::column_spec(2, width = "14em") %>% 
   kableExtra::collapse_rows(columns = 2, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(columns = 3, latex_hline = "none", valign = "top") %>% 
   kableExtra::collapse_rows(columns = 4, latex_hline = "none", valign = "top") %>% 
