@@ -1,0 +1,10 @@
+pandoc: 2.11.4
+pkgdown: 1.6.1
+pkgdown_sha: ~
+articles:
+  data-generation: data-generation.html
+  performance-measures: performance-measures.html
+  preds-results-full: preds-results-full.html
+  regr-results-full: regr-results-full.html
+last_built: 2021-04-29T08:50Z
+

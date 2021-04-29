@@ -14,4 +14,4 @@ data/dat-mds.fst
 data/dat-mds_admin-cens.fst
 
 # For now do not commit pkgdown - comment out later
-docs
+#docs
