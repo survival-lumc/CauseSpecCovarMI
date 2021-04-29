@@ -2,6 +2,7 @@
 ## Analysis of mds data ##
 ##**********************##
 
+library(CauseSpecCovarMI)
 
 # Choose whether synthetic or not
 synth <- FALSE
