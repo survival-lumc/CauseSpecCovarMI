@@ -80,8 +80,10 @@ one_simulation <- function(scenario, # scenario
   
   
   # Fixed parameters
-  m <- c(2, 3) #c(5, 10, 25, 50) # Number of imputations of interest
-  iters_MI <- 2 #20 # Iterations of multiple imputation procedure
+  m <- c(5, 10, 25, 50) # Number of imputations of interest
+  iters_MI <- 20 # Iterations of multiple imputation procedure
+  # Can be set to 1 since chained equations are not needed, but original simulations
+  # were unfortunately run with 20 
   
   # Set methods and predictor matrices
   mats <- get_predictor_mats(dat) 

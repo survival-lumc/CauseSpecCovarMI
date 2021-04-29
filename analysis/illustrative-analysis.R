@@ -19,8 +19,12 @@ options(contrasts = rep("contr.treatment", 2))
 
 # Prepare model formulas --------------------------------------------------
 
+# Since synthetic does not have srv_* variables (not needed)
+outcomes <- intersect(
+  colnames(dat_mds),
+  c("ci_s_allo1", "ci_allo1", "srv_s_allo1", "srv_allo1")
+)
 
-outcomes <- c("ci_s_allo1", "ci_allo1", "srv_s_allo1", "srv_allo1")
 predictors <- sort(colnames(dat_mds)[!(colnames(dat_mds) %in% outcomes)]) 
 
 # Both REL and NRM have same rhs
@@ -79,8 +83,8 @@ matpred[!(rownames(matpred) %in% var_names_miss), ] <- 0
 matpred
 
 # Set number of imputations and iterations globally
-m <- 2 #100
-iters <- 2 #20 
+m <- 100
+iters <- 2  
 
 
 # Run MICE ----------------------------------------------------------------
@@ -92,8 +96,8 @@ imps_mice <- mice::parlmice(
   m = m,
   maxit = iters,
   cluster.seed = 1984, 
-  n.core = 2, #10, 
-  n.imp.core = 1, #10, 
+  n.core = 10, # Change both n.core/n.imp core here, see ?mice::parlmice
+  n.imp.core = 10,  
   method = meths,
   predictorMatrix = matpred
 )
@@ -122,13 +126,13 @@ smform_smcfcs <- c(
 
 imps_smcfcs <- parlSMCFCS::parlsmcfcs(
   seed = 4891,
-  n_cores = 2, #10,
+  n_cores = 10, # change cores here if needed
   outfile = "out_paralsmcfcs.txt",
   originaldata = dat_mds,
   smtype = "compet",
   smformula = smform_smcfcs,
-  m = 2, #m,
-  numit = 2, #iters,
+  m = m,
+  numit = iters,
   method = meths,
   rjlimit = 3000 # 3x normal, reduce num warnings
 )
