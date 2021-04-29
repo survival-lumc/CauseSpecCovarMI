@@ -59,7 +59,8 @@ Imports:
     survival,
     tibble,
     tidyr,
-    patchwork
+    patchwork,
+    kableExtra
 Suggests:
     devtools,
     ggpubr,

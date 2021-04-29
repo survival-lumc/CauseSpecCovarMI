@@ -2,6 +2,7 @@
 ## Make simulation result plots for manuscript ##
 ##*********************************************##
 
+library(CauseSpecCovarMI)
 
 # Manuscript plots --------------------------------------------------------
 
