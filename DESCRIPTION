@@ -1,6 +1,6 @@
 Package: CauseSpecCovarMI
 Title: Multiple imputation for cause-specific Cox models
-Version: 1.0.0
+Version: 0.0.0
 Authors@R: c(
     person(
         given = "Edouard F.",
