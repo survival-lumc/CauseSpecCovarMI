@@ -8,10 +8,10 @@ In studies analyzing competing time-to-event outcomes, interest often lies in bo
 
 ## Supplementary material
 
-- [Generating simulated data](articles/data-generation.html)
-- [Performance measures](articles/performance-measures.html)
-- [Full results: regression coefficients](articles/regr-results-full.html)
-- [Full results: predictions](articles/preds-results-full.html)
+- [Generating simulated data](https://survival-lumc.github.io/CauseSpecCovarMI/articles/data-generation.html)
+- [Performance measures](https://survival-lumc.github.io/CauseSpecCovarMI/articles/performance-measures.html)
+- [Full results: regression coefficients](https://survival-lumc.github.io/CauseSpecCovarMI/articles/regr-results-full.html)
+- [Full results: predictions](https://survival-lumc.github.io/CauseSpecCovarMI/articles/preds-results-full.html)
 
 ## Usage 
 
