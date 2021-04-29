@@ -34,15 +34,23 @@ fig1 <- regr_results[
     point_dodge = 0.7,
     text_size = 4, 
     pointsize = 1.5, 
-    height_steps = 0.03,
-    height_betw_steps = 0.05,
-    top_step = -0.2,
+    height_steps = 0.015,
+    height_betw_steps = 0.03,
+    top_step = -0.175,
     step_labels = c(
       "beta1" = "Beta1 = {0.5, 1}",
       "prop_miss" = "Missing % = {10, 50}", 
       "haz_shape" = "Hazard shapes = {similar, different}",
       "eta1" = "Mech. strength = {weak, strong}"
     )
+  ) +
+  ggplot2::scale_shape_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
+  ) +
+  ggplot2::scale_linetype_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
   ) +
   ggplot2::guides(
     shape = ggplot2::guide_legend("Method"),
@@ -53,7 +61,10 @@ fig1 <- regr_results[
   ggplot2::theme(legend.position = "bottom")
 
 fig1
-ggplot2::ggsave(plot = fig1, filename = "analysis/figures/MAR_B1_NLP.eps")
+ggplot2::ggsave(
+  plot = fig1, 
+  filename = "analysis/figures/MAR_B1_NLP.eps"
+)
 
 
 # Figure 2 ----------------------------------------------------------------
@@ -75,7 +86,8 @@ fig2 <- regr_results[
     step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
     point_dodge = 0.7,
     text_size = 4, 
-    pointsize = 1.5, 
+    pointsize = 1.5,
+    top_step = -0.225,
     height_steps = 0.02,
     height_betw_steps = 0.04,
     step_labels = c(
@@ -84,6 +96,14 @@ fig2 <- regr_results[
       "haz_shape" = "Hazard shapes = {similar, different}",
       "eta1" = "Mech. strength = {weak, strong}"
     )
+  ) +
+  ggplot2::scale_shape_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
+  ) +
+  ggplot2::scale_linetype_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
   ) +
   ggplot2::guides(
     shape = ggplot2::guide_legend("Method"),
@@ -129,6 +149,14 @@ fig3 <- preds_results[
       "eta1" = "Mech. strength = {weak, strong}"
     ),
     top_step = -0.004
+  ) +
+  ggplot2::scale_shape_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
+  ) +
+  ggplot2::scale_linetype_discrete(
+    breaks = c("CCA", "ch12", "ch12_int", "smcfcs"),
+    labels = c("CCA", expression(CH[12]), expression(CH["12,int"]), "smcfcs")
   ) +
   ggplot2::guides(
     shape = ggplot2::guide_legend("Method"),

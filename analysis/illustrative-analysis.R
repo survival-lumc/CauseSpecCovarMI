@@ -3,9 +3,14 @@
 ##**********************##
 
 
-# Read-in
-dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% 
-  data.table::setDT()
+# Choose whether synthetic or not
+synth <- FALSE
+
+if (synth) {
+  dat_mds <- CauseSpecCovarMI::dat_mds_synth %>% data.table::setDT()
+} else {
+  dat_mds <- fst::read_fst("data/dat-mds_admin-cens.fst") %>% data.table::setDT()
+}
 
 # Set contrasts for ordered factors
 options(contrasts = rep("contr.treatment", 2)) 
@@ -202,6 +207,20 @@ mod_nrm <- survival::coxph(form_nrm, data = dat_mds) %>%
     old = c("exp(coef)", "lower .95", "upper .95"), 
     new = c("estimate", "2.5 %", "97.5 %")
   )
+
+# Check proportionality of complete cases
+survival::cox.zph(survival::coxph(form_rel, data = dat_mds))
+survival::cox.zph(survival::coxph(form_nrm, data = dat_mds))
+
+# Look into one of imputed datasets
+# - crnocr and patient age test as non-proportional
+# - residuals show it is likely not too dramatic
+# Note: better method for checking proportionality with MI is described
+# in Keogh et al. (2018), using joint wald tests
+zph_rel <- survival::cox.zph(survival::coxph(form_rel, data = impdats_mice[[15]]))
+zph_nrm <- survival::cox.zph(survival::coxph(form_nrm, data = impdats_mice[[15]]))
+plot(zph_rel)
+plot(zph_nrm)
 
 
 # Forest plot -------------------------------------------------------------

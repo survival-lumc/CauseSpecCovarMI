@@ -6,13 +6,15 @@ Authors@R: c(
         given = "Edouard F.",
         family = "Bonneville",
         role = c("aut", "cre"),
-        email = "e.f.bonneville@lumc.nl"
+        email = "e.f.bonneville@lumc.nl",
+        comment = c(ORCID = "0000-0001-7542-4498")
     ),
     person(
         given = "Matthieu",
         family = "Resche-Rigon",
         role = c("aut"),
-        email = "matthieu.resche-rigon@u-paris.fr"
+        email = "matthieu.resche-rigon@u-paris.fr",
+        comment = c(ORCID = "0000-0003-2220-5085")
     ),
     person(
         given = "Johannes",
@@ -24,7 +26,8 @@ Authors@R: c(
         given = "Hein",
         family = "Putter",
         role = c("aut"),
-        email = "H.Putter@lumc.nl"
+        email = "H.Putter@lumc.nl",
+        comment = c(ORCID = "0000-0001-5395-1422")
     ),
     person(
         given = "Liesbeth C.",
