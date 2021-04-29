@@ -52,7 +52,7 @@ The simulation study was run on a computer cluster using a [SLURM](https://slurm
 sbatch analysis/simulations/all-simulations.sh 
 ```
 
-The above will run each replication of each scenario, and for each will save two `.rds` files (one for regression coefficients, another for the predictions) containing the results to the `data/sim-reps_indiv/`.  To summarise all of these, you can run
+The above will run each replication of each scenario, and for each replication will save two `.rds` files (one for regression coefficients, another for the predictions) containing the results to the `data/sim-reps_indiv/`.  To summarise all of these, you can run
 
 ```bash
 sbatch analysis/simulations/summarise-simulations.sh
@@ -65,7 +65,7 @@ This will produce four files, which represent the full and summarised results fo
 - `data/sims_preds_full.fst` 
 - `data/sims_preds_summary.fst` 
 
-These are included in the package/on Zenodo, such that one does not need to run the entire simulation study again (which would take in the order of days).
+The summarised data is available directly in the package and is accessed using `CauseSpecCovarMI::regr_results` and `CauseSpecCovarMI::preds_results`. Due to the size of the full result datafiles, there are available upon request from the corresponding author (such that one does not need to run the entire simulation study again, which would take in the order of days).
 
 Should you want to replicate one replication of one scenario locally (for example the 10th replication of scenario 3), you can run
 
@@ -85,7 +85,7 @@ Rscript analysis/simulations/manuscript-figures-simulations.R
 
 ### Reproducing illustrative analysis
 
-The original dataset on which the illustrative analysis was performed could not be shared, however a synthetic version is provided. This will yield similar results after the imputation procedure, but not comparable for complete-case analysis. On a cluster using SLURM, you can run
+The original dataset on which the illustrative analysis was performed could not be shared, however a synthetic version is provided in the package as `CauseSpecCovarMI::da`. This will yield similar results after the imputation procedure, but not comparable for complete-case analysis. On a cluster using SLURM, you can run
 
 ```bash
 sbatch analysis/run-illustrative-analysis.sh

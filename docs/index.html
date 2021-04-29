@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CauseSpecCovarMI</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.0</span>
       </span>
     </div>
 
@@ -101,10 +101,10 @@
 <h2 class="hasAnchor">
 <a href="#supplementary-material" class="anchor"></a>Supplementary material</h2>
 <ul>
-<li><a href="articles/data-generation.html">Generating simulated data</a></li>
-<li><a href="articles/performance-measures.html">Performance measures</a></li>
-<li><a href="articles/regr-results-full.html">Full results: regression coefficients</a></li>
-<li><a href="articles/preds-results-full.html">Full results: predictions</a></li>
+<li><a href="https://survival-lumc.github.io/CauseSpecCovarMI/articles/data-generation.html">Generating simulated data</a></li>
+<li><a href="https://survival-lumc.github.io/CauseSpecCovarMI/articles/performance-measures.html">Performance measures</a></li>
+<li><a href="https://survival-lumc.github.io/CauseSpecCovarMI/articles/regr-results-full.html">Full results: regression coefficients</a></li>
+<li><a href="https://survival-lumc.github.io/CauseSpecCovarMI/articles/preds-results-full.html">Full results: predictions</a></li>
 </ul>
 </div>
 <div id="usage" class="section level2">
@@ -137,7 +137,7 @@
 <a href="#reproducing-the-simulation-study" class="anchor"></a>Reproducing the simulation study</h3>
 <p>The simulation study was run on a computer cluster using a <a href="https://slurm.schedmd.com/documentation.html">SLURM</a> scheduler. If you have access to such a scheduler, you should install the package and clone the directory on the cluster first, and then run (from the home directory)</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> analysis/simulations/all-simulations.sh </span></code></pre></div>
-<p>The above will run each replication of each scenario, and for each will save two <code>.rds</code> files (one for regression coefficients, another for the predictions) containing the results to the <code>data/sim-reps_indiv/</code>. To summarise all of these, you can run</p>
+<p>The above will run each replication of each scenario, and for each replication will save two <code>.rds</code> files (one for regression coefficients, another for the predictions) containing the results to the <code>data/sim-reps_indiv/</code>. To summarise all of these, you can run</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> analysis/simulations/summarise-simulations.sh</span></code></pre></div>
 <p>This will produce four files, which represent the full and summarised results for both the regression coefficient results and those for the predictions:</p>
 <ul>
@@ -146,7 +146,7 @@
 <li><code>data/sims_preds_full.fst</code></li>
 <li><code>data/sims_preds_summary.fst</code></li>
 </ul>
-<p>These are included in the package/on Zenodo, such that one does not need to run the entire simulation study again (which would take in the order of days).</p>
+<p>The summarised data is available directly in the package and is accessed using <code><a href="reference/regr_results.html">CauseSpecCovarMI::regr_results</a></code> and <code><a href="reference/preds_results.html">CauseSpecCovarMI::preds_results</a></code>. Due to the size of the full result datafiles, there are available upon request from the corresponding author (such that one does not need to run the entire simulation study again, which would take in the order of days).</p>
 <p>Should you want to replicate one replication of one scenario locally (for example the 10th replication of scenario 3), you can run</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> analysis/simulations/run-simulation.R 3 10</span></code></pre></div>
 <p>The scenarios (and their numbers/parameters) are contained in <code>data/scenarios.rds</code>.</p>
@@ -160,7 +160,7 @@
 <div id="reproducing-illustrative-analysis" class="section level3">
 <h3 class="hasAnchor">
 <a href="#reproducing-illustrative-analysis" class="anchor"></a>Reproducing illustrative analysis</h3>
-<p>The original dataset on which the illustrative analysis was performed could not be shared, however a synthetic version is provided. This will yield similar results after the imputation procedure, but not comparable for complete-case analysis. On a cluster using SLURM, you can run</p>
+<p>The original dataset on which the illustrative analysis was performed could not be shared, however a synthetic version is provided in the package as <code>CauseSpecCovarMI::da</code>. This will yield similar results after the imputation procedure, but not comparable for complete-case analysis. On a cluster using SLURM, you can run</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> analysis/run-illustrative-analysis.sh</span></code></pre></div>
 <p>This will make use of 10 cores to run the 100 imputations (with 25 iterations) from both <code>mice()</code> and <code>smcfcs()</code> in parallel.</p>
 <p>It can also be run locally by first changing the number of cores in <code>analysis/illustrative-analysis.R</code> , and then</p>
@@ -217,10 +217,10 @@
 <div class="developers">
 <h2>Developers</h2>
 <ul class="list-unstyled">
-<li>Edouard F. Bonneville <br><small class="roles"> Author, maintainer </small>  </li>
-<li>Matthieu Resche-Rigon <br><small class="roles"> Author </small>  </li>
+<li>Edouard F. Bonneville <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0001-7542-4498" target="orcid.widget" aria-label="ORCID"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
+<li>Matthieu Resche-Rigon <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-2220-5085" target="orcid.widget" aria-label="ORCID"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
 <li>Johannes Schetelig <br><small class="roles"> Author </small>  </li>
-<li>Hein Putter <br><small class="roles"> Author </small>  </li>
+<li>Hein Putter <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0001-5395-1422" target="orcid.widget" aria-label="ORCID"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
 <li>Liesbeth C. de Wreede <br><small class="roles"> Author </small>  </li>
 </ul>
 </div>
