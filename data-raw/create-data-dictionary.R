@@ -268,12 +268,9 @@ dictionary_df[var_name == "mdsclass", `Meas. level` := "Ordered categorical"]
 
 dictionary_df[!(is.na(level_num) | level_num == 1), `Meas. level` := ""]
 
-
-dictionary_df <- dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
+dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
   "Variable", "Description", "Meas. level", "Levels", "\\% Missing"
-)]
-
-dictionary_df %>% 
+)] %>% 
   kableExtra::kbl(
     format = "latex",
     booktabs = "T", 
@@ -291,3 +288,28 @@ dictionary_df %>%
   kableExtra::collapse_rows(5, latex_hline = "none", valign = "top")
 
 
+# Version for journal - without multirow ----------------------------------
+
+
+dictionary_df[!(is.na(level_num) | level_num == 1), ':=' (
+  "\\% Missing" = "",
+  Variable = "",
+  Description = ""
+)]
+
+
+dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
+  "Variable", "Description", "Meas. level", "Levels", "\\% Missing"
+)] %>% 
+  kableExtra::kbl(
+    format = "latex",
+    booktabs = "T", 
+    position = "h",
+    caption = caption,
+    linesep = "",
+    escape = F, 
+    digits = 2
+  ) %>% 
+  kableExtra::kable_styling(font_size = 8) %>% 
+  kableExtra::column_spec(1, width = "7em") %>% 
+  kableExtra::column_spec(2, width = "10em") 
