@@ -265,7 +265,7 @@ forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
 
 # Change to rel
 ggplot2::ggsave(
-  filename = "analysis/figures/forest_rel.eps", 
+  filename = "analysis/figures/forest_rel.pdf", 
   plot = forest_rel, 
   width = 10, 
   height = 11
@@ -273,8 +273,8 @@ ggplot2::ggsave(
 
 # Change to nrm
 ggplot2::ggsave(
-  filename = "analysis/figures/forest_nrm.eps", 
-  plot = forest_rel, 
+  filename = "analysis/figures/forest_nrm.pdf", 
+  plot = forest_nrm, 
   width = 10, 
   height = 11
 )

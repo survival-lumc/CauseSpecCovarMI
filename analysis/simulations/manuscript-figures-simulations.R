@@ -64,7 +64,10 @@ fig1 <- regr_results[
 fig1
 ggplot2::ggsave(
   plot = fig1, 
-  filename = "analysis/figures/MAR_B1_NLP.eps"
+  filename = "analysis/figures/MAR_B1_NLP.pdf", 
+  units = "in",
+  width = 6.24,
+  height = 4.65
 )
 
 
@@ -115,7 +118,10 @@ fig2 <- regr_results[
   ggplot2::theme(legend.position = "bottom")
 
 fig2
-ggplot2::ggsave(plot = fig2, filename = "analysis/figures/MAR-T_B1_NLP.eps")
+ggplot2::ggsave(plot = fig2, filename = "analysis/figures/MAR-T_B1_NLP.pdf", 
+                units = "in",
+                width = 6.24,
+                height = 4.65)
 
 
 # Figure 3 ----------------------------------------------------------------
@@ -169,5 +175,8 @@ fig3 <- preds_results[
 
 
 fig3
-ggplot2::ggsave(plot = fig3, filename = "analysis/figures/MAR_pred_NLP.eps")
+ggplot2::ggsave(plot = fig3, filename = "analysis/figures/MAR_pred_NLP.pdf", 
+                units = "in",
+                width = 6.24,
+                height = 4.65)
 
