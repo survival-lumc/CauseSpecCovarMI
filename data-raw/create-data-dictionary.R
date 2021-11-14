@@ -156,12 +156,18 @@ labels_all <- merge(levels_dat, vars_meta, by = "var_name", all.y = TRUE)
 # Add counts per factor - and REL / NRM counts too
 counters <- lapply(names(dat_mds), function(col) {
   
+  # Add descriptive column
   if (is.numeric(dat_mds[[col]])) {
     counts <- dat_mds[, .(
       levels = NA_character_,
       count = .N,
       count_REL = sum(ci_s_allo1 == 1),
-      count_NRM = sum(ci_s_allo1 == 2)
+      count_NRM = sum(ci_s_allo1 == 2),
+      descrip_stat = paste0(
+        as.character(round(median(get(col), na.rm = TRUE), 2)), " (",
+        as.character(round(quantile(get(col), probs = 0.25, na.rm = TRUE), 2)), ", ",
+        as.character(round(quantile(get(col), probs = 0.75, na.rm = TRUE), 2)), ")"
+      )
     ), by = is.na(get(col))]
     data.table::setnames(counts, "is.na", "miss_ind")
     return(counts[miss_ind == FALSE])
@@ -171,6 +177,9 @@ counters <- lapply(names(dat_mds), function(col) {
       count_REL = sum(ci_s_allo1 == 1),
       count_NRM = sum(ci_s_allo1 == 2)
     ), by = col])
+    counts[, "descrip_stat" := paste0(
+      as.character(count), " (", as.character(round(100 * count / sum(count), 0)),"\\%)"
+    )]
     data.table::setnames(counts, col, "levels")
     
     return(counts[, levels := as.character(levels)])
@@ -215,16 +224,16 @@ dictionary_df[is.na(levels_lab_tex), levels_lab_tex := levels_lab]
 # Set column names
 data.table::setnames(
   dictionary_df,
-  c("var_label", "var_description", "levels_lab_tex", "prop_miss"),
-  c("Variable", "Description", "Levels", "\\% Missing")
+  c("var_label", "var_description", "levels_lab_tex", "prop_miss", "descrip_stat"),
+  c("Variable", "Description", "Levels", "\\% Missing", "Summary")
 )
 
 
-caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, V. = very, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
+caption <- "Data dictionary with predictor variables and their descriptions, levels and proportion missing data. The `Summary' column reports median and interquartile range for continuous variables, as well as counts and proportion per level of categorical variables.  Abbrevations: CMV = cytomegalovirus, CR = complete remission, IPSS-R = International Prognostic Scoring System, V. = very, interm. = intermediate, HLA = Human leukocyte antigen, HCT-CI = Hematopoietic stemcell transplantation-comorbidity index, M = male, F = female, MDS = myelodysplastic syndromes, sAML = secondary acute myeloid leukemia, w/ = with, w/o = without."
 
 # Make table
 dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_allo1")), c(
-  "Variable", "Description", "Levels", "\\% Missing"
+  "Variable", "Description", "Levels", "\\% Missing", "Summary"
 )] %>% 
   kableExtra::kbl(
     format = "latex",
@@ -232,14 +241,16 @@ dictionary_df[!(var_name  %in% c("srv_s_allo1", "srv_allo1", "ci_allo1", "ci_s_a
     position = "h",
     caption = caption,
     linesep = "",
+    align = c("l", "l", "l", "r", "r"),
     escape = F, 
     digits = 2
   ) %>% 
-  kableExtra::kable_styling(font_size = 7) %>% #full_width = T) %>% 
+  kableExtra::kable_styling(font_size = 8) %>% #full_width = T) %>% 
   kableExtra::column_spec(2, width = "20em") %>% 
   kableExtra::collapse_rows(2, latex_hline = "none", valign = "top") %>%
   kableExtra::collapse_rows(1, latex_hline = "none", valign = "top") %>% 
-  kableExtra::collapse_rows(4, latex_hline = "none", valign = "top")
+  kableExtra::collapse_rows(4, latex_hline = "none", valign = "top") %>%
+  kableExtra::landscape()
 
 
 # Table with extra measurment level column --------------------------------
