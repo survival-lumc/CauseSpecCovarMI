@@ -219,6 +219,11 @@ one_simulation <- function(scenario, # scenario
   horiz <- c(0.5, 5, 10) # Prediction horizons, 6mo, 5Y, 10Y, c(0.5, 5, 10)
   covar_grid <- make_covar_grid(dat)
   
+  # Compute the true ones once here to solve bottleneck?
+  true_cis <- purrr::map(seq_len(nrow(covar_grid)), .f = function(row) {
+    get_true_cuminc(ev1_pars, ev2_pars, times = horiz, combo = covar_grid[row, ])
+  })
+  
   cat("\n Making predictions and pooling... \n\n")
   
   # Make predictions for cox models fitted in each imputed dataset 
@@ -230,7 +235,8 @@ one_simulation <- function(scenario, # scenario
         grid_obj = covar_grid, 
         times = horiz, 
         ev1_pars = ev1_pars,
-        ev2_pars = ev2_pars
+        ev2_pars = ev2_pars,
+        true_cuminc = true_cis
       )
     } 
   )
@@ -241,7 +247,8 @@ one_simulation <- function(scenario, # scenario
     grid_obj = covar_grid, 
     times = horiz, 
     ev1_pars = ev1_pars,
-    ev2_pars = ev2_pars
+    ev2_pars = ev2_pars,
+    true_cuminc = true_cis
   )
   
   preds_ref <- get_preds_grid(
@@ -249,7 +256,8 @@ one_simulation <- function(scenario, # scenario
     grid_obj = covar_grid, 
     times = horiz, 
     ev1_pars = ev1_pars,
-    ev2_pars = ev2_pars
+    ev2_pars = ev2_pars,
+    true_cuminc = true_cis
   )
   
   
@@ -282,19 +290,19 @@ one_simulation <- function(scenario, # scenario
   # RDS saving and storing seeds/scen_num ----
   
   # Save as RDS in analysis/simulation results/predictions
-  saveRDS( 
-    object = estimates, 
-    file = paste0(
-      "data/sim-reps_indiv/regr/regr_scen", 
-      scenario$scen_num, "_seed", seed, ".rds"
-    )
-  )
-  saveRDS(
-    object = pooled_preds, 
-    file = paste0(
-      "data/sim-reps_indiv/preds/preds_scen", 
-      scenario$scen_num, "_seed", seed, ".rds"
-    )
-  )
+  # saveRDS( 
+  #   object = estimates, 
+  #   file = paste0(
+  #     "data/sim-reps_indiv/regr/regr_scen", 
+  #     scenario$scen_num, "_seed", seed, ".rds"
+  #   )
+  # )
+  # saveRDS(
+  #   object = pooled_preds, 
+  #   file = paste0(
+  #     "data/sim-reps_indiv/preds/preds_scen", 
+  #     scenario$scen_num, "_seed", seed, ".rds"
+  #   )
+  # )
 }
 

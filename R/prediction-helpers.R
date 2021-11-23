@@ -273,7 +273,8 @@ get_preds_grid <- function(cox_long,
                            grid_obj,
                            times,
                            ev1_pars,
-                           ev2_pars) {
+                           ev2_pars,
+                           true_cuminc) {
   
   # Set-up for baseline (covariate values = 0)
   tmat <- mstate::trans.comprisk(K = 2, names = c("Rel", "NRM"))
@@ -320,12 +321,7 @@ get_preds_grid <- function(cox_long,
     )
     
     # Compute true cumulative incidence at those horizons
-    true_CI <- get_true_cuminc(
-      ev1_pars = ev1_pars, 
-      ev2_pars = ev2_pars,
-      combo = combo, 
-      times = times
-    )
+    true_CI <- true_cuminc[[row]]
     
     # Join the true and predicted state probabilities
     res <- cbind.data.frame(summ, "X" = combo$X, "Z" = combo$Z) %>% 
