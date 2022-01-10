@@ -2,7 +2,7 @@ devtools::load_all()
 baseline <- CauseSpecCovarMI::mds_shape_rates
 
 # Generate X and Z
-n <- 2000
+n <- 15000 # 2000
 covars <- gen_covars(n = n, X_type = "continuous", r = 0.5)
 
 # Try the same different hazards (only different right?) with another one on top
@@ -22,9 +22,9 @@ ev2_pars <- list(
 
 ev3_pars <- list(
   "a3" = 1, # constant
-  "h3_0" = 0.05, 
+  "h3_0" = 0.075, 
   "b3" = 0.75, 
-  "gamm3" = .5
+  "gamm3" = .25
 )
 
 # Generate the latent times
@@ -53,7 +53,15 @@ eps <- data.table::fcase(
 admin_cens <- 10
 time <- pmin(t_tilde, admin_cens)
 delta <- as.numeric(time < admin_cens) * eps
-table(delta)
+
+# Add regular censoring
+cens <- stats::rexp(n = n, rate = baseline[baseline$state == "EFS", "rate"])
+time <- pmin(time, cens)
+delta <- as.numeric(time < cens) * delta
+prop.table(table(delta))
+
+plot(cmprsk::cuminc(time, delta))
+
 
 dat <- cbind.data.frame(time, delta, covars)
 dat <- dat[order(dat$time), ]

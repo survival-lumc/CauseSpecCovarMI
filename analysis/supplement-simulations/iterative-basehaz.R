@@ -84,17 +84,6 @@ meth_ch12["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
 meth_ch12["H2"] <- paste("~I(", expression(update_basehaz(t, ev2, X, Z)),")")
 meth_ch12[c("H1_Z", "H2_Z")] <- ""
 
-# With interaction
-mat_ch12_int["X", c("Z", "eps", "H1", "H2", "H1_Z", "H2_Z")] <- 1
-mat_ch12_int["H1", c("X", "Z", "t", "ev1", "ev2")] <- 1
-mat_ch12_int["H2", c("X", "Z", "t", "ev1", "ev2")] <- 1
-mat_ch12_int["H1_Z", c("H1", "Z")] <- 1
-mat_ch12_int["H2_Z", c("H2", "Z")] <- 1
-meth_ch12_int["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
-meth_ch12_int["H2"] <- paste("~I(", expression(update_basehaz(t, ev2, X, Z)),")")
-meth_ch12_int["H1_Z"] <- "~I(H1 * Z)"
-meth_ch12_int["H2_Z"] <- "~I(H2 * Z)"
-
 
 # Imp settings
 m <- c(15) # Number of imputations of interest
@@ -114,14 +103,6 @@ imp_ch12 <- mice::mice(
   m = m[length(m)],
   method = meth_ch12, 
   predictorMatrix = mat_ch12,
-  maxit = iters_MI
-)
-
-imp_ch12_int <- mice::mice(
-  dat, 
-  m = m[length(m)],
-  method = meth_ch12_int, 
-  predictorMatrix = mat_ch12_int,
   maxit = iters_MI
 )
 
