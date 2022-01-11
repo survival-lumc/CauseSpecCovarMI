@@ -1,125 +1,147 @@
 devtools::load_all()
-baseline <- CauseSpecCovarMI::mds_shape_rates
-
-# Generate X and Z
-n <- 15000 # 2000
-covars <- gen_covars(n = n, X_type = "continuous", r = 0.5)
-
-# Try the same different hazards (only different right?) with another one on top
-ev1_pars <- list(
-  "a1" = 1.5, 
-  "h1_0" = 0.04,
-  "b1" = .5, 
-  "gamm1" = 1
-)
-
-ev2_pars <- list(
-  "a2" = baseline[baseline$state == "NRM", "shape"], 
-  "h2_0" = baseline[baseline$state == "NRM", "rate"], 
-  "b2" = .5, 
-  "gamm2" = .5
-)
-
-ev3_pars <- list(
-  "a3" = 1, # constant
-  "h3_0" = 0.075, 
-  "b3" = 0.75, 
-  "gamm3" = .25
-)
-
-# Generate the latent times
-T1 <- rweibull_KM(
-  n, 
-  alph = ev1_pars$a1, 
-  lam = ev1_pars$h1_0 * exp(drop(c(ev1_pars$b1, ev1_pars$gamm1) %*% t(as.matrix(covars))))
-)
-T2 <- rweibull_KM(
-  n, 
-  alph = ev2_pars$a2, 
-  lam = ev2_pars$h2_0 * exp(drop(c(ev2_pars$b2, ev2_pars$gamm2) %*% t(as.matrix(covars))))
-)
-T3 <- rweibull_KM(
-  n, 
-  alph = ev3_pars$a3, 
-  lam = ev3_pars$h3_0 * exp(drop(c(ev3_pars$b3, ev3_pars$gamm3) %*% t(as.matrix(covars))))
-)
-
-t_tilde <- pmin(T1, T2, T3)
-eps <- data.table::fcase(
-  t_tilde == T1, 1,
-  t_tilde == T2, 2,
-  t_tilde == T3, 3
-)
-admin_cens <- 10
-time <- pmin(t_tilde, admin_cens)
-delta <- as.numeric(time < admin_cens) * eps
-
-# Add regular censoring
-cens <- stats::rexp(n = n, rate = baseline[baseline$state == "EFS", "rate"])
-time <- pmin(time, cens)
-delta <- as.numeric(time < cens) * delta
-prop.table(table(delta))
-
-plot(cmprsk::cuminc(time, delta))
-
-
-dat <- cbind.data.frame(time, delta, covars)
-dat <- dat[order(dat$time), ]
-
-# Add cumulative hazards and interactions
-dat$ev1 <- with(dat, as.numeric(delta == 1))
-dat$ev2 <- with(dat, as.numeric(delta == 2))
-dat$ev3 <- with(dat, as.numeric(delta == 3))
-
-dat$H1 <- nelsaalen_timefixed(dat, "time", "ev1")
-dat$H2 <- nelsaalen_timefixed(dat, "time", "ev2")
-dat$H3 <- nelsaalen_timefixed(dat, "time", "ev3")
-
-dat$H1_Z <- with(dat, H1 * Z)
-dat$H2_Z <- with(dat, H2 * Z)
-dat$H3_Z <- with(dat, H3 * Z)
-
-head(dat)
-
-# Check the good stuff
 library(survival)
 library(mstate)
-coxph(Surv(time, delta == 1) ~ X + Z, data = dat) |>  coef()
-coxph(Surv(time, delta == 2) ~ X + Z, data = dat) |>  coef()
-coxph(Surv(time, delta == 3) ~ X + Z, data = dat) |>  coef()
+library(mice)
+source("analysis/supplement-simulations/helpers-three-comprisks.R")
+source("analysis/supplement-simulations/scenarios-supplemental.R")
+scenario <- scenarios_raw[1, ]
+
+one_simulation_threecomp <- function(scenario) {
+  
+  # Set up parameters
+  baseline <- CauseSpecCovarMI::mds_shape_rates
+  
+  # Different basehaz setting, with another constant hazard as third
+  ev1_pars <- list("a1" = 1.5, "h1_0" = 0.04, "b1" = .5, "gamm1" = 1)
+  
+  ev2_pars <- list(
+    "a2" = baseline[baseline$state == "NRM", "shape"], 
+    "h2_0" = baseline[baseline$state == "NRM", "rate"], 
+    "b2" = .5, 
+    "gamm2" = .5
+  )
+  
+  # constant; plot true baseline cumincs somewhere..
+  ev3_pars <- list("a3" = 1, "h3_0" = 0.075, "b3" = 0.75, "gamm3" = .25)
+  
+  dat <- generate_dat_threecomp(
+    n = scenario$n,
+    X_type = scenario$X_level, 
+    r = 0.5,
+    ev1_pars, ev2_pars, ev3_pars,
+    rate_cens = baseline[baseline$state == "EFS", "rate"],
+    mech = scenario$miss_mech,
+    eta1 = scenario$eta1,
+    p = scenario$prop_miss
+  )
+  
+  # -- Run full dataset and CCA
+  
+  mod_ref <- setup_mstate_threecomp(dat %>% dplyr::mutate(X = .data$X_orig))
+  mod_CCA <- setup_mstate_threecomp(dat)
+  
+  # -- smcfcs
+  
+  m <- 5 # make 25 or 50
+  meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
+  
+  imp_smcfcs <- record_warning(
+    smcfcs::smcfcs(
+      originaldata = dat, 
+      smtype = "compet", 
+      smformula = c(
+        "Surv(t, eps == 1) ~ X + Z",
+        "Surv(t, eps == 2) ~ X + Z",
+        "Surv(t, eps == 3) ~ X + Z"
+      ), 
+      method = meths_smcfcs, 
+      m = m, 
+      numit = 1, 
+      rjlimit = 5000
+    ) # 5 times higher than default, avoid rej sampling errors
+  )
+  
+  # -- mice setup
+  
+  mat <- mice::make.predictorMatrix(dat) 
+  mat[] <- 0L 
+  mat_ch123 <- mat_ch123_int <- mat 
+  
+  mat_ch123["X", c("Z", "eps", "H1", "H2", "H3")] <- 1
+  mat_ch123_int["X", c("Z", "eps", "H1", "H2", "H3", "H1_Z", "H2_Z", "H3_Z")] <- 1
+  meths_mice <-  ice::make.method(dat, defaultMethod = c("norm", "logreg", "polyreg", "polr"))
+  
+  # -- mice standard and interaction
+  
+  # ch123
+  imp_ch123 <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_ch123,
+    maxit = 1, 
+    print = FALSE
+  )
+  
+  # With interaction
+  imp_ch123_int <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_ch123_int,
+    maxit = 1, 
+    print = FALSE
+  )
+  
+  # -- Summarise
+  
+  complist <- list(
+    "imp_ch123" = mice::complete(imp_ch123, action = "all"),
+    "imp_ch123_int" = mice::complete(imp_ch123_int, action = "all"),
+    "smcfcs" = imp_smcfcs$value$impDatasets
+  )
+  
+  mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate_threecomp(.x)) 
+  
+  estimates <- purrr::imap_dfr(
+    mods_complist, 
+    ~ pool_diffm(.x, n_imp = m, analy = .y)
+  ) %>% 
+    
+    # Bind CCA, ref
+    dplyr::bind_rows(
+      summarise_ref_CCA(mod_ref, analy = "ref"),
+      summarise_ref_CCA(mod_CCA, analy = "CCA")
+    ) %>% 
+    
+    # Add true values
+    dplyr::mutate(
+      true = dplyr::case_when(
+        stringr::str_detect(var, "X.1") ~ ev1_pars$b1,
+        stringr::str_detect(var, "Z.1") ~ ev1_pars$gamm1,
+        stringr::str_detect(var, "X.2") ~ ev2_pars$b2,
+        stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2,
+        stringr::str_detect(var, "X.3") ~ ev3_pars$b3,
+        stringr::str_detect(var, "Z.3") ~ ev3_pars$gamm3
+      )
+    ) %>% 
+    
+    # Add mice warnings and rej sampling errors for smcfcs
+    dplyr::mutate(
+      warns = dplyr::case_when(
+        analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning, "[0-9]+")),
+        analy == "imp_ch123" ~ as.numeric(!is.null(imp_ch123$loggedEvents)),
+        analy == "imp_ch123_int" ~ as.numeric(!(is.null(imp_ch123_int$loggedEvents))),
+        analy %in% c("CCA", "ref") ~ 0
+      ) 
+    ) %>%
+    cbind.data.frame(scenario, row.names = NULL)
+  
+  return(estimates)
+}
+
+# Try lapply here? --------------------------------------------------------
 
 
-
-# Prepare mstate code..
-covs <- c("X", "Z")
-tmat <- trans.comprisk(K = 3)
-msdat <- msprep(
-  time = c(NA, rep("time", 3)),
-  status = with(dat, cbind(NA, delta == 1, delta == 2, delta == 3)),
-  trans = tmat,
-  data = dat,
-  keep = covs
-)
-msdat_exp <- expand.covs(msdat, covs = covs, longnames = FALSE)
-ms_form <- reformulate(
-  response = "Surv(time, status)",
-  termlabels = c(paste0("X.", seq_len(3)), paste0("Z.", seq_len(3)), "strata(trans)")
-)
-mod <- coxph(ms_form, data = msdat_exp)
-summarise_ref_CCA(mod, analy = "full")
-
-
-
-
-# We dont do prediction here right?
-
-
-induce_missings(n = nrow(dat), dat = dat, mech = "MAR", p = 0.5, eta1 = -1)
-
-# Just mar missing (dont vary hazards or coef effects, mech strength and prop missing yes?) 
-# Or just show all coefficients facetted?
-
-# Use ch12, ch12_int and smcfcs
-meths <- mice::make.method(dat)
-predmat <- mice::make.predictorMatrix(dat)
-predmat[] <- 0L
+# set.seed()..
+# replicate..
