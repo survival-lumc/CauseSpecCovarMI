@@ -3,156 +3,184 @@
 devtools::load_all()
 library(mice)
 library(survival)
+source("analysis/supplement-simulations/scenarios-supplemental.R")
 
 # https://github.com/lbeesleyBIOSTAT/SRMIMI_Example_Code/blob/main/Example_Code_Normal.R
 # https://github.com/alexanderrobitzsch/miceadds
 # https://www.gerkovink.com/miceVignettes/Passive_Post_processing/Passive_imputation_post_processing.html
 
+scenario <- scenarios_raw[1, ]
 
-# Generate data -----------------------------------------------------------
+# One sim func ------------------------------------------------------------
 
+one_simulation_breslow <- function(scenario) {
+  
+  # Set up parameters
+  baseline <- CauseSpecCovarMI::mds_shape_rates
+  
+  # Different basehaz setting
+  alph1 <- 1.5; lam1 <- 0.04
+  ev1_pars <- list("a1" = alph1, "h1_0" = lam1, "b1" = .5, "gamm1" = 1)
+  
+  ev2_pars <- list(
+    "a2" = baseline[baseline$state == "NRM", "shape"], 
+    "h2_0" = baseline[baseline$state == "NRM", "rate"], 
+    "b2" = .5, 
+    "gamm2" = .5
+  )
+  
+  # Generate dataset
+  dat <- generate_dat(
+    n = scenario$n,
+    X_type = scenario$X_level, 
+    r = 0.5, 
+    ev1_pars = ev1_pars,
+    ev2_pars = ev2_pars, 
+    rate_cens = baseline[baseline$state == "EFS", "rate"], 
+    mech = scenario$miss_mech, 
+    p = scenario$prop_miss,
+    eta1 = scenario$eta1
+  )
+  
+  # Add true baseline hazards
+  dat$H1_true <- alph1 * dat$t^lam1
+  dat$H2_true <- baseline[baseline$state == "NRM", "rate"] * 
+    dat$t^(baseline[baseline$state == "NRM", "shape"])
+  
+  # -- Run full dataset and CCA
+  
+  mod_ref <- setup_mstate(dat %>% dplyr::mutate(X = .data$X_orig))
+  mod_CCA <- setup_mstate(dat)
+  
+  # -- smcfcs
+  
+  m <- 3 # make 25 or 50
+  meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
+  
+  imp_smcfcs <- record_warning(
+    smcfcs::smcfcs(
+      originaldata = dat, 
+      smtype = "compet", 
+      smformula = c(
+        "Surv(t, eps == 1) ~ X + Z",
+        "Surv(t, eps == 2) ~ X + Z"
+      ), 
+      method = meths_smcfcs, 
+      m = m, 
+      numit = 1, 
+      rjlimit = 5000
+    ) # 5 times higher than default, avoid rej sampling errors
+  )
+  
+  # -- mice setup
+  
+  mat <- mice::make.predictorMatrix(dat) 
+  mat[] <- 0L 
+  mat_nels <- mat_true <- mat_breslow <- mat 
+  
+  mat_nels["X", c("Z", "eps", "H1", "H2")] <- 1
+  mat_true["X", c("Z", "eps", "H1_true", "H2_true")] <- 1
+  meths_mice <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "polyreg", "polr"))
+  
+  # -- mice with nels and true
+  
+  imp_nels <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_nels,
+    maxit = 1, 
+    print = FALSE
+  )
+  
+  imp_true <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_true,
+    maxit = 1, 
+    print = FALSE
+  )
+  
+  # -- mice iterative breslow
+  
+  # Set cumulative hazards as missing (they will be updated)
+  dat[, c("H1", "H2")] <- NA
+  
+  # Make function to update basehaz
+  update_basehaz <- function(time, delta, x, z) {
+    mod <- coxph(Surv(time, delta) ~ x + z, control = survival::coxph.control(timefix = FALSE))
+    basehaz_df <- basehaz(mod, centered = FALSE)
+    haz <- basehaz_df[match(time, basehaz_df[["time"]]), ][["hazard"]]
+    return(haz)
+  }
+  
+  mat_breslow["X", c("Z", "eps", "H1", "H2")] <- 1
+  meths_mice["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
+  meths_mice["H2"] <- paste("~I(", expression(update_basehaz(t, ev2, X, Z)),")")
+  
+  imp_breslow <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_breslow,
+    maxit = 10, # should be enough
+    print = FALSE
+  )
+  
+  # -- Summarise
+  
+  complist <- list(
+    "imp_nels" = mice::complete(imp_nels, action = "all"),
+    "imp_true" = mice::complete(imp_true, action = "all"),
+    "imp_breslow" = mice::complete(imp_breslow, action = "all"),
+    "smcfcs" = imp_smcfcs$value$impDatasets
+  )
+  
+  mods_complist <- purrr::modify_depth(complist, .depth = 2, ~ setup_mstate(.x)) 
+  
+  estimates <- purrr::imap_dfr(
+    mods_complist, 
+    ~ pool_diffm(.x, n_imp = m, analy = .y)
+  ) %>% 
+    
+    # Bind CCA, ref
+    dplyr::bind_rows(
+      summarise_ref_CCA(mod_ref, analy = "ref"),
+      summarise_ref_CCA(mod_CCA, analy = "CCA")
+    ) %>% 
+    
+    # Add true values
+    dplyr::mutate(
+      true = dplyr::case_when(
+        stringr::str_detect(var, "X.1") ~ ev1_pars$b1,
+        stringr::str_detect(var, "Z.1") ~ ev1_pars$gamm1,
+        stringr::str_detect(var, "X.2") ~ ev2_pars$b2,
+        stringr::str_detect(var, "Z.2") ~ ev2_pars$gamm2
+      )
+    ) %>% 
+    
+    # Add mice warnings and rej sampling errors for smcfcs
+    dplyr::mutate(
+      warns = dplyr::case_when(
+        analy == "smcfcs" ~ as.numeric(stringr::str_extract(imp_smcfcs$warning, "[0-9]+")),
+        analy == "imp_nels" ~ as.numeric(!is.null(imp_nels$loggedEvents)),
+        analy == "imp_true" ~ as.numeric(!(is.null(imp_true$loggedEvents))),
+        analy == "imp_breslow" ~ as.numeric(!(is.null(imp_breslow$loggedEvents))),
+        analy %in% c("CCA", "ref") ~ 0
+      ) 
+    ) %>%
+    cbind.data.frame(scenario, row.names = NULL)
 
-baseline <- CauseSpecCovarMI::mds_shape_rates
-shape_ev1 <- baseline[baseline$state == "REL", "shape"]
-base_rate_ev1 <- baseline[baseline$state == "REL", "rate"]
-
-ev1_pars <- list(
-  "a1" = 1.5, 
-  "h1_0" = 0.04,
-  "b1" = .5, 
-  "gamm1" = 1
-)
-
-# Parameters Weibull event 2
-ev2_pars <- list(
-  "a2" = baseline[baseline$state == "NRM", "shape"], 
-  "h2_0" = baseline[baseline$state == "NRM", "rate"], 
-  "b2" = .5, 
-  "gamm2" = .5
-)
-
-dat <- generate_dat(
-  n = 2000,
-  X_type = "continuous", 
-  r = 0.5, 
-  ev1_pars = ev1_pars,
-  ev2_pars = ev2_pars, 
-  rate_cens = baseline[baseline$state == "EFS", "rate"], 
-  mech = "MAR", 
-  p = 0.5,
-  eta1 = -1
-)
-
-H1_nels <- dat$H1
-H2_nels <- dat$H2
-H1_true <- 0.04 * dat$t^(1.5)
-H2_true <- baseline[baseline$state == "NRM", "rate"] * 
-  dat$t^(baseline[baseline$state == "NRM", "shape"])
-
-# Prepare imputations -----------------------------------------------------
-
-
-# Set cumulative hazards and interactions as missing (they will be updated)
-dat[, c("H1", "H2", "H1_Z", "H2_Z")] <- NA
-
-# Make function to update basehaz
-update_basehaz <- function(time, delta, x, z) {
-  mod <- coxph(Surv(time, delta) ~ x + z, control = survival::coxph.control(timefix = FALSE))
-  basehaz_df <- basehaz(mod, centered = FALSE)
-  haz <- basehaz_df[match(time, basehaz_df[["time"]]), ][["hazard"]]
-  return(haz)
+  return(estimates)
 }
 
-# Prep matrices and methods
-mat <- make.predictorMatrix(dat) 
-mat[] <- 0L 
-mat_ch1 <- mat_ch12 <- mat_ch12_int <- mat 
-meth <- make.method(dat, defaultMethod = c("norm", "logreg", "polyreg", "polr"))
-meth_ch1 <- meth_ch12 <- meth_ch12_int <- meth 
-
-# One cumhaz
-mat_ch1["X", c("Z", "ev1", "H1")] <- 1
-mat_ch1["H1", c("X", "Z", "t", "ev1", "ev2")] <- 1
-meth_ch1["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
-meth_ch1[c("H2", "H1_Z", "H2_Z")] <- ""
-
-# Both cumhaz
-mat_ch12["X", c("Z", "eps", "H1", "H2")] <- 1
-mat_ch12["H1", c("X", "Z", "t", "ev1", "ev2")] <- 1
-mat_ch12["H2", c("X", "Z", "t", "ev1", "ev2")] <- 1
-meth_ch12["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
-meth_ch12["H2"] <- paste("~I(", expression(update_basehaz(t, ev2, X, Z)),")")
-meth_ch12[c("H1_Z", "H2_Z")] <- ""
 
 
-# Imp settings
-m <- c(15) # Number of imputations of interest
-iters_MI <- 15
-
-# Run imps
-imp_ch1 <- mice::mice(
-  dat, 
-  m = m[length(m)],
-  method = meth_ch1, 
-  predictorMatrix = mat_ch1,
-  maxit = iters_MI
-)
-
-imp_ch12 <- mice::mice(
-  dat, 
-  m = m[length(m)],
-  method = meth_ch12, 
-  predictorMatrix = mat_ch12,
-  maxit = iters_MI
-)
-
-#make.method
-
-imps_comp <- mice::complete(imp_ch12_int, action = "all")
-cbind.data.frame(imps_comp$`1`$H1,
-                 imps_comp$`2`$H1,
-                 imps_comp$`3`$H1) |>  View()
+# Try lapply here? --------------------------------------------------------
 
 
-# Make plots
-plot(imp_ch12)
-imps_comp <- mice::complete(imp_ch12, action = "all")
+# set.seed()..
+# replicate..
 
-
-plot(
-  x = H1_true, 
-  y = H1_nels, 
-  xlab = expression("True H"[10]*"(T)"),
-  ylab = expression("Estimated H"[10]*"(T)"),
-  xlim = c(0, 1.2), ylim = c(0, 1.2), type = "n"
-)
-abline(a = 0, b = 1, lwd = 2, col = "gray")
-points(x = H1_true, y = H1_nels, col = "blue", pch = 16, cex = 0.5)
-points(x = H1_true, y = imps_comp$`1`$H1, col = "black", pch = 16, cex = 0.5)
-legend(
-  "topleft", 
-  legend = c("Iterative Breslow", "Nelson-Aalen"), 
-  col = c("black", "blue"),
-  pch = c(16, 16), 
-  bty = "n"
-)
-
-
-plot(
-  x = H2_true, 
-  y = H2_nels, 
-  xlab = expression("True H"[20]*"(T)"),
-  ylab = expression("Estimated H"[20]*"(T)"),
-  xlim = c(0, 1.2), ylim = c(0, 1.2), type = "n"
-)
-abline(a = 0, b = 1, lwd = 2, col = "gray")
-points(x = H2_true, y = H2_nels, col = "blue", pch = 16, cex = 0.5)
-points(x = H2_true, y = imps_comp$`1`$H2, col = "black", pch = 16, cex = 0.5)
-legend(
-  "topleft", 
-  legend = c("Iterative Breslow", "Nelson-Aalen"), 
-  col = c("black", "blue"),
-  pch = c(16, 16), 
-  bty = "n"
-)
 
