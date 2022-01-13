@@ -4,7 +4,7 @@ library(mstate)
 library(mice)
 source("analysis/supplement-simulations/helpers-three-comprisks.R")
 source("analysis/supplement-simulations/scenarios-supplemental.R")
-scenario <- scenarios_raw[1, ]
+scenario <- scenarios_raw[6, ]
 
 one_simulation_threecomp <- function(scenario) {
   
@@ -12,7 +12,7 @@ one_simulation_threecomp <- function(scenario) {
   baseline <- CauseSpecCovarMI::mds_shape_rates
   
   # Different basehaz setting, with another constant hazard as third
-  ev1_pars <- list("a1" = 1.5, "h1_0" = 0.04, "b1" = .5, "gamm1" = 1)
+  ev1_pars <- list("a1" = 1.5, "h1_0" = 0.04, "b1" = scenario$beta1, "gamm1" = 1)
   
   ev2_pars <- list(
     "a2" = baseline[baseline$state == "NRM", "shape"], 
@@ -42,7 +42,8 @@ one_simulation_threecomp <- function(scenario) {
   
   # -- smcfcs
   
-  m <- 5 # make 25 or 50
+  m <- 50 # make 25 or 50
+  # add numit here
   meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
   
   imp_smcfcs <- record_warning(
@@ -56,7 +57,7 @@ one_simulation_threecomp <- function(scenario) {
       ), 
       method = meths_smcfcs, 
       m = m, 
-      numit = 1, 
+      numit = 25, #25, 
       rjlimit = 5000
     ) # 5 times higher than default, avoid rej sampling errors
   )
@@ -69,7 +70,7 @@ one_simulation_threecomp <- function(scenario) {
   
   mat_ch123["X", c("Z", "eps", "H1", "H2", "H3")] <- 1
   mat_ch123_int["X", c("Z", "eps", "H1", "H2", "H3", "H1_Z", "H2_Z", "H3_Z")] <- 1
-  meths_mice <-  ice::make.method(dat, defaultMethod = c("norm", "logreg", "polyreg", "polr"))
+  meths_mice <-  mice::make.method(dat, defaultMethod = c("norm", "logreg", "polyreg", "polr"))
   
   # -- mice standard and interaction
   
@@ -137,11 +138,28 @@ one_simulation_threecomp <- function(scenario) {
     ) %>%
     cbind.data.frame(scenario, row.names = NULL)
   
+  # Clear from memory
+  rm("imp_smcfcs", "imp_ch123", "imp_ch123_int")
+  
   return(estimates)
 }
 
 # Try lapply here? --------------------------------------------------------
 
+#test_threecomp <- one_simulation_threecomp(scenario)
+
 
 # set.seed()..
 # replicate..
+
+
+set.seed(1984)
+
+res <- replicate(
+  n = 2,
+  one_simulation_threecomp(scenario),
+  simplify = FALSE
+)
+
+
+saveRDS(res, file = "analysis/supplement-simulations/test_scens_threecomp.rds")

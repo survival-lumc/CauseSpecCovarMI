@@ -9,9 +9,20 @@ source("analysis/supplement-simulations/scenarios-supplemental.R")
 # https://github.com/alexanderrobitzsch/miceadds
 # https://www.gerkovink.com/miceVignettes/Passive_Post_processing/Passive_imputation_post_processing.html
 
-scenario <- scenarios_raw[1, ]
+scenario <- scenarios_raw[6, ]
 
 # One sim func ------------------------------------------------------------
+
+# Make function to update basehaz
+update_basehaz <- function(time, delta, x, z) {
+  mod <- survival::coxph(
+    Surv(time, delta) ~ x + z, 
+    control = survival::coxph.control(timefix = FALSE)
+  )
+  basehaz_df <- survival::basehaz(mod, centered = FALSE)
+  haz <- basehaz_df[match(time, basehaz_df[["time"]]), ][["hazard"]]
+  return(haz)
+}
 
 one_simulation_breslow <- function(scenario) {
   
@@ -20,7 +31,7 @@ one_simulation_breslow <- function(scenario) {
   
   # Different basehaz setting
   alph1 <- 1.5; lam1 <- 0.04
-  ev1_pars <- list("a1" = alph1, "h1_0" = lam1, "b1" = .5, "gamm1" = 1)
+  ev1_pars <- list("a1" = alph1, "h1_0" = lam1, "b1" = scenario$beta1, "gamm1" = 1)
   
   ev2_pars <- list(
     "a2" = baseline[baseline$state == "NRM", "shape"], 
@@ -42,10 +53,15 @@ one_simulation_breslow <- function(scenario) {
     eta1 = scenario$eta1
   )
   
-  # Add true baseline hazards
-  dat$H1_true <- alph1 * dat$t^lam1
-  dat$H2_true <- baseline[baseline$state == "NRM", "rate"] * 
-    dat$t^(baseline[baseline$state == "NRM", "shape"])
+  # Add true baseline hazards, and interactions
+  dat$H1_true <- with(dat,  lam1 * t^alph1)
+  dat$H2_true <- with(
+    dat,
+    baseline[baseline$state == "NRM", "rate"] * 
+      t^(baseline[baseline$state == "NRM", "shape"])
+  ) 
+  dat$H1_true_Z <- with(dat, H1_true * Z)
+  dat$H2_true_Z <- with(dat, H2_true * Z)
   
   # -- Run full dataset and CCA
   
@@ -54,7 +70,8 @@ one_simulation_breslow <- function(scenario) {
   
   # -- smcfcs
   
-  m <- 3 # make 25 or 50
+  m <- 50 # make 25 or 50
+  #iters <- 25 # for both smcfcs (?, like random walk) and breslow
   meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
   
   imp_smcfcs <- record_warning(
@@ -67,10 +84,12 @@ one_simulation_breslow <- function(scenario) {
       ), 
       method = meths_smcfcs, 
       m = m, 
-      numit = 1, 
+      numit = 25, 
       rjlimit = 5000
     ) # 5 times higher than default, avoid rej sampling errors
   )
+  
+  #plot(imp_smcfcs$value)
   
   # -- mice setup
   
@@ -102,18 +121,36 @@ one_simulation_breslow <- function(scenario) {
     print = FALSE
   )
   
+  # -- mice nels and true with interactions
+  
+  mat_nels["X", c("H1_Z", "H2_Z")] <- 1
+  
+  imp_nels_int <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_nels,
+    maxit = 1, 
+    print = FALSE
+  )
+  
+  mat_true["X", c("H1_true_Z", "H2_true_Z")] <- 1
+  
+  imp_true_int <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_true,
+    maxit = 1, 
+    print = FALSE
+  )
+  
   # -- mice iterative breslow
+  
+  cat("\n Start of iterative breslow mice..")
   
   # Set cumulative hazards as missing (they will be updated)
   dat[, c("H1", "H2")] <- NA
-  
-  # Make function to update basehaz
-  update_basehaz <- function(time, delta, x, z) {
-    mod <- coxph(Surv(time, delta) ~ x + z, control = survival::coxph.control(timefix = FALSE))
-    basehaz_df <- basehaz(mod, centered = FALSE)
-    haz <- basehaz_df[match(time, basehaz_df[["time"]]), ][["hazard"]]
-    return(haz)
-  }
   
   mat_breslow["X", c("Z", "eps", "H1", "H2")] <- 1
   meths_mice["H1"] <- paste("~I(", expression(update_basehaz(t, ev1, X, Z)),")")
@@ -128,12 +165,30 @@ one_simulation_breslow <- function(scenario) {
     print = FALSE
   )
   
+  # With interaction
+  dat[, c("H1_Z", "H2_Z")] <- NA
+  mat_breslow["X", c("H1_Z", "H2_Z")] <- 1
+  meths_mice["H1_Z"] <- "~I(H1 * Z)"
+  meths_mice["H2_Z"] <- "~I(H2 * Z)"
+  
+  imp_breslow_int <- mice::mice(
+    dat, 
+    m = m,
+    method = meths_mice, 
+    predictorMatrix = mat_breslow,
+    maxit = 10, # should be enough
+    print = FALSE
+  )
+  
   # -- Summarise
   
   complist <- list(
     "imp_nels" = mice::complete(imp_nels, action = "all"),
     "imp_true" = mice::complete(imp_true, action = "all"),
     "imp_breslow" = mice::complete(imp_breslow, action = "all"),
+    "imp_nels_int" = mice::complete(imp_nels_int, action = "all"),
+    "imp_true_int" = mice::complete(imp_true_int, action = "all"),
+    "imp_breslow_int" = mice::complete(imp_breslow_int, action = "all"),
     "smcfcs" = imp_smcfcs$value$impDatasets
   )
   
@@ -167,20 +222,46 @@ one_simulation_breslow <- function(scenario) {
         analy == "imp_nels" ~ as.numeric(!is.null(imp_nels$loggedEvents)),
         analy == "imp_true" ~ as.numeric(!(is.null(imp_true$loggedEvents))),
         analy == "imp_breslow" ~ as.numeric(!(is.null(imp_breslow$loggedEvents))),
+        analy == "imp_nels_int" ~ as.numeric(!is.null(imp_nels_int$loggedEvents)),
+        analy == "imp_true_int" ~ as.numeric(!(is.null(imp_true_int$loggedEvents))),
+        analy == "imp_breslow_int" ~ as.numeric(!(is.null(imp_breslow_int$loggedEvents))),
         analy %in% c("CCA", "ref") ~ 0
       ) 
     ) %>%
     cbind.data.frame(scenario, row.names = NULL)
 
+  # Clear from memory
+  rm(
+    "imp_smcfcs", "imp_nels", "imp_true", "imp_breslow", 
+    "imp_nels_int", "imp_true_int", "imp_breslow_int"
+  )
+  
   return(estimates)
 }
 
-
+#test_tenimps <- one_simulation_breslow(scenario)
 
 # Try lapply here? --------------------------------------------------------
 
+# TO DO:
+# - set one seed per scen
+# - add rm statements for imp objects - DONE
+# - parallelize per scen
+# - save a list on shark, rbindlist locally (pull repo on shark)
+# - add new functions to R/ in package
 
-# set.seed()..
 # replicate..
 
 
+
+#Here we run...
+set.seed(1985)
+
+res <- replicate(
+  n = 2,
+  one_simulation_breslow(scenario),
+  simplify = FALSE
+)
+
+
+saveRDS(res, file = "analysis/supplement-simulations/test_scens_breslow.rds")
