@@ -209,7 +209,7 @@ if (!synth) save(dictionary_df, file = "R/data_dictionary.rda")
 
 
 dictionary_df <- get(load("R/data_dictionary.rda"))
-data.table::setorder(dictionary_df, "var_name", "level_num")
+data.table::setorder(dictionary_df, "var_label", "level_num")
 dictionary_df[is.na(levels_lab), levels_lab := ""]
 
 # Make columns for LaTex
