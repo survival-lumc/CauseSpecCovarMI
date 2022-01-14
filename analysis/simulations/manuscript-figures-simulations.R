@@ -14,6 +14,9 @@ preds_results <- data.table::data.table(CauseSpecCovarMI::preds_results)
 # Global theme
 ggplot2::theme_set(ggplot2::theme_minimal(base_size = 12))
 
+# Larger pointsize after review
+ptsize <- 1.75
+
 
 # Figure 1 ----------------------------------------------------------------
 
@@ -34,7 +37,7 @@ fig1 <- regr_results[
     step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
     point_dodge = 0.7,
     text_size = 4, 
-    pointsize = 1.5, 
+    pointsize = ptsize, 
     height_steps = 0.015,
     height_betw_steps = 0.03,
     top_step = -0.175,
@@ -90,7 +93,7 @@ fig2 <- regr_results[
     step_factors = c("beta1", "prop_miss", "haz_shape", "eta1"),
     point_dodge = 0.7,
     text_size = 4, 
-    pointsize = 1.5,
+    pointsize = ptsize,
     top_step = -0.225,
     height_steps = 0.02,
     height_betw_steps = 0.04,
@@ -145,7 +148,7 @@ fig3 <- preds_results[
     true = 0, 
     step_factors = c("state", "beta1", "haz_shape", "eta1"),
     text_size = 4, 
-    pointsize = 1.5,
+    pointsize = ptsize,
     point_dodge = 0.7,
     height_steps = 0.001,
     height_betw_steps = 0.003,

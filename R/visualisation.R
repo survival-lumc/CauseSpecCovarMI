@@ -376,7 +376,7 @@ ggplot_grouped_forest <- function(dat,
     ggplot2::geom_point(
       ggplot2::aes(col = .data$method, shape = .data$method), 
       position = ggplot2::position_dodge(width = 0.75), 
-      size = 1.25,
+      size = 1.75, #1.25,
       na.rm = TRUE
     ) +
     ggplot2::coord_flip(ylim = lims_x, xlim = c(0, 40)) +
