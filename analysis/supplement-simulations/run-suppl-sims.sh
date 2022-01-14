@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH -J suppl-sims
 #SBATCH --nodes=1
+#SBATCH --partition=short
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:45:00 
 #SBATCH --mem=5G 
