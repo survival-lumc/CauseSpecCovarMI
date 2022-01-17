@@ -4,9 +4,12 @@ library(mstate)
 library(mice)
 source("analysis/supplement-simulations/helpers-three-comprisks.R")
 source("analysis/supplement-simulations/scenarios-supplemental.R")
-scenario <- scenarios_raw[6, ]
 
-one_simulation_threecomp <- function(scenario) {
+one_simulation_threecomp <- function(scenario, n_cpu, rep_num) {
+  
+  # Set the seed
+  scen_number <- as.numeric(rownames(scenario))
+  set.seed(rep_num * scen_number)
   
   # Set up parameters
   baseline <- CauseSpecCovarMI::mds_shape_rates
@@ -43,11 +46,13 @@ one_simulation_threecomp <- function(scenario) {
   # -- smcfcs
   
   m <- 50 # make 25 or 50
-  # add numit here
   meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
   
   imp_smcfcs <- record_warning(
-    smcfcs::smcfcs(
+    smcfcs::smcfcs.parallel(
+      seed = round(runif(1, 0, 1e5)),# change somehow here; random based on initial seed
+      n_cores = n_cpu,
+      cl_type = "FORK",
       originaldata = dat, 
       smtype = "compet", 
       smformula = c(
@@ -57,7 +62,7 @@ one_simulation_threecomp <- function(scenario) {
       ), 
       method = meths_smcfcs, 
       m = m, 
-      numit = 25, #25, 
+      numit = 20, # drop to 20 
       rjlimit = 5000
     ) # 5 times higher than default, avoid rej sampling errors
   )
@@ -144,22 +149,20 @@ one_simulation_threecomp <- function(scenario) {
   return(estimates)
 }
 
-# Try lapply here? --------------------------------------------------------
 
-#test_threecomp <- one_simulation_threecomp(scenario)
-
-
-# set.seed()..
-# replicate..
+# Run scenario ------------------------------------------------------------
 
 
-set.seed(1984)
-
-res <- replicate(
-  n = 2,
-  one_simulation_threecomp(scenario),
-  simplify = FALSE
+n_sim <- 2
+res <- lapply(
+  X = seq_len(n_sim),
+  FUN = function(rep) {
+    one_simulation_breslow(
+      scenario = scenarios_raw[Sys.getenv("SLURM_ARRAY_TASK_ID"), ], 
+      n_cpu = Sys.getenv("SLURM_CPUS_PER_TASK"), 
+      rep_num = rep
+    )
+  }
 )
-
 
 saveRDS(res, file = "analysis/supplement-simulations/test_scens_threecomp.rds")

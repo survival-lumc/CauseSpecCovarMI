@@ -228,6 +228,28 @@ plot(zph_rel)
 plot(zph_nrm)
 
 
+# Check CCA validity as in Bartlett (2016) - sec. 3
+form_testCCA <- stats::reformulate(
+  termlabels = predictors,
+  response = "Surv(ci_allo1, ci_s_allo1 == 0)"
+)
+survival::coxph(form_testCCA, data = dat_mds) %>% 
+  summary(conf.int = 0.95)
+
+
+miss_vars <- naniar::miss_var_which(dat_mds)
+naniar::miss_var_summary(dat_mds)
+
+# Include crnoncr and match_allo1 snce <3 % missings
+form_testCCA2 <- stats::reformulate(
+  termlabels = c(predictors[!(predictors %in% miss_vars)], "R", "match_allo1_1"),
+  response = "Surv(ci_allo1, ci_s_allo1 > 0)" #any cause
+)
+dat_mds$R <- as.numeric(complete.cases(dat_mds))
+survival::coxph(form_testCCA2, data = dat_mds) %>% 
+  summary(conf.int = 0.95)
+naniar::miss_var_which(dat_mds)
+
 # Forest plot -------------------------------------------------------------
 
 
