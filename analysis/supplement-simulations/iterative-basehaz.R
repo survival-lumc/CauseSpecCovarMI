@@ -9,8 +9,6 @@ source("analysis/supplement-simulations/scenarios-supplemental.R")
 # https://github.com/alexanderrobitzsch/miceadds
 # https://www.gerkovink.com/miceVignettes/Passive_Post_processing/Passive_imputation_post_processing.html
 
-scenario <- scenarios_raw[6, ]
-
 # One sim func ------------------------------------------------------------
 
 # Make function to update basehaz
@@ -24,7 +22,11 @@ update_basehaz <- function(time, delta, x, z) {
   return(haz)
 }
 
-one_simulation_breslow <- function(scenario) {
+one_simulation_breslow <- function(scenario, n_cpu, rep_num) {
+  
+  # Set the seed
+  scen_number <- as.numeric(rownames(scenario))
+  set.seed(-rep_num * scen_number)
   
   # Set up parameters
   baseline <- CauseSpecCovarMI::mds_shape_rates
@@ -71,11 +73,13 @@ one_simulation_breslow <- function(scenario) {
   # -- smcfcs
   
   m <- 50 # make 25 or 50
-  #iters <- 25 # for both smcfcs (?, like random walk) and breslow
   meths_smcfcs <- mice::make.method(dat, defaultMethod = c("norm", "logreg", "mlogit", "podds"))
   
   imp_smcfcs <- record_warning(
-    smcfcs::smcfcs(
+    smcfcs::smcfcs.parallel(
+      seed = round(runif(1, 0, 1e5)),
+      n_cores = n_cpu,
+      cl_type = "FORK",
       originaldata = dat, 
       smtype = "compet", 
       smformula = c(
@@ -84,7 +88,7 @@ one_simulation_breslow <- function(scenario) {
       ), 
       method = meths_smcfcs, 
       m = m, 
-      numit = 25, 
+      numit = 20, 
       rjlimit = 5000
     ) # 5 times higher than default, avoid rej sampling errors
   )
@@ -239,9 +243,9 @@ one_simulation_breslow <- function(scenario) {
   return(estimates)
 }
 
-#test_tenimps <- one_simulation_breslow(scenario)
 
-# Try lapply here? --------------------------------------------------------
+# Run sims ----------------------------------------------------------------
+
 
 # TO DO:
 # - set one seed per scen
@@ -250,18 +254,26 @@ one_simulation_breslow <- function(scenario) {
 # - save a list on shark, rbindlist locally (pull repo on shark)
 # - add new functions to R/ in package
 
-# replicate..
 
+#scenario=${SLURM_ARRAY_TASK_ID}
+#ncpu=${SLURM_CPUS_PER_TASK}
+#args <- commandArgs(TRUE)
+#scenario <- as.numeric(args[1])
+#repl <- as.numeric(args[2])
 
+# Run 
+#n_sim <- scenario$n_sim
 
-#Here we run...
-set.seed(1985)
-
-res <- replicate(
-  n = 2,
-  one_simulation_breslow(scenario),
-  simplify = FALSE
+n_sim <- 2
+res <- lapply(
+  X = seq_len(n_sim),
+  FUN = function(rep) {
+    one_simulation_breslow(
+      scenario = scenarios_raw[Sys.getenv("SLURM_ARRAY_TASK_ID"), ], 
+      n_cpu = Sys.getenv("SLURM_CPUS_PER_TASK"), 
+      rep_num = rep
+    )
+  }
 )
-
 
 saveRDS(res, file = "analysis/supplement-simulations/test_scens_breslow.rds")
