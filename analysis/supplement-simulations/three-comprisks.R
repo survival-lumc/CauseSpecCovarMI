@@ -25,7 +25,7 @@ one_simulation_threecomp <- function(scenario, n_cpu, rep_num) {
   )
   
   # constant; plot true baseline cumincs somewhere..
-  ev3_pars <- list("a3" = 1, "h3_0" = 0.075, "b3" = 0.75, "gamm3" = .25)
+  ev3_pars <- list("a3" = 1, "h3_0" = 0.1, "b3" = 0.75, "gamm3" = .25)
   
   dat <- generate_dat_threecomp(
     n = scenario$n,
@@ -146,23 +146,35 @@ one_simulation_threecomp <- function(scenario, n_cpu, rep_num) {
   # Clear from memory
   rm("imp_smcfcs", "imp_ch123", "imp_ch123_int")
   
+  # Notify
+  cat(paste0("\n", "End of rep #", as.character(rep_num), "!\n"))
+  
   return(estimates)
 }
 
 
 # Run scenario ------------------------------------------------------------
 
+# Run 
+scen_num <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+scenario <- scenarios_raw[scen_num, ]
+n_sim <- scenario$n_sim
 
-n_sim <- 2
 res <- lapply(
   X = seq_len(n_sim),
   FUN = function(rep) {
-    one_simulation_breslow(
-      scenario = scenarios_raw[Sys.getenv("SLURM_ARRAY_TASK_ID"), ], 
-      n_cpu = Sys.getenv("SLURM_CPUS_PER_TASK"), 
+    one_simulation_threecomp(
+      scenario = scenario, 
+      n_cpu = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK")), 
       rep_num = rep
     )
   }
 )
 
-saveRDS(res, file = "analysis/supplement-simulations/test_scens_threecomp.rds")
+# Give a name depending on scenario..
+res_filename <- paste0(
+  "analysis/supplement-simulations/",
+  "suppl-sims_threecomp_scen", scen_num,
+  ".rds"
+)
+saveRDS(res, file = res_filename)

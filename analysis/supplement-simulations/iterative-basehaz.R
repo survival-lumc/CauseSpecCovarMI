@@ -247,33 +247,30 @@ one_simulation_breslow <- function(scenario, n_cpu, rep_num) {
 # Run sims ----------------------------------------------------------------
 
 
-# TO DO:
-# - set one seed per scen
-# - add rm statements for imp objects - DONE
-# - parallelize per scen
 # - save a list on shark, rbindlist locally (pull repo on shark)
 # - add new functions to R/ in package
 
 
-#scenario=${SLURM_ARRAY_TASK_ID}
-#ncpu=${SLURM_CPUS_PER_TASK}
-#args <- commandArgs(TRUE)
-#scenario <- as.numeric(args[1])
-#repl <- as.numeric(args[2])
-
 # Run 
-#n_sim <- scenario$n_sim
+scen_num <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+scenario <- scenarios_raw[scen_num, ]
+n_sim <- scenario$n_sim
 
-n_sim <- 2
 res <- lapply(
   X = seq_len(n_sim),
   FUN = function(rep) {
     one_simulation_breslow(
-      scenario = scenarios_raw[Sys.getenv("SLURM_ARRAY_TASK_ID"), ], 
-      n_cpu = Sys.getenv("SLURM_CPUS_PER_TASK"), 
+      scenario = scenario, 
+      n_cpu = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK")), 
       rep_num = rep
     )
   }
 )
 
-saveRDS(res, file = "analysis/supplement-simulations/test_scens_breslow.rds")
+# Give a name depending on scenario..
+res_filename <- paste0(
+  "analysis/supplement-simulations/",
+  "suppl-sims_breslow_scen", scen_num,
+  ".rds"
+)
+saveRDS(res, file = res_filename)

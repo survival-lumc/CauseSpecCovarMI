@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -J suppl-sims
-#SBATCH --partition=short
+#SBATCH -J suppl-sims-threecomp
+#SBATCH --partition=all
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --time=00:45:00 
-#SBATCH --array=1-2
+#SBATCH --cpus-per-task=10
+#SBATCH --time=15:00:00 
+#SBATCH --array=3-16 
 
 # Purge
 module purge
