@@ -113,8 +113,8 @@
 <li><p>Different, <span class="math inline">\(\{\kappa_1,\lambda_{10},\kappa_2,\lambda_{20}\} = \{1.5,0.04,0.53,0.21\}\)</span></p></li>
 </ul>
 <p>The figures below visualise the baseline hazards, as well as the corresponding baseline cumulative incidences.</p>
-<p><img src="data-generation_files/figure-html/baseline_hazards-1.png" width="2240" style="display: block; margin: auto;"></p>
-<p><img src="data-generation_files/figure-html/baseline_cuminc-1.png" width="2240" style="display: block; margin: auto;"></p>
+<p><img src="data-generation_files/figure-html/baseline_hazards-1.png" width="672" style="display: block; margin: auto;"></p>
+<p><img src="data-generation_files/figure-html/baseline_cuminc-1.png" width="672" style="display: block; margin: auto;"></p>
 </div>
 <div id="missingness-mechanisms" class="section level1">
 <h1 class="hasAnchor">
@@ -128,15 +128,15 @@
 <li>Missing not at random conditional on <span class="math inline">\(X\)</span> (MNAR), which was defined as <span class="math inline">\(\text{logit} P(R_X = 0 \vert X) = \eta_0 + \eta_1 X\)</span>.</li>
 </ul>
 <p>Setting <span class="math inline">\(\eta_1 = -2\)</span> and solving for <span class="math inline">\(\eta_0\)</span> such that the average probability of missingness was 50%, we can visualise each of the mechanisms as follows:</p>
-<p><img src="data-generation_files/figure-html/miss_mechs-1.png" width="2240" style="display: block; margin: auto;"></p>
+<p><img src="data-generation_files/figure-html/miss_mechs-1.png" width="672" style="display: block; margin: auto;"></p>
 <div id="mechanism-strength" class="section level2">
 <h2 class="hasAnchor">
 <a href="#mechanism-strength" class="anchor"></a>2.1 Mechanism strength</h2>
 <p>The <span class="math inline">\(\eta_1\)</span> values represents the strength of the mechanism. Using the MAR mechanism as an example, we can visualise the effect of changing <span class="math inline">\(\eta_1\)</span> while fixing the proportion of missing values at 50% as follows.</p>
 <p>In term of probability of <span class="math inline">\(X\)</span> missing as a function of <span class="math inline">\(Z\)</span>:</p>
-<p><img src="data-generation_files/figure-html/eta1_illust_MAR-1.png" width="2240" style="display: block; margin: auto;"></p>
+<p><img src="data-generation_files/figure-html/eta1_illust_MAR-1.png" width="672" style="display: block; margin: auto;"></p>
 <p>With the data itself:</p>
-<p><img src="data-generation_files/figure-html/eta1_illust_MAR2-1.png" width="2240" style="display: block; margin: auto;"></p>
+<p><img src="data-generation_files/figure-html/eta1_illust_MAR2-1.png" width="672" style="display: block; margin: auto;"></p>
 </div>
 </div>
   </div>
