@@ -28,6 +28,7 @@ knitr::opts_chunk$set(
 library(CauseSpecCovarMI)
 library(ggplot2)
 library(ggpubr)
+library(kableExtra)
 
 theme_set(
   theme_bw(base_size = 11)
@@ -66,11 +67,21 @@ scenarios <- data.table::setDT(CauseSpecCovarMI::scenarios)
 These were the scenarios that were run:
 
 ```{r scenarios}
-scenarios[, !c("seed", "pilot")] %>% knitr::kable()
+scens <- scenarios[, !c("seed", "pilot", "rho")]
+scens[miss_mech == "MAR_GEN", miss_mech := "MAR-T"]
+data.table::setnames(
+  scens,
+  new = c("n", "Prop. missing", "Beta 1", "Mech. type", "X covariate type", 
+          "Mech. strength (eta1)", "Hazard shape", "Scenario number")
+)
+scens %>% 
+  kableExtra::kable() |> 
+  kableExtra::kable_styling("striped") %>% 
+  kableExtra::scroll_box(height = "300px")
 ```
 
 
-# 2 Continuous $X$
+# 2 Continuous X
 
 ```{r mcse_contin}
 mcse_bias <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
@@ -616,7 +627,7 @@ regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" &
 ```
 
 
-# 3. Binary $X$
+# 3. Binary X
 
 ```{r mcse_bin}
 mcse_bias_bin <- regr_results[m %in% c(0, 50) & n == 2000 & beta1 != "0" & 
