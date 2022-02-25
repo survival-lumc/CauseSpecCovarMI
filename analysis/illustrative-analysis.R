@@ -3,6 +3,7 @@
 ##**********************##
 
 library(CauseSpecCovarMI)
+devtools::load_all()
 
 # Choose whether synthetic or not
 synth <- FALSE
@@ -222,8 +223,8 @@ survival::cox.zph(survival::coxph(form_nrm, data = dat_mds))
 # - residuals show it is likely not too dramatic
 # Note: better method for checking proportionality with MI is described
 # in Keogh et al. (2018), using joint wald tests
-zph_rel <- survival::cox.zph(survival::coxph(form_rel, data = impdats_mice[[15]]))
-zph_nrm <- survival::cox.zph(survival::coxph(form_nrm, data = impdats_mice[[15]]))
+zph_rel <- survival::cox.zph(survival::coxph(form_rel, data = impdats_mice[[1]]))
+zph_nrm <- survival::cox.zph(survival::coxph(form_nrm, data = impdats_mice[[1]]))
 plot(zph_rel)
 plot(zph_nrm)
 
@@ -242,7 +243,7 @@ naniar::miss_var_summary(dat_mds)
 
 # Include crnoncr and match_allo1 snce <3 % missings
 form_testCCA2 <- stats::reformulate(
-  termlabels = c(predictors[!(predictors %in% miss_vars)], "R", "match_allo1_1"),
+  termlabels = c(predictors[!(predictors %in% miss_vars)], "R"),
   response = "Surv(ci_allo1, ci_s_allo1 > 0)" #any cause
 )
 dat_mds$R <- as.numeric(complete.cases(dat_mds))
@@ -274,7 +275,12 @@ forest_rel <- CauseSpecCovarMI:::ggplot_grouped_forest(
   results = list_rel,
   event = "Relapse",
   form = form_rel
-)
+) +
+  ggplot2::scale_color_manual(
+    labels = c("SMC-FCS", expression(CH[12]), "CCA"), 
+    values = c("#1B9E77", "#D95F02", "#7570B3")
+  ) +
+  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA"))
 
 forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
   dat = dat_mds,
@@ -283,7 +289,12 @@ forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
   event = "Non-relapse mortality",
   form = form_nrm,
   lims_x = c(0.5, 3.1)
-)
+) +
+  ggplot2::scale_color_manual(
+    labels = c("SMC-FCS", expression(CH[12]), "CCA"), 
+    values = c("#1B9E77", "#D95F02", "#7570B3")
+  ) +
+  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA"))
 
 # Change to rel
 ggplot2::ggsave(
@@ -456,3 +467,30 @@ kableExtra::kbl(
   digits = 1
 ) %>% 
   kableExtra::pack_rows(index = c("REL" = 3, "NRM" = 3))
+
+
+
+# Cumulative incidence curves for supplement ------------------------------
+
+
+library(prodlim)
+ci_nonp <- prodlim(Hist(ci_allo1, ci_s_allo1) ~ 1, data = dat_mds)
+pdf("cuminc_mds.pdf", width = 9)
+plot(
+  ci_nonp, 
+  cause = 1, 
+  ylab = "Cumulative incidence", 
+  xlab = "Time since alloHCT (years)", 
+  atrisk.at = seq(0, 10, 2),
+  percent = FALSE
+  #atrisk.title = "Numbers at risk",
+  #atrisk.pos = ,
+  #atrisk.col = "blue"
+  #labels = NULL
+)
+plot(ci_nonp, cause = 2, add = TRUE, col = 2, lty = 2)
+legend(x = 7, y = 1, legend = c("Relapse", "NRM"), 
+       title = "Cause", lty = c(1, 2), col = c(1, 2), bty = 'n',
+       #cex = fontsize, 
+       lwd = c(3, 3))
+dev.off()
