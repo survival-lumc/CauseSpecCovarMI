@@ -85,7 +85,8 @@
 
       
 
-      </header><script src="regr-results-full_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
+      </header><script src="regr-results-full_files/header-attrs-2.11/header-attrs.js"></script><script src="regr-results-full_files/kePrint-0.0.1/kePrint.js"></script><link href="regr-results-full_files/lightable-0.0.1/lightable.css" rel="stylesheet">
+<div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Regression coefficients: full results</h1>
@@ -103,1335 +104,3136 @@
 <h1 class="hasAnchor">
 <a href="#scenarios" class="anchor"></a>1 Scenarios</h1>
 <p>These were the scenarios that were run:</p>
-<table class="table">
-<thead><tr class="header">
-<th align="right">n</th>
-<th align="right">prop_miss</th>
-<th align="right">beta1</th>
-<th align="left">miss_mech</th>
-<th align="left">X_level</th>
-<th align="right">rho</th>
-<th align="right">eta1</th>
-<th align="left">haz_shape</th>
-<th align="right">scen_num</th>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; ">
+<table class="table table table-striped">
+<thead><tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+n
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Prop. missing
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Beta 1
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Mech. type
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+X covariate type
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Mech. strength (eta1)
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Hazard shape
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Scenario number
+</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">4</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">5</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">7</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">9</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">10</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">13</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">14</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">15</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">17</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">18</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">20</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">21</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">22</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">23</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">24</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">25</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">26</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">27</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">28</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">29</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">30</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">31</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">32</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">33</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">34</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">35</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">36</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">37</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">38</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">39</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">40</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">41</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">42</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">43</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">44</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">45</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">46</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">47</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">48</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">49</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">50</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">51</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">52</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">53</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">54</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">55</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">56</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">57</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">58</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">59</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">60</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">61</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">62</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">continuous</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">63</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">64</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">65</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">66</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">67</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">68</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">69</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">70</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">71</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">72</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">73</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">74</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">75</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">76</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">77</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">78</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">79</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">80</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">81</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">82</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">83</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">84</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">85</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">86</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">87</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">88</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">89</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">90</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.1</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">91</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">92</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">similar</td>
-<td align="right">93</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">94</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">95</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">96</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">97</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">98</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">similar</td>
-<td align="right">99</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">100</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">101</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">102</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">103</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">104</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">similar</td>
-<td align="right">105</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">106</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MCAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">NA</td>
-<td align="left">different</td>
-<td align="right">107</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">108</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">109</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">110</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">111</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">112</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-1</td>
-<td align="left">different</td>
-<td align="right">113</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">114</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">115</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">116</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MNAR</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">117</td>
-</tr>
-<tr class="even">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">0.5</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">118</td>
-</tr>
-<tr class="odd">
-<td align="right">2000</td>
-<td align="right">0.5</td>
-<td align="right">1.0</td>
-<td align="left">MAR_GEN</td>
-<td align="left">binary</td>
-<td align="right">0.5</td>
-<td align="right">-2</td>
-<td align="left">different</td>
-<td align="right">119</td>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+3
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+5
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+8
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+9
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+10
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+11
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+12
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+13
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+14
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+15
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+16
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+17
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+18
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+19
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+20
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+21
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+22
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+23
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+24
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+25
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+26
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+27
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+28
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+29
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+30
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+31
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+32
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+33
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+34
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+35
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+36
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+37
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+38
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+39
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+40
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+41
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+42
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+43
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+44
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+45
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+46
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+47
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+48
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+49
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+50
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+51
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+52
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+53
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+54
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+55
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+56
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+57
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+58
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+59
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+60
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+61
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+62
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+continuous
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+63
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+64
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+65
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+66
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+67
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+68
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+69
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+70
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+71
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+73
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+74
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+75
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+76
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+77
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+78
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+79
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+80
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+81
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+82
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+83
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+84
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+85
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+86
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+87
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+88
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+89
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+90
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+91
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+92
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+93
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+94
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+95
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+96
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+97
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+98
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+99
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+100
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+101
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+102
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+103
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+104
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+similar
+</td>
+<td style="text-align:right;">
+105
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+106
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MCAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+107
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+108
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+109
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+110
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+111
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+112
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+113
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+114
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+115
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+116
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MNAR
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+117
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+118
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:left;">
+MAR-T
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:left;">
+different
+</td>
+<td style="text-align:right;">
+119
+</td>
 </tr>
 </tbody>
 </table>
 </div>
+</div>
 <div id="continuous-x" class="section level1">
 <h1 class="hasAnchor">
-<a href="#continuous-x" class="anchor"></a>2 Continuous <span class="math inline">\(X\)</span>
-</h1>
+<a href="#continuous-x" class="anchor"></a>2 Continuous X</h1>
 <ul>
 <li>Range of Bias MCSE: [0.003; 0.008]</li>
 <li>Range of RMSE MCSE: [0.003; 0.008]</li>
@@ -1537,8 +3339,7 @@
 </div>
 <div id="binary-x" class="section level1">
 <h1 class="hasAnchor">
-<a href="#binary-x" class="anchor"></a>3. Binary <span class="math inline">\(X\)</span>
-</h1>
+<a href="#binary-x" class="anchor"></a>3. Binary X</h1>
 <ul>
 <li>Range of Bias MCSE: [0.003; 0.015]</li>
 <li>Range of RMSE MCSE: [0.003; 0.015]</li>

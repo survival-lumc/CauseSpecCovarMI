@@ -83,7 +83,7 @@ In this section, we present the results for the predicted probabilities part of 
 
 We show results at horizon of 5 years after baseline, restricting to high amount of missing (50\%). 
 
-# 1 Continuous $X$
+# 1 Continuous X
 
 ```{r mcse_contin}
 mcse_bias <- preds_results[beta1 != "0" &
@@ -448,7 +448,7 @@ preds_results[
   ggplot2::theme(legend.position = "bottom")
 ```
 
-# 2 Binary $X$
+# 2 Binary X
 
 ```{r mcse_bin}
 mcse_bias_bin <- preds_results[beta1 != "0" &
