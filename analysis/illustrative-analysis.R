@@ -280,7 +280,10 @@ forest_rel <- CauseSpecCovarMI:::ggplot_grouped_forest(
     labels = c("SMC-FCS", expression(CH[12]), "CCA"), 
     values = c("#1B9E77", "#D95F02", "#7570B3")
   ) +
-  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA"))
+  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA")) +
+  ggplot2::theme(
+    legend.margin = ggplot2::margin(t = 0, r = 0, b = -1.5, l = 0, unit = "cm")
+  )
 
 forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
   dat = dat_mds,
@@ -294,7 +297,10 @@ forest_nrm <- CauseSpecCovarMI:::ggplot_grouped_forest(
     labels = c("SMC-FCS", expression(CH[12]), "CCA"), 
     values = c("#1B9E77", "#D95F02", "#7570B3")
   ) +
-  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA"))
+  ggplot2::scale_shape_discrete(labels = c("SMC-FCS", expression(CH[12]), "CCA")) +
+  ggplot2::theme(
+    legend.margin = ggplot2::margin(t = 0, r = 0, b = -1.5, l = 0, unit = "cm")
+  )
 
 # Change to rel
 ggplot2::ggsave(

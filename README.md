@@ -1,5 +1,7 @@
 # Multiple imputation for cause-specific Cox models: assessing methods for estimation and prediction
 
+[![DOI:10.1177/09622802221102623](https://zenodo.org/badge/DOI/10.1177/09622802221102623.svg)](https://doi.org/10.1177/09622802221102623)
+
 Direct access supplementary material II: [https://survival-lumc.github.io/CauseSpecCovarMI/](https://survival-lumc.github.io/CauseSpecCovarMI/)
 
 ## Abstract

@@ -10,12 +10,16 @@
 n_sim <- 160 
 
 # All possible parameters to vary
-n <- c(n = 500, "large" = 2000)
+#n <- c(n = 500, "large" = 2000)
+n <- c("large" = 2000)
 prop_miss <- c("low" = .10, "high" = .50)
-beta1 <- c("null" = 0, "med" = 0.5, "large" = 1)
+#beta1 <- c("null" = 0, "med" = 0.5, "large" = 1)
+beta1 <- c("med" = 0.5, "large" = 1)
+
 mech <- c("MCAR", "MAR", "MNAR", "MAR_GEN")
 X_level <- c("continuous", "binary")
-rho <- c("weak" = 0.1, "strong" = 0.5)
+#rho <- c("weak" = 0.1, "strong" = 0.5)
+rho <- c("strong" = 0.5)
 eta1 <- c("weaker" = -1, "strong" = -2) # To incorporate MAR-T
 haz_shape <- c("similar", "different")
 
