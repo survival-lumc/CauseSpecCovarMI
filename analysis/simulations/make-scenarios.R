@@ -3,62 +3,63 @@
 ##******************************************##
 
 
-# Parameters varied -------------------------------------------------------
+# This file contains how the scenarios grid was originally prepared for the 
+# simulation study. It contains the 112 scenarios described in the article,
+# plus an additional 7 scenarios with beta_1 = 0 (to check the null).
 
 
-# Number of replications per scenario, based on monte-carlo error bias
-n_sim <- 160 
+# Parameters varied/fixed -------------------------------------------------
 
-# All possible parameters to vary
-#n <- c(n = 500, "large" = 2000)
-n <- c("large" = 2000)
-prop_miss <- c("low" = .10, "high" = .50)
-#beta1 <- c("null" = 0, "med" = 0.5, "large" = 1)
-beta1 <- c("med" = 0.5, "large" = 1)
 
-mech <- c("MCAR", "MAR", "MNAR", "MAR_GEN")
-X_level <- c("continuous", "binary")
-#rho <- c("weak" = 0.1, "strong" = 0.5)
-rho <- c("strong" = 0.5)
-eta1 <- c("weaker" = -1, "strong" = -2) # To incorporate MAR-T
-haz_shape <- c("similar", "different")
+n_sim <- 160 # Number of replications per scenario, based on monte carlo error bias
+n <- c("large" = 2000) # Sample size 
+prop_miss <- c("low" = .10, "high" = .50) # Proportion missing data
+beta1 <- c("null" = 0, "med" = 0.5, "large" = 1) # Coefficient on X in model for REL
+mech <- c("MCAR", "MAR", "MNAR", "MAR_GEN") # Missingness mechanism
+X_level <- c("continuous", "binary") # X covariate type
+rho <- c("strong" = 0.5) # Correlation between X and Z
+eta1 <- c("weaker" = -1, "strong" = -2) # "Strength" of the missingness mechanism
+haz_shape <- c("similar", "different") # Form of the hazard shapes
 
 
 # Creating full factorial, and pilot scenarios ----------------------------
 
 
 # Make the full factorial and label the pilots
-full_factorial <- expand.grid(
-  "n" = n,
-  "prop_miss" = prop_miss,
-  "beta1" = beta1,
-  "miss_mech" = mech,
-  "X_level" = X_level,
-  "rho" = rho,
-  "eta1" = eta1,
-  "haz_shape" = haz_shape
-) %>% 
-  data.table::data.table() %>% 
+full_factorial <- data.table::data.table(
+  expand.grid(
+    "n" = n,
+    "prop_miss" = prop_miss,
+    "beta1" = beta1,
+    "miss_mech" = mech,
+    "X_level" = X_level,
+    "rho" = rho,
+    "eta1" = eta1,
+    "haz_shape" = haz_shape
+  )
+) 
   
-  # Eta1 not relevant for MCAR, remove resulting duplicates
-  .[, eta1 := ifelse(miss_mech == "MCAR", NA, eta1)] %>% 
-  unique() %>% 
+# Eta1 not relevant for MCAR, remove resulting duplicates
+full_factorial <- unique(full_factorial[, eta1 := ifelse(miss_mech == "MCAR", NA, eta1)])
 
-  # Pick out the pilot scenarios
-  .[, pilot := data.table::fcase(
-    beta1 == 0.5, 0,
-    n == 500, 0,
-    rho == 0.1, 0,
-    X_level == "binary", 0, 
-    prop_miss == 0.1, 0,
-    haz_shape == "different", 0,
-    default = 1
-  )]
+# Pick out the pilot scenarios
+full_factorial[, pilot := data.table::fcase(
+  beta1 == 0.5, 0,
+  n == 500, 0,
+  rho == 0.1, 0,
+  X_level == "binary", 0, 
+  prop_miss == 0.1, 0,
+  haz_shape == "different", 0,
+  default = 1
+)]
+
+# NOTE: The "pilot" scenarios were named as such since they were used in the 
+# testing phase of the simulation study.
 
 # Subset pilots and given them a scenario number
-pilot_scenarios <- data.table::copy(full_factorial) %>% 
-  .[pilot == 1] %>% 
-  .[order(pilot), scen_num := 1:.N]
+pilot_scenarios <- data.table::copy(full_factorial[pilot == 1])
+data.table::setorder(pilot_scenarios, pilot)
+pilot_scenarios[, scen_num := 1:.N]
 
 # Decisions after running these:
 # - beta1 = 0 not of primary interest
@@ -73,33 +74,15 @@ pilot_scenarios <- data.table::copy(full_factorial) %>%
 
 
 # Remaining scenarios
-scenarios_remaining <- data.table::copy(full_factorial) %>% 
-  
-  # Remove pilots and other criteria
-  .[pilot == 0 & rho == 0.5 & beta1 != 0 & n == 2000] %>% 
-  .[order(X_level, prop_miss, haz_shape), scen_num := 1:.N + max(
-    pilot_scenarios$scen_num
-  )]
+scenarios_remaining <- data.table::copy(full_factorial) 
+scenarios_remaining <- scenarios_remaining[pilot == 0 & beta1 != 0]
+data.table::setorder(scenarios_remaining, X_level, prop_miss, haz_shape)
+scenarios_remaining[, scen_num := 1:.N + max(pilot_scenarios$scen_num)]
 
-# Set up copy of pilots with n = 500 - these are not part of the manuscript!
-n_sim_500 <- 400 # 0.2^2/0.01^2
-pilots_n500 <- data.table::copy(pilot_scenarios) %>% 
-  .[, ':=' (
-    n = 500,
-    scen_num = 1:.N + max(scenarios_remaining$scen_num)
-  )] 
-  
 # Bind it all together 
-scenarios_full <- rbind(
-  pilot_scenarios, 
-  scenarios_remaining,
-  pilots_n500
-) %>% 
-  .[n == 2000, seed := scen_num * n_sim] %>% 
-  .[n == 500, seed := scen_num * n_sim_500] %>% 
-  .[order(scen_num)]
+scenarios_full <- rbind(pilot_scenarios, scenarios_remaining) 
+scenarios_full[, seed := scen_num * n_sim]
+data.table::setorder(scenarios_full, scen_num)
 
-# Note we do not report results of n = 500
-
-# Save as .Rdata to load in 
+# Save as .Rdata to load-in 
 #save(scenarios_full, file = "data/scenarios.RData")
