@@ -81,7 +81,7 @@ one_simulation <- function(scenario, # scenario
   
   # Fixed parameters
   m <- c(5, 10, 25, 50) # Number of imputations of interest
-  iters_MI <- 1 # Iterations of multiple imputation procedure
+  iters_MI <- 1 #20 # Iterations of multiple imputation procedure
   # Can be set to 1 since chained equations are not needed, but original simulations
   # were unfortunately run with 20 
   
@@ -286,6 +286,8 @@ one_simulation <- function(scenario, # scenario
   
 
   cat("\n Replication done!")
+  
+  return(list("ests" = estimates, "preds" = pooled_preds))
   
   # RDS saving and storing seeds/scen_num ----
   
